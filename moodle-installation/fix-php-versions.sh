@@ -47,7 +47,6 @@ apt install -y \
 # RECOMMENDED extensions (рекомендуемые):
 apt install -y \
     php8.3-soap \
-    php8.3-sodium \
     php8.3-xmlrpc \
     php8.3-ldap \
     php8.3-redis \

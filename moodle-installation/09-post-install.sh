@@ -184,7 +184,7 @@ apt update && apt upgrade -y
 
 # Обновление PHP пакетов
 echo "Обновление PHP..."
-apt install -y php8.3-cli php8.3-fpm php8.3-pgsql php8.3-redis php8.3-gd php8.3-curl php8.3-zip php8.3-mbstring php8.3-xml php8.3-intl php8.3-soap php8.3-sodium
+apt install -y php8.3-cli php8.3-fpm php8.3-pgsql php8.3-redis php8.3-gd php8.3-curl php8.3-zip php8.3-mbstring php8.3-xml php8.3-intl php8.3-soap
 
 # Перезапуск сервисов
 echo "Перезапуск сервисов..."

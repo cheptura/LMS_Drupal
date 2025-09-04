@@ -55,7 +55,6 @@ apt install -y \
 # RECOMMENDED extensions (рекомендуемые):
 apt install -y \
     php8.3-soap \
-    php8.3-sodium \
     php8.3-xmlrpc \
     php8.3-ldap \
     php8.3-redis \
@@ -64,7 +63,7 @@ apt install -y \
     php8.3-exif \
     php8.3-imap
 
-# Note: ctype, dom, iconv, json, pcre, simplexml, spl, tokenizer, openssl
+# Note: ctype, dom, iconv, json, pcre, simplexml, spl, tokenizer, openssl, sodium
 # встроены в PHP 8.3 и не требуют отдельной установки
 
 echo "5. Проверка и удаление случайно установленных других версий PHP..."
