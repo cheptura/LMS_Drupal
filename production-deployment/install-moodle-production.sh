@@ -32,14 +32,15 @@ info() {
 # Конфигурация по умолчанию
 MOODLE_VERSION="5.0.2"
 PHP_VERSION="8.2"
-MOODLE_DOMAIN=""
+MOODLE_DOMAIN="lms.rtti.tj"  # Установлен конкретный домен
+SERVER_IP="92.242.60.172"    # IP сервера LMS
 MOODLE_ROOT="/var/www/moodle"
 MOODLE_DATA="/var/moodledata"
 MOODLE_DATA_NAS="/mnt/nas/moodledata"
 NAS_HOST=""
 NAS_USER="moodleuser"
 NAS_SHARE="moodle-files"
-ADMIN_EMAIL=""
+ADMIN_EMAIL="admin@rtti.tj"
 ADMIN_USER="admin"
 ADMIN_PASS=""
 LOG_FILE="/var/log/moodle-production-install.log"

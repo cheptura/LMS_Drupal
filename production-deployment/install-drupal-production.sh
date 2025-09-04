@@ -32,13 +32,14 @@ info() {
 # Конфигурация по умолчанию
 DRUPAL_VERSION="11.0"
 PHP_VERSION="8.3"
-DRUPAL_DOMAIN=""
+DRUPAL_DOMAIN="library.rtti.tj"  # Установлен конкретный домен
+SERVER_IP="92.242.61.204"        # IP сервера библиотеки
 DRUPAL_ROOT="/var/www/drupal"
 DRUPAL_FILES_NAS="/mnt/nas/drupal-files"
 NAS_HOST=""
 NAS_USER="drupaluser"
 NAS_SHARE="drupal-files"
-ADMIN_EMAIL=""
+ADMIN_EMAIL="admin@rtti.tj"
 ADMIN_USER="admin"
 ADMIN_PASS=""
 SITE_NAME="RTTI Digital Library"

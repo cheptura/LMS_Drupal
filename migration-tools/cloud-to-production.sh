@@ -30,7 +30,6 @@ info() {
 }
 
 # Конфигурация
-CLOUD_SOURCE_HOST=""
 CLOUD_SSH_KEY=""
 CLOUD_SSH_USER="root"
 
@@ -38,8 +37,10 @@ PROD_MOODLE_ROOT="/var/www/moodle"
 PROD_DRUPAL_ROOT="/var/www/drupal"
 PROD_MOODLE_DATA="/var/moodledata"
 
-NEW_MOODLE_DOMAIN=""
-NEW_DRUPAL_DOMAIN=""
+NEW_MOODLE_DOMAIN="lms.rtti.tj"      # Установлен конкретный домен
+NEW_DRUPAL_DOMAIN="library.rtti.tj"  # Установлен конкретный домен
+LMS_SERVER_IP="92.242.60.172"        # IP сервера LMS + мониторинг
+LIBRARY_SERVER_IP="92.242.61.204"    # IP сервера библиотеки
 
 NAS_HOST=""
 NAS_USER="backup"
@@ -52,6 +53,10 @@ LOG_FILE="/var/log/cloud-to-production-migration.log"
 # Функция настройки параметров
 setup_migration_config() {
     echo "=== Настройка параметров миграции ==="
+    echo "Домены уже настроены:"
+    echo "  Moodle LMS: $NEW_MOODLE_DOMAIN ($LMS_SERVER_IP)"
+    echo "  Drupal Library: $NEW_DRUPAL_DOMAIN ($LIBRARY_SERVER_IP)"
+    echo ""
     
     read -p "IP адрес облачного сервера Moodle: " CLOUD_MOODLE_HOST
     read -p "IP адрес облачного сервера Drupal: " CLOUD_DRUPAL_HOST
@@ -61,13 +66,13 @@ setup_migration_config() {
         error "SSH ключ не найден: $CLOUD_SSH_KEY"
     fi
     
-    read -p "Новый домен для Moodle (например: lms.rtti.tj): " NEW_MOODLE_DOMAIN
-    read -p "Новый домен для Drupal (например: library.rtti.tj): " NEW_DRUPAL_DOMAIN
-    
     read -p "IP адрес NAS сервера: " NAS_HOST
     read -p "Пользователь NAS: " NAS_USER
     
     log "Конфигурация миграции настроена"
+    log "Будет выполнена миграция:"
+    log "  Moodle: $CLOUD_MOODLE_HOST → $NEW_MOODLE_DOMAIN ($LMS_SERVER_IP)"
+    log "  Drupal: $CLOUD_DRUPAL_HOST → $NEW_DRUPAL_DOMAIN ($LIBRARY_SERVER_IP)"
 }
 
 # Проверка прав root

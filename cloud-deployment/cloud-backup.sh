@@ -1,12 +1,12 @@
 #!/bin/bash
-# Скрипт резервного копирования для облачного развертывания LMS
-# Поддержка AWS S3, Google Cloud Storage, Azure Blob, DigitalOcean Spaces
+# Скрипт резервного копирования для LMS
+# Стандартное локальное резервное копирование Moodle и Drupal
 
 set -e
 
 # Конфигурация
-BACKUP_DIR="/opt/cloud-backups"
-LOG_FILE="/var/log/cloud-backup.log"
+BACKUP_DIR="/opt/lms-backups"
+LOG_FILE="/var/log/lms-backup.log"
 RETENTION_DAYS=30
 
 # Базы данных
@@ -20,11 +20,6 @@ MOODLE_ROOT="/var/www/moodle"
 DRUPAL_ROOT="/var/www/drupal"
 MOODLE_DATA="/var/moodledata"
 
-# Облачные настройки (определяются автоматически)
-CLOUD_PROVIDER=""
-CLOUD_BUCKET=""
-CLOUD_REGION=""
-
 # Функции логирования
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
@@ -33,129 +28,6 @@ log() {
 error() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE"
     exit 1
-}
-
-# Определение облачного провайдера
-detect_cloud_provider() {
-    if curl -s --max-time 3 http://169.254.169.254/latest/meta-data/ &>/dev/null; then
-        CLOUD_PROVIDER="aws"
-        CLOUD_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
-        log "Обнаружен AWS EC2 в регионе $CLOUD_REGION"
-    elif curl -s --max-time 3 http://169.254.169.254/metadata/v1/ &>/dev/null; then
-        CLOUD_PROVIDER="digitalocean"
-        CLOUD_REGION=$(curl -s http://169.254.169.254/metadata/v1/region)
-        log "Обнаружен DigitalOcean в регионе $CLOUD_REGION"
-    elif curl -s --max-time 3 "http://metadata.google.internal/computeMetadata/v1/" -H "Metadata-Flavor: Google" &>/dev/null; then
-        CLOUD_PROVIDER="gcp"
-        CLOUD_REGION=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | cut -d'/' -f4)
-        log "Обнаружен GCP в зоне $CLOUD_REGION"
-    elif curl -s --max-time 3 "http://169.254.169.254/metadata/instance" -H "Metadata: true" &>/dev/null; then
-        CLOUD_PROVIDER="azure"
-        CLOUD_REGION=$(curl -s -H "Metadata: true" "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text")
-        log "Обнаружен Azure в регионе $CLOUD_REGION"
-    else
-        CLOUD_PROVIDER="generic"
-        log "Обычный VPS - используем локальное хранение"
-    fi
-}
-
-# Настройка облачного хранилища
-setup_cloud_storage() {
-    case "$CLOUD_PROVIDER" in
-        "aws")
-            setup_aws_s3
-            ;;
-        "gcp")
-            setup_gcp_storage
-            ;;
-        "azure")
-            setup_azure_storage
-            ;;
-        "digitalocean")
-            setup_do_spaces
-            ;;
-        *)
-            log "Используется локальное хранение"
-            ;;
-    esac
-}
-
-# Настройка AWS S3
-setup_aws_s3() {
-    log "Настройка AWS S3..."
-    
-    # Устанавливаем AWS CLI если не установлен
-    if ! command -v aws &> /dev/null; then
-        apt update
-        apt install -y awscli
-    fi
-    
-    # Получаем метаданные EC2
-    INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-    
-    # Создаем bucket name
-    CLOUD_BUCKET="rtti-lms-backups-${CLOUD_REGION}-${INSTANCE_ID}"
-    
-    # Создаем bucket если не существует
-    aws s3 mb "s3://$CLOUD_BUCKET" --region "$CLOUD_REGION" 2>/dev/null || true
-    
-    log "AWS S3 bucket: $CLOUD_BUCKET"
-}
-
-# Настройка Google Cloud Storage
-setup_gcp_storage() {
-    log "Настройка Google Cloud Storage..."
-    
-    # Устанавливаем gsutil если не установлен
-    if ! command -v gsutil &> /dev/null; then
-        curl https://sdk.cloud.google.com | bash
-        source ~/.bashrc
-    fi
-    
-    # Получаем project ID
-    PROJECT_ID=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/project/project-id")
-    
-    # Создаем bucket name
-    CLOUD_BUCKET="rtti-lms-backups-${PROJECT_ID}"
-    
-    # Создаем bucket если не существует
-    gsutil mb -p "$PROJECT_ID" -l "$CLOUD_REGION" "gs://$CLOUD_BUCKET" 2>/dev/null || true
-    
-    log "GCP Storage bucket: $CLOUD_BUCKET"
-}
-
-# Настройка Azure Blob Storage
-setup_azure_storage() {
-    log "Настройка Azure Blob Storage..."
-    
-    # Устанавливаем Azure CLI если не установлен
-    if ! command -v az &> /dev/null; then
-        curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-    fi
-    
-    # Аутентификация через managed identity
-    az login --identity
-    
-    # Создаем storage account name
-    CLOUD_BUCKET="rttilmsbackups$(date +%s | tail -c 6)"
-    
-    log "Azure Storage account: $CLOUD_BUCKET"
-}
-
-# Настройка DigitalOcean Spaces
-setup_do_spaces() {
-    log "Настройка DigitalOcean Spaces..."
-    
-    # Используем s3cmd для работы с Spaces
-    if ! command -v s3cmd &> /dev/null; then
-        apt update
-        apt install -y s3cmd
-    fi
-    
-    # Создаем bucket name
-    CLOUD_BUCKET="rtti-lms-backups-$(hostname)"
-    
-    log "DigitalOcean Spaces: $CLOUD_BUCKET"
 }
 
 # Создание директорий
@@ -189,7 +61,6 @@ backup_moodle_database() {
     
     if [ $? -eq 0 ]; then
         log "Резервная копия БД Moodle создана: $backup_file"
-        upload_to_cloud "$backup_file" "databases/moodle/"
     else
         error "Ошибка создания резервной копии БД Moodle"
     fi
@@ -224,7 +95,6 @@ backup_drupal_database() {
     
     if [ $? -eq 0 ]; then
         log "Резервная копия БД Drupal создана: $backup_file"
-        upload_to_cloud "$backup_file" "databases/drupal/"
     else
         error "Ошибка создания резервной копии БД Drupal"
     fi
@@ -260,7 +130,6 @@ backup_moodle_files() {
     
     if [ $? -eq 0 ]; then
         log "Резервная копия файлов Moodle создана: $backup_file"
-        upload_to_cloud "$backup_file" "files/moodle/"
     else
         error "Ошибка создания резервной копии файлов Moodle"
     fi
@@ -302,7 +171,6 @@ backup_drupal_files() {
     
     if [ $? -eq 0 ]; then
         log "Резервная копия файлов Drupal создана: $backup_file"
-        upload_to_cloud "$backup_file" "files/drupal/"
     else
         error "Ошибка создания резервной копии файлов Drupal"
     fi
@@ -330,42 +198,8 @@ backup_configs() {
     
     if [ $? -eq 0 ]; then
         log "Резервная копия конфигураций создана: $backup_file"
-        upload_to_cloud "$backup_file" "configs/"
     else
         error "Ошибка создания резервной копии конфигураций"
-    fi
-}
-
-# Загрузка в облачное хранилище
-upload_to_cloud() {
-    local file_path="$1"
-    local cloud_path="$2"
-    local filename=$(basename "$file_path")
-    
-    case "$CLOUD_PROVIDER" in
-        "aws")
-            aws s3 cp "$file_path" "s3://$CLOUD_BUCKET/$cloud_path$filename"
-            ;;
-        "gcp")
-            gsutil cp "$file_path" "gs://$CLOUD_BUCKET/$cloud_path$filename"
-            ;;
-        "azure")
-            az storage blob upload --account-name "$CLOUD_BUCKET" --container-name backups --name "$cloud_path$filename" --file "$file_path"
-            ;;
-        "digitalocean")
-            s3cmd put "$file_path" "s3://$CLOUD_BUCKET/$cloud_path$filename"
-            ;;
-        *)
-            log "Файл сохранен локально: $file_path"
-            ;;
-    esac
-    
-    if [ $? -eq 0 ]; then
-        log "Файл загружен в облако: $cloud_path$filename"
-        # Удаляем локальную копию для экономии места
-        rm -f "$file_path"
-    else
-        log "Ошибка загрузки в облако, файл сохранен локально: $file_path"
     fi
 }
 
@@ -375,46 +209,6 @@ cleanup_old_backups() {
     
     # Локальная очистка
     find "$BACKUP_DIR" -type f -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
-    
-    # Облачная очистка
-    case "$CLOUD_PROVIDER" in
-        "aws")
-            # Настройка lifecycle policy для S3
-            cat > /tmp/lifecycle.json << EOF
-{
-    "Rules": [
-        {
-            "ID": "DeleteOldBackups",
-            "Status": "Enabled",
-            "Expiration": {
-                "Days": $RETENTION_DAYS
-            }
-        }
-    ]
-}
-EOF
-            aws s3api put-bucket-lifecycle-configuration --bucket "$CLOUD_BUCKET" --lifecycle-configuration file:///tmp/lifecycle.json 2>/dev/null || true
-            rm -f /tmp/lifecycle.json
-            ;;
-        "gcp")
-            # Настройка lifecycle для GCS
-            cat > /tmp/lifecycle.json << EOF
-{
-    "rule": [
-        {
-            "action": {"type": "Delete"},
-            "condition": {"age": $RETENTION_DAYS}
-        }
-    ]
-}
-EOF
-            gsutil lifecycle set /tmp/lifecycle.json "gs://$CLOUD_BUCKET" 2>/dev/null || true
-            rm -f /tmp/lifecycle.json
-            ;;
-        *)
-            log "Автоматическая очистка облачных файлов не настроена для $CLOUD_PROVIDER"
-            ;;
-    esac
     
     log "Очистка старых резервных копий завершена"
 }
@@ -456,13 +250,13 @@ send_notification() {
     # Отправка в Slack (если настроен webhook)
     if [ -n "$SLACK_WEBHOOK" ]; then
         curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"LMS Backup [$CLOUD_PROVIDER]: $status - $message\"}" \
+            --data "{\"text\":\"LMS Backup: $status - $message\"}" \
             "$SLACK_WEBHOOK" 2>/dev/null || true
     fi
     
     # Отправка email (если настроен)
     if command -v mail &> /dev/null; then
-        echo "$message" | mail -s "LMS Cloud Backup - $status" admin@rtti.tj 2>/dev/null || true
+        echo "$message" | mail -s "LMS Backup - $status" admin@rtti.tj 2>/dev/null || true
     fi
     
     log "Уведомление отправлено: $status"
@@ -472,10 +266,8 @@ send_notification() {
 main_backup() {
     local backup_type="$1"
     
-    log "=== Начало облачного резервного копирования LMS (тип: $backup_type) ==="
+    log "=== Начало резервного копирования LMS (тип: $backup_type) ==="
     
-    detect_cloud_provider
-    setup_cloud_storage
     create_directories
     
     case "$backup_type" in
@@ -502,8 +294,8 @@ main_backup() {
     cleanup_old_backups
     verify_backups
     
-    log "=== Облачное резервное копирование LMS завершено (тип: $backup_type) ==="
-    send_notification "SUCCESS" "Резервное копирование завершено успешно на $CLOUD_PROVIDER"
+    log "=== Резервное копирование LMS завершено (тип: $backup_type) ==="
+    send_notification "SUCCESS" "Резервное копирование завершено успешно"
 }
 
 # Показать справку
@@ -526,11 +318,9 @@ show_help() {
     echo "  $0 databases"
     echo "  $0 verify"
     echo ""
-    echo "Поддерживаемые облачные провайдеры:"
-    echo "  - AWS S3"
-    echo "  - Google Cloud Storage"
-    echo "  - Azure Blob Storage"
-    echo "  - DigitalOcean Spaces"
+    echo "Поддерживаемые системы:"
+    echo "  - Moodle 5.0.2 LMS"
+    echo "  - Drupal 11 Library"
 }
 
 # Главная логика

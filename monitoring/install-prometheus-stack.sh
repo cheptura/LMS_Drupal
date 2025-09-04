@@ -35,6 +35,12 @@ NODE_EXPORTER_VERSION="1.6.1"
 NGINX_EXPORTER_VERSION="0.11.0"
 POSTGRES_EXPORTER_VERSION="0.12.1"
 
+# Серверы RTTI LMS
+LMS_SERVER="92.242.60.172"        # lms.rtti.tj (Moodle + мониторинг)
+LIBRARY_SERVER="92.242.61.204"    # library.rtti.tj (Drupal)
+LMS_DOMAIN="lms.rtti.tj"
+LIBRARY_DOMAIN="library.rtti.tj"
+
 MONITORING_USER="monitoring"
 PROMETHEUS_DIR="/opt/prometheus"
 GRAFANA_DIR="/opt/grafana"

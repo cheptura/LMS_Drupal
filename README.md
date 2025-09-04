@@ -48,49 +48,50 @@ LMS_Drupal/
 
 ### Предварительные требования
 
-- Ubuntu Server 24.04 LTS (облако или продакшн)
-- Зарегистрированные домены в зоне .tj (например: lms.rtti.tj, library.rtti.tj)
+- Ubuntu Server 24.04 LTS 
+- Домены: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
 - NAS сервер для продакшн развертывания
-- Облачный аккаунт для первичного тестирования (AWS/DO/GCP/Azure)
 - Базовые знания Linux администрирования
 
-### Быстрая установка в облаке
+### Готовые серверы RTTI
 
-#### Этап 1: Облачное тестирование
+- **LMS + Мониторинг**: lms.rtti.tj (92.242.60.172)
+  - Moodle 5.0.2 LMS
+  - Система мониторинга (Prometheus/Grafana)
+  
+- **Библиотека**: library.rtti.tj (92.242.61.204)
+  - Drupal 11 Digital Library
 
-1. **Установка Moodle 5.0.2 в облаке**
+### Установка LMS
+
+#### Установка Moodle 5.0.2 на lms.rtti.tj (92.242.60.172)
+
+1. **Установка Moodle**
    ```bash
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-moodle-cloud.sh
    chmod +x install-moodle-cloud.sh
    sudo ./install-moodle-cloud.sh
    ```
 
-2. **Установка Drupal 11 в облаке**
+#### Установка Drupal 11 на library.rtti.tj (92.242.61.204)
+
+2. **Установка Drupal**
    ```bash
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-drupal-cloud.sh
    chmod +x install-drupal-cloud.sh
    sudo ./install-drupal-cloud.sh
    ```
 
-#### Этап 2: Миграция в продакшн
+#### Продакшн развертывание с NAS (альтернативно)
 
-3. **Миграция из облака в продакшн**
+3. **Прямая продакшн установка с NAS интеграцией**
    ```bash
-   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/migration-tools/cloud-to-production.sh
-   chmod +x cloud-to-production.sh
-   sudo ./cloud-to-production.sh
-   ```
-
-#### Этап 3: Прямая продакшн установка (альтернативно)
-
-4. **Установка напрямую в продакшн**
-   ```bash
-   # Moodle с NAS
+   # Moodle с NAS на lms.rtti.tj
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-moodle-production.sh
    chmod +x install-moodle-production.sh
    sudo ./install-moodle-production.sh
    
-   # Drupal с NAS
+   # Drupal с NAS на library.rtti.tj
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-drupal-production.sh
    chmod +x install-drupal-production.sh
    sudo ./install-drupal-production.sh
@@ -98,43 +99,46 @@ LMS_Drupal/
 
 ## 📊 Система мониторинга
 
-Полный стек мониторинга для инфраструктуры LMS с двумя вариантами:
+Мониторинг установлен на lms.rtti.tj (92.242.60.172) и отслеживает оба сервера:
 
 ### 🔵 Prometheus + Grafana + AlertManager (рекомендуется)
 ```bash
-# Установка современного стека мониторинга
+# Установка на lms.rtti.tj
 wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-prometheus-stack.sh
 chmod +x install-prometheus-stack.sh
 sudo ./install-prometheus-stack.sh
 ```
 
-**Результат**: Prometheus (9090), Grafana (3000), AlertManager (9093), exporters
+**Доступ**: 
+- Prometheus: http://lms.rtti.tj:9090
+- Grafana: http://lms.rtti.tj:3000
+- AlertManager: http://lms.rtti.tj:9093
 
-### 🟠 Zabbix Server + Agent (классическое решение)
+### 🟠 Zabbix Server + Agent (альтернативное решение)
 ```bash
-# Установка Zabbix для корпоративного мониторинга
+# Установка на lms.rtti.tj
 wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-zabbix.sh
 chmod +x install-zabbix.sh
 sudo ./install-zabbix.sh
 ```
 
-**Результат**: Zabbix Server с веб-интерфейсом и агентами
+**Доступ**: http://lms.rtti.tj/zabbix
 
-### 🔍 Агенты для дополнительных серверов
+### 🔍 Агенты для library.rtti.tj
 ```bash
-# Установка только агентов мониторинга
+# Установка только агентов на library.rtti.tj
 wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-monitoring-agents.sh
 chmod +x install-monitoring-agents.sh
 sudo ./install-monitoring-agents.sh
 ```
 
 **Мониторинг включает:**
-- 📊 Системные ресурсы (CPU, память, диск, сеть)
+- 📊 Серверы: lms.rtti.tj + library.rtti.tj
 - 🌐 Веб-приложения (Moodle, Drupal, Nginx, PHP-FPM)
 - 🗄️ Базы данных (PostgreSQL, Redis)
 - 💾 NAS и резервные копии
 - 🔒 SSL сертификаты и безопасность
-- 🚨 Автоматические алерты и уведомления
+- 🚨 Автоматические алерты
 
 Подробная документация: [monitoring/README.md](monitoring/README.md)
 
@@ -239,12 +243,13 @@ graph TB
         U3[Администраторы]
     end
     
-    subgraph "LMS Сервер"
+    subgraph "LMS Сервер (92.242.60.172)"
         M[Moodle LMS<br/>lms.rtti.tj]
         M --> MDB[(PostgreSQL<br/>Moodle DB)]
+        MON[Мониторинг<br/>Prometheus/Grafana]
     end
     
-    subgraph "Библиотека Сервер"
+    subgraph "Библиотека Сервер (92.242.61.204)"
         D[Drupal Library<br/>library.rtti.tj]
         D --> DDB[(PostgreSQL<br/>Drupal DB)]
     end
@@ -256,17 +261,16 @@ graph TB
     end
     
     subgraph "Инфраструктура"
-        LB[Load Balancer]
         NAS[NAS Storage]
         BACKUP[Backup System]
-        MON[Monitoring]
     end
     
-    U1 --> LB
-    U2 --> LB
-    U3 --> LB
-    LB --> M
-    LB --> D
+    U1 --> M
+    U2 --> M
+    U3 --> M
+    U1 --> D
+    U2 --> D
+    U3 --> D
     M <--> SSO
     D <--> SSO
     M <--> API
@@ -461,6 +465,11 @@ graph TB
 ---
 
 ## 🔗 Полезные ссылки
+
+### RTTI LMS Серверы
+- **🎓 Moodle LMS**: [https://lms.rtti.tj](https://lms.rtti.tj) (92.242.60.172)
+- **📚 Digital Library**: [https://library.rtti.tj](https://library.rtti.tj) (92.242.61.204)
+- **📊 Мониторинг**: [http://lms.rtti.tj:3000](http://lms.rtti.tj:3000) (Grafana)
 
 ### Проект
 - **🌐 GitHub Repository**: [https://github.com/cheptura/LMS_Drupal](https://github.com/cheptura/LMS_Drupal)
