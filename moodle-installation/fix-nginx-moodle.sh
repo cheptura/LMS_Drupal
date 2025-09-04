@@ -175,8 +175,8 @@ else
 fi
 
 echo "4. Очистка кэша Moodle..."
-if [ -f "/var/www/moodle/admin/cli/purge_caches.php" ]; then
-    sudo -u www-data php /var/www/moodle/admin/cli/purge_caches.php
+if [ -f "$MOODLE_PATH/admin/cli/purge_caches.php" ]; then
+    sudo -u www-data php $MOODLE_PATH/admin/cli/purge_caches.php
     echo "✅ Кэш Moodle очищен"
 else
     echo "⚠️  Файл очистки кэша не найден"
