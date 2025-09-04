@@ -8,7 +8,7 @@
 # Быстрая установка (одной командой)
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
-sudo chmod +x install-all.sh && sudo ./install-all.sh
+sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
 ```
 
 ## Состав скриптов
@@ -32,7 +32,7 @@ sudo chmod +x install-all.sh && sudo ./install-all.sh
 - **diagnose-drupal.sh** - Полная диагностика системы Drupal
 
 ### 📋 Автоматическая установка:
-- **install-all.sh** - Полная автоматическая установка всех компонентов
+- **install-drupal.sh** - Полная автоматическая установка всех компонентов
 
 ## Поэтапная установка
 ```bash

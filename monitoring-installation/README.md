@@ -8,7 +8,7 @@
 # Быстрая установка (одной командой)
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/monitoring-installation
-sudo chmod +x install-all.sh && sudo ./install-all.sh
+sudo chmod +x install-monitoring.sh && sudo ./install-monitoring.sh
 ```
 
 ## Состав скриптов
@@ -32,7 +32,7 @@ sudo chmod +x install-all.sh && sudo ./install-all.sh
 - **diagnose-monitoring.sh** - Полная диагностика системы мониторинга
 
 ### 📋 Автоматическая установка:
-- **install-all.sh** - Полная автоматическая установка всех компонентов
+- **install-monitoring.sh** - Полная автоматическая установка всех компонентов
 
 ## Поэтапная установка
 ```bash

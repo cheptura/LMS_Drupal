@@ -8,7 +8,7 @@
 # Быстрая установка (одной командой)
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
-sudo chmod +x install-all.sh && sudo ./install-all.sh
+sudo chmod +x install-moodle.sh && sudo ./install-moodle.sh
 ```
 
 ## Состав скриптов
@@ -32,7 +32,7 @@ sudo chmod +x install-all.sh && sudo ./install-all.sh
 - **diagnose-moodle.sh** - Полная диагностика системы Moodle
 
 ### 📋 Автоматическая установка:
-- **install-all.sh** - Полная автоматическая установка всех компонентов
+- **install-moodle.sh** - Полная автоматическая установка всех компонентов
 
 ## Поэтапная установка
 ```bash
