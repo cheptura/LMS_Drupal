@@ -328,12 +328,47 @@ sudo ./install-moodle-cloud.sh
 ```
 
 #### Ошибки загрузки Moodle
-**Проблема**: 404 ошибка при скачивании Moodle 5.0.2
+**Проблема**: Ошибка при распаковке архива или сообщение "gzip: stdin: not in gzip format"
+
+**Причина**: Скрипт скачал HTML страницу вместо архива Moodle
+
+**Автоматическое решение:**
 ```bash
-# Скрипт автоматически использует fallback URL:
-# https://download.moodle.org/download.php/stable500/moodle-latest-500.tgz
-# Если проблема продолжается, проверьте интернет-соединение
-curl -I https://download.moodle.org/download.php/stable500/moodle-latest-500.tgz
+# Скачать и запустить скрипт исправления
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/fix-moodle-download.sh
+chmod +x fix-moodle-download.sh
+sudo ./fix-moodle-download.sh
+
+# После исправления запустить основной скрипт
+sudo ./install-moodle-cloud.sh
+```
+
+**Ручное решение:**
+```bash
+# Удалить поврежденные файлы
+sudo rm -f /tmp/moodle-*.tgz
+sudo rm -rf /tmp/moodle*
+
+# Скачать Moodle вручную (проверенные URL)
+cd /tmp
+sudo wget "https://download.moodle.org/download.php/direct/stable500/moodle-latest-500.tgz" -O "moodle-5.0.tgz"
+
+# Проверить что файл корректный
+file moodle-5.0.tgz  # Должен показать "gzip compressed data"
+tar -tzf moodle-5.0.tgz | head  # Должен показать список файлов
+
+# Если файл корректный, продолжить установку
+sudo ./install-moodle-cloud.sh
+```
+
+**Проверка качества скачанного файла:**
+```bash
+# Проверить что файл является архивом, а не HTML
+file /tmp/moodle-*.tgz
+head -5 /tmp/moodle-*.tgz  # Не должно показывать HTML теги
+
+# Если видите HTML теги, удалите файл и попробуйте альтернативные URL
+curl -I https://download.moodle.org/download.php/direct/stable500/moodle-latest-500.tgz
 ```
 
 #### Проблемы с SSL сертификатами

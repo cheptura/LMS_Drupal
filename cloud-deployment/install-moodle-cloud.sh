@@ -350,12 +350,27 @@ install_moodle() {
     
     # Скачиваем Moodle 5.0+
     cd /tmp
-    wget "https://download.moodle.org/download.php/stable500/moodle-latest-500.tgz" -O "moodle-${MOODLE_VERSION}.tgz"
+    # Используем правильный URL для Moodle 5.0
+    wget "https://download.moodle.org/download.php/direct/stable500/moodle-latest-500.tgz" -O "moodle-${MOODLE_VERSION}.tgz"
     
-    if [ ! -f "moodle-${MOODLE_VERSION}.tgz" ]; then
+    # Проверяем что файл скачался корректно
+    if [ ! -f "moodle-${MOODLE_VERSION}.tgz" ] || ! file "moodle-${MOODLE_VERSION}.tgz" | grep -q "gzip compressed"; then
         # Альтернативная ссылка если основная не работает
-        log "Пробуем альтернативную ссылку..."
+        log "Основная ссылка не работает, пробуем альтернативную..."
+        rm -f "moodle-${MOODLE_VERSION}.tgz"
         wget "https://github.com/moodle/moodle/archive/refs/heads/MOODLE_500_STABLE.tar.gz" -O "moodle-${MOODLE_VERSION}.tgz"
+        
+        # Проверяем альтернативную ссылку
+        if [ ! -f "moodle-${MOODLE_VERSION}.tgz" ] || ! file "moodle-${MOODLE_VERSION}.tgz" | grep -q "gzip compressed"; then
+            error "Не удалось скачать Moodle. Проверьте интернет-соединение."
+        fi
+    fi
+    
+    log "Проверяем и распаковываем архив Moodle..."
+    
+    # Проверяем что файл действительно является архивом
+    if ! tar -tzf "moodle-${MOODLE_VERSION}.tgz" >/dev/null 2>&1; then
+        error "Скачанный файл не является валидным tar.gz архивом. Возможно, была скачана HTML страница."
     fi
     
     tar -xzf "moodle-${MOODLE_VERSION}.tgz"
