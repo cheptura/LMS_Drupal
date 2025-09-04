@@ -30,41 +30,7 @@ fi
 
 echo "1. Проверка состояния всех сервисов..."
 
-# Определение версии PHP из файла или автоматически
-if [ -f "/root/moodle-php-info.txt" ]; then
-    echo "Чтение информации о PHP из файла..."
-    source /root/moodle-php-info.txt
-    PHP_FPM_SERVICE_NAME="$PHP_FPM_SERVICE"
-    echo "✅ Найдена сохраненная версия PHP: $PHP_VERSION"
-else
-    echo "Автоматическое определение версии PHP..."
-    PHP_VERSION=$(php -v | head -n1 | cut -d" " -f2 | cut -d"." -f1-2)
-    PHP_FPM_SERVICE_NAME="php$PHP_VERSION-fpm"
-    echo "✅ Определена версия PHP: $PHP_VERSION"
-fi
-
-# Проверка доступности PHP-FPM
-if systemctl list-unit-files | grep -q "^$PHP_FPM_SERVICE_NAME.service"; then
-    echo "✅ Найден сервис: $PHP_FPM_SERVICE_NAME"
-else
-    echo "❌ Сервис $PHP_FPM_SERVICE_NAME не найден"
-    echo "Поиск альтернативных версий PHP-FPM..."
-    
-    # Попытка найти любую доступную версию PHP-FPM
-    AVAILABLE_PHP_FPM=$(systemctl list-unit-files | grep "php.*-fpm.service" | head -1 | awk '{print $1}' | sed 's/.service//')
-    if [ -n "$AVAILABLE_PHP_FPM" ]; then
-        echo "✅ Найден альтернативный сервис: $AVAILABLE_PHP_FPM"
-        PHP_FPM_SERVICE_NAME="$AVAILABLE_PHP_FPM"
-    else
-        echo "❌ Не найден ни один PHP-FPM сервис"
-        echo "Установка PHP-FPM..."
-        apt update
-        apt install -y php$PHP_VERSION-fpm
-        PHP_FPM_SERVICE_NAME="php$PHP_VERSION-fpm"
-    fi
-fi
-
-SERVICES=("nginx" "$PHP_FPM_SERVICE_NAME" "postgresql" "redis-server")
+SERVICES=("nginx" "php8.2-fpm" "postgresql" "redis-server")
 for service in "${SERVICES[@]}"; do
     if systemctl is-active --quiet $service; then
         echo "✅ $service: работает"
@@ -77,7 +43,7 @@ for service in "${SERVICES[@]}"; do
             echo "✅ $service: запущен"
         else
             echo "❌ Не удалось запустить $service"
-            if [[ "$service" == *"php"*"-fpm" ]]; then
+            if [ "$service" = "php8.2-fpm" ]; then
                 echo "Попытка установки $service..."
                 apt install -y $service
                 systemctl enable $service

@@ -1,31 +1,42 @@
 #!/bin/bash
 
-# LMS_Drupal - Moodle Installation Script
-# Шаг 2: Установка веб-сервера (Nginx + PHP 8.2)
-# Сервер: lms.rtti.tj (92.242.60.172)
-# Автор: cheptura (GitHub: https://github.com/cheptura/LMS_Drupal)
-# Дата: $(date)
+# RTTI Moodle - Шаг 2: Установка веб-сервера
+# Сервechoecho "9. Оптимизация настроек PHP для Moodle..."
+PHP_INI="/etc/php/8.2/fpm/php.ini"
+cp $PHP_INI ${PHP_INI}.backup
 
-set -e
+# Настройки производительности для Moodle
+sed -i 's/^max_execution_time = 30/max_execution_time = 300/' $PHP_INI
+sed -i 's/^max_input_time = 60/max_input_time = 300/' $PHP_INI
+sed -i 's/^memory_limit = 128M/memory_limit = 512M/' $PHP_INI
+sed -i 's/^post_max_size = 8M/post_max_size = 100M/' $PHP_INI
+sed -i 's/^upload_max_filesize = 2M/upload_max_filesize = 100M/' $PHP_INI
+sed -i 's/^;max_input_vars = 1000/max_input_vars = 5000/' $PHP_INI
+sed -i 's/^;opcache.enable=1/opcache.enable=1/' $PHP_INI
+sed -i 's/^;opcache.memory_consumption=128/opcache.memory_consumption=256/' $PHP_INI
 
-# Проверка прав суперпользователя
-if [[ $EUID -ne 0 ]]; then
-   echo "Этот скрипт должен быть запущен от имени root"
-   exit 1
-fi
+echo "10. Создание конфигурации Nginx для Moodle..."е PHP 8.2 от автоматических обновлений..."
+# Закрепляем пакеты PHP 8.2, чтобы они не обновлялись автоматически
+apt-mark hold php8.2-*
 
-echo "🚀 LMS_Drupal - Установка веб-сервера для Moodle"
-echo "================================================"
-echo "Сервер: lms.rtti.tj"
-echo "Дата: $(date)"
+echo "9. Оптимизация настроек PHP для Moodle..."р: lms.rtti.tj (92.242.60.172)
+
+echo "=== RTTI Moodle - Шаг 2: Установка веб-сервера ==="
+echo "🎓 Nginx + PHP 8.2 для Moodle"
+echo "📅 Дата: $(date)"
 echo
 
+# Проверка прав root
+if [ "$EUID" -ne 0 ]; then
+    echo "❌ Ошибка: Запустите скрипт с правами root"
+    exit 1
+fi
+
 echo "1. Установка Nginx..."
-apt update
 apt install -y nginx
 
 echo "2. Удаление всех существующих версий PHP..."
-# Сначала полностью очищаем систему от PHP
+# Сначала удаляем все возможные версии PHP
 apt remove --purge -y php* 2>/dev/null || true
 apt autoremove -y
 
@@ -34,7 +45,7 @@ add-apt-repository ppa:ondrej/php -y
 apt update
 
 echo "4. Установка ТОЛЬКО PHP 8.2 и всех необходимых расширений для Moodle..."
-# Устанавливаем только конкретные пакеты PHP 8.2, БЕЗ метапакета php
+# Устанавливаем только конкретные пакеты PHP 8.2, без метапакета php
 apt install -y \
     php8.2-cli \
     php8.2-fpm \
@@ -63,7 +74,7 @@ apt install -y \
     php8.2-json \
     php8.2-dom
 
-echo "5. Проверка и удаление случайно установленных других версий PHP..."
+echo "5. Проверка и очистка от случайно установленных других версий PHP..."
 # Удаляем любые другие версии PHP, которые могли установиться как зависимости
 apt remove --purge -y php8.0* php8.1* php8.3* php8.4* php7* 2>/dev/null || true
 apt autoremove -y
@@ -72,11 +83,7 @@ echo "6. Установка PHP 8.2 как версии по умолчанию.
 update-alternatives --install /usr/bin/php php /usr/bin/php8.2 100
 update-alternatives --set php /usr/bin/php8.2
 
-echo "7. Закрепление PHP 8.2 от автоматических обновлений..."
-# Закрепляем пакеты PHP 8.2, чтобы они не обновлялись автоматически до PHP 8.3/8.4
-apt-mark hold php8.2-*
-
-echo "8. Оптимизация настроек PHP для Moodle..."
+echo "6. Оптимизация настроек PHP для Moodle..."
 PHP_INI="/etc/php/8.2/fpm/php.ini"
 cp $PHP_INI ${PHP_INI}.backup
 
@@ -90,8 +97,8 @@ sed -i 's/^;max_input_vars = 1000/max_input_vars = 5000/' $PHP_INI
 sed -i 's/^;opcache.enable=1/opcache.enable=1/' $PHP_INI
 sed -i 's/^;opcache.memory_consumption=128/opcache.memory_consumption=256/' $PHP_INI
 
-echo "9. Создание конфигурации Nginx для Moodle..."
-cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
+echo "7. Создание конфигурации Nginx для Moodle..."
+cat > /etc/nginx/sites-available/lms.rtti.tj << EOF
 server {
     listen 80;
     server_name lms.rtti.tj;
@@ -108,18 +115,17 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
 
     location / {
-        try_files $uri $uri/ /index.php?$query_string;
+        try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_read_timeout 300;
-        fastcgi_buffer_size 128k;
-        fastcgi_buffers 4 256k;
-        fastcgi_busy_buffers_size 256k;
+        fastcgi_buffer_size 16k;
+        fastcgi_buffers 4 16k;
     }
 
     # Deny access to hidden files
@@ -144,72 +150,64 @@ server {
     location ~ /config\.php {
         deny all;
     }
-
-    # Block access to upgrade script
-    location ~ /admin/tool/installaddon/ {
-        deny all;
-    }
 }
 EOF
 
-echo "10. Активация сайта..."
+echo "6. Активация сайта..."
 ln -sf /etc/nginx/sites-available/lms.rtti.tj /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
-echo "11. Проверка конфигурации Nginx..."
-nginx -t
-if [ $? -ne 0 ]; then
-    echo "❌ Ошибка в конфигурации Nginx!"
+echo "7. Проверка конфигурации Nginx..."
+if nginx -t; then
+    echo "✅ Конфигурация Nginx корректна"
+else
+    echo "❌ Ошибка в конфигурации Nginx"
     exit 1
 fi
 
-echo "12. Запуск и включение автозапуска служб..."
-systemctl enable nginx php8.2-fpm
-systemctl start nginx php8.2-fpm
+echo "8. Запуск и включение автозапуска служб..."
+systemctl start nginx
+systemctl enable nginx
+systemctl start php8.2-fpm
+systemctl enable php8.2-fpm
 
-echo "13. Настройка firewall..."
+echo "9. Настройка firewall..."
 ufw allow 'Nginx Full'
 
-echo "14. Создание директории для сайта..."
-mkdir -p /var/www/html/moodle
-chown -R www-data:www-data /var/www/html/moodle
+echo "10. Создание директории для сайта..."
+mkdir -p /var/www/html
+chown -R www-data:www-data /var/www/html
 
-echo "15. Создание тестовой страницы..."
-cat > /var/www/html/moodle/info.php << 'EOF'
+echo "11. Создание тестовой страницы..."
+cat > /var/www/html/index.php << 'EOF'
 <?php
-echo "<h1>Moodle Server Status</h1>";
-echo "<p><strong>Server:</strong> lms.rtti.tj</p>";
-echo "<p><strong>PHP Version:</strong> " . phpversion() . "</p>";
-echo "<p><strong>Date:</strong> " . date('Y-m-d H:i:s') . "</p>";
-
-// Check PHP extensions required for Moodle
-$required_extensions = ['pgsql', 'xml', 'curl', 'gd', 'mbstring', 'zip', 'intl'];
-echo "<h2>Required PHP Extensions:</h2>";
-foreach ($required_extensions as $ext) {
-    $status = extension_loaded($ext) ? "✅" : "❌";
-    echo "<p>$status $ext</p>";
-}
+echo "<h1>RTTI Moodle Server Ready</h1>";
+echo "<p>Server: lms.rtti.tj</p>";
+echo "<p>PHP Version: " . phpversion() . "</p>";
+echo "<p>Time: " . date('Y-m-d H:i:s') . "</p>";
+phpinfo();
 ?>
 EOF
 
-echo "16. Перезапуск служб..."
-systemctl restart nginx php8.2-fpm
+echo "12. Перезапуск служб..."
+systemctl restart nginx
+systemctl restart php8.2-fpm
 
-echo "17. Проверка статуса..."
+echo "13. Проверка статуса..."
 systemctl status nginx --no-pager -l
 systemctl status php8.2-fpm --no-pager -l
 
-echo "18. Финальная проверка версии PHP..."
+echo "14. Финальная проверка версии PHP..."
 echo "📋 Установленная версия PHP:"
 php -v
 echo
-echo "📋 Установленные пакеты PHP 8.2:"
+echo "📋 Установленные пакеты PHP:"
 dpkg -l | grep php8.2 | head -10
 echo
 echo "📋 Проверка на наличие других версий PHP:"
 dpkg -l | grep -E "php[0-9]" | grep -v php8.2 || echo "✅ Других версий PHP не найдено"
 
-echo "19. Сохранение информации о PHP версии..."
+echo "15. Сохранение информации о PHP версии..."
 cat > /root/moodle-php-info.txt << EOF
 # Информация о PHP для Moodle
 # Дата установки: $(date)
@@ -224,6 +222,6 @@ echo "✅ Информация о PHP сохранена в /root/moodle-php-inf
 echo
 echo "✅ Шаг 2 завершен успешно!"
 echo "📌 Nginx и PHP 8.2 установлены и настроены"
-echo "📌 Проверьте: http://lms.rtti.tj/info.php"
+echo "📌 Проверьте: http://lms.rtti.tj"
 echo "📌 Следующий шаг: ./03-install-database.sh"
 echo

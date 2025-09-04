@@ -179,26 +179,14 @@ if [ ${#MISSING_EXTENSIONS[@]} -gt 0 ]; then
         apt install -y php8.2-$ext
     done
     
-    # Умная проверка и перезапуск PHP-FPM
-    echo "Перезапуск PHP-FPM..."
+    # Перезапуск PHP 8.2 FPM
+    echo "Перезапуск PHP 8.2 FPM..."
+    systemctl restart php8.2-fpm
     if systemctl is-active --quiet php8.2-fpm; then
-        systemctl restart php8.2-fpm
         echo "✅ PHP 8.2 FPM перезапущен"
-    elif systemctl is-active --quiet php8.1-fpm; then
-        systemctl restart php8.1-fpm
-        echo "✅ PHP 8.1 FPM перезапущен"
-    elif systemctl is-active --quiet php8.0-fpm; then
-        systemctl restart php8.0-fpm
-        echo "✅ PHP 8.0 FPM перезапущен"
     else
-        echo "⚠️  PHP-FPM не найден или не активен"
-        echo "Попытка определить и запустить PHP-FPM..."
-        PHP_VERSION=$(php -v | head -n1 | cut -d" " -f2 | cut -d"." -f1-2)
-        if [ -n "$PHP_VERSION" ]; then
-            systemctl enable php$PHP_VERSION-fpm 2>/dev/null || true
-            systemctl start php$PHP_VERSION-fpm 2>/dev/null || true
-            echo "✅ Попытка запуска PHP $PHP_VERSION FPM"
-        fi
+        echo "❌ Ошибка перезапуска PHP 8.2 FPM"
+        echo "Проверьте: systemctl status php8.2-fpm"
     fi
 fi
 
