@@ -287,6 +287,89 @@ else
     echo "❌ Проблема с подключением к Alertmanager"
 fi
 
+# Правила для дополнительных экспортеров (Process, SSL, RTTI)
+sudo tee $RULES_DIR/advanced_alerts.yml > /dev/null <<EOF
+groups:
+- name: advanced_alerts
+  rules:
+  # Process Exporter алерты
+  - alert: CriticalProcessDown
+    expr: namedprocess_namegroup_num_procs{groupname=~"nginx|postgres|php-fpm"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Критический процесс {{ \$labels.groupname }} не запущен"
+      description: "Процесс {{ \$labels.groupname }} недоступен на {{ \$labels.instance }}"
+
+  - alert: LowProcessCount
+    expr: namedprocess_namegroup_num_procs{groupname="php-fpm"} < 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Мало процессов {{ \$labels.groupname }}"
+      description: "Только {{ \$value }} процессов {{ \$labels.groupname }} запущено"
+
+  # SSL Exporter алерты
+  - alert: SSLCertificateExpiringSoon
+    expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "SSL сертификат истекает через неделю"
+      description: "SSL сертификат для {{ \$labels.instance }} истечет через {{ \$value | humanizeDuration }}"
+
+  - alert: SSLCertificateExpired
+    expr: probe_ssl_earliest_cert_expiry - time() < 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "SSL сертификат истек"
+      description: "SSL сертификат для {{ \$labels.instance }} уже истек"
+
+  # RTTI Custom Exporter алерты
+  - alert: RTTISystemUpdatesMany
+    expr: rtti_system_updates_available > 20
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "Много системных обновлений"
+      description: "Доступно {{ \$value }} обновлений системы"
+
+  - alert: RTTISecurityServiceDown
+    expr: rtti_fail2ban_status == 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Служба безопасности Fail2Ban неактивна"
+      description: "Fail2Ban не работает на {{ \$labels.instance }}"
+
+  - alert: RTTITooManyFailedLogins
+    expr: rtti_failed_logins_recent > 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Много неудачных попыток входа"
+      description: "{{ \$value }} неудачных попыток входа за последнее время"
+EOF
+
+echo "✅ Правила для дополнительных экспортеров созданы"
+
+# Проверка правил дополнительных экспортеров
+echo "Проверка правил дополнительных экспортеров..."
+if sudo -u prometheus /opt/prometheus/promtool check rules "$RULES_DIR/advanced_alerts.yml"; then
+    echo "✅ Правила дополнительных экспортеров корректны"
+else
+    echo "❌ Ошибка в правилах дополнительных экспортеров"
+    exit 1
+fi
+
 echo "=== Настройка алертов завершена ==="
 echo ""
 echo "Созданы следующие группы правил:"
@@ -294,6 +377,7 @@ echo "- node_alerts.yml - алерты для системных метрик"
 echo "- web_alerts.yml - алерты для веб-сервисов"
 echo "- database_alerts.yml - алерты для баз данных"
 echo "- monitoring_alerts.yml - алерты для системы мониторинга"
+echo "- advanced_alerts.yml - алерты для дополнительных экспортеров"
 echo ""
 echo "Веб-интерфейсы:"
 echo "- Prometheus: http://localhost:9090"

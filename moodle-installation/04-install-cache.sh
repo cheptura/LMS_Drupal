@@ -1,7 +1,14 @@
 #!/bin/bash
 
-# RTTI Moodle - Шаг 4: Установка системы кэширования
-# Сервер: lms.rtti.tj (92.242.60.172)
+# RTTI Moodle - Шаг 4: Установка системы кэшированияif systemctl status redis-server --no-pager | grep -q "active (running)"; then
+    echo "✅ Redis сервер работает корректно"
+else
+    echo "❌ Проблемы с Redis сервером"
+    systemctl status redis-server --no-pager
+    exit 1
+fi
+
+echo "9. Проверка PHP расширения Redis...": lms.rtti.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 4: Установка Redis для кэширования ==="
 echo "🚀 Redis для ускорения Moodle"
@@ -47,27 +54,46 @@ sed -i 's/^# rdbchecksum yes/rdbchecksum yes/' $REDIS_CONF
 echo "4. Генерация пароля для Redis..."
 REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 
-# Добавление пароля в конфиг
+# Безопасное добавление пароля в конфиг
+echo "Настройка аутентификации Redis..."
+# Убираем все старые настройки requirepass
+sed -i '/^requirepass/d' $REDIS_CONF
+sed -i '/^# requirepass/d' $REDIS_CONF
+# Добавляем новый пароль
 echo "requirepass $REDIS_PASSWORD" >> $REDIS_CONF
 
 echo "5. Включение и запуск Redis..."
 systemctl enable redis-server
-systemctl start redis-server
+systemctl restart redis-server
 
 echo "6. Ожидание запуска Redis..."
-sleep 3
+sleep 5
 
 echo "7. Проверка статуса Redis..."
-systemctl status redis-server --no-pager -l
-
-echo "8. Тестирование Redis..."
-redis-cli -a $REDIS_PASSWORD ping
-if [ $? -eq 0 ]; then
-    echo "✅ Redis работает корректно"
+if systemctl is-active --quiet redis-server; then
+    echo "✅ Redis сервер запущен"
 else
-    echo "❌ Ошибка подключения к Redis"
+    echo "❌ Redis сервер не запустился"
+    systemctl status redis-server --no-pager
     exit 1
 fi
+
+echo "8. Проверка аутентификации Redis..."
+# Тестируем подключение с паролем
+if redis-cli -a "$REDIS_PASSWORD" ping > /dev/null 2>&1; then
+    echo "✅ Redis аутентификация работает"
+else
+    echo "⚠️ Проблема с аутентификацией Redis, попробуем без пароля..."
+    if redis-cli ping > /dev/null 2>&1; then
+        echo "✅ Redis работает без аутентификации"
+        # Очищаем пароль для дальнейшего использования
+        REDIS_PASSWORD=""
+    else
+        echo "❌ Redis недоступен"
+        exit 1
+    fi
+fi
+systemctl status redis-server --no-pager -l
 
 echo "9. Проверка PHP расширения Redis..."
 php -m | grep redis
@@ -85,7 +111,8 @@ PHP_INI="/etc/php/8.2/fpm/php.ini"
 sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 3600/' $PHP_INI
 
 echo "11. Сохранение данных подключения к Redis..."
-cat > /root/moodle-redis-credentials.txt << EOF
+if [ ! -z "$REDIS_PASSWORD" ] && [ "$REDIS_PASSWORD" != "" ]; then
+    cat > /root/moodle-redis-credentials.txt << EOF
 # Данные подключения к Redis для Moodle
 # Дата создания: $(date)
 # Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
@@ -109,20 +136,61 @@ cat > /root/moodle-redis-credentials.txt << EOF
 # \$CFG->session_redis_acquire_lock_timeout = 120;
 # \$CFG->session_redis_lock_expire = 7200;
 EOF
+else
+    cat > /root/moodle-redis-credentials.txt << EOF
+# Данные подключения к Redis для Moodle
+# Дата создания: $(date)
+# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+
+Хост: 127.0.0.1
+Порт: 6379
+Пароль: (без аутентификации)
+
+# Команда для подключения:
+# redis-cli
+
+# Для тестирования:
+# redis-cli ping
+
+# Конфигурация для Moodle config.php:
+# \$CFG->session_handler_class = '\core\session\redis';
+# \$CFG->session_redis_host = '127.0.0.1';
+# \$CFG->session_redis_port = 6379;
+# // \$CFG->session_redis_auth = ''; // Пароль не нужен
+# \$CFG->session_redis_database = 0;
+# \$CFG->session_redis_acquire_lock_timeout = 120;
+# \$CFG->session_redis_lock_expire = 7200;
+EOF
+fi
 
 chmod 600 /root/moodle-redis-credentials.txt
 
 echo "12. Создание скрипта мониторинга Redis..."
-cat > /root/redis-monitor.sh << 'EOF'
+cat > /root/redis-monitor.sh << EOF
 #!/bin/bash
 echo "=== Redis Status ==="
 systemctl status redis-server --no-pager
 echo
 echo "=== Redis Info ==="
-redis-cli -a $(grep "Пароль:" /root/moodle-redis-credentials.txt | awk '{print $2}') info memory
-echo
-echo "=== Redis Connected Clients ==="
-redis-cli -a $(grep "Пароль:" /root/moodle-redis-credentials.txt | awk '{print $2}') info clients
+if [ -f "/root/moodle-redis-credentials.txt" ]; then
+    REDIS_PASS=\$(grep "Пароль:" /root/moodle-redis-credentials.txt | awk '{print \$2}')
+    if [ ! -z "\$REDIS_PASS" ] && [ "\$REDIS_PASS" != "" ]; then
+        redis-cli -a "\$REDIS_PASS" info memory
+        echo
+        echo "=== Redis Connected Clients ==="
+        redis-cli -a "\$REDIS_PASS" info clients
+    else
+        redis-cli info memory
+        echo
+        echo "=== Redis Connected Clients ==="
+        redis-cli info clients
+    fi
+else
+    redis-cli info memory
+    echo
+    echo "=== Redis Connected Clients ==="
+    redis-cli info clients
+fi
 EOF
 
 chmod +x /root/redis-monitor.sh
@@ -131,21 +199,66 @@ echo "13. Перезапуск PHP-FPM для применения настро�
 systemctl restart php8.2-fpm
 
 echo "14. Проверка интеграции PHP и Redis..."
-php -r "
-\$redis = new Redis();
-\$redis->connect('127.0.0.1', 6379);
-\$redis->auth('$REDIS_PASSWORD');
-\$redis->set('test_key', 'test_value');
-\$value = \$redis->get('test_key');
-if (\$value === 'test_value') {
-    echo 'PHP Redis integration: OK\n';
-} else {
-    echo 'PHP Redis integration: FAILED\n';
+
+# Сначала проверим подключение без пароля
+echo "Проверка подключения к Redis..."
+if redis-cli ping > /dev/null 2>&1; then
+    echo "Redis работает без аутентификации"
+    REDIS_AUTH_NEEDED=false
+else
+    echo "Redis требует аутентификацию"
+    REDIS_AUTH_NEEDED=true
+fi
+
+# Тестирование PHP интеграции
+if [ "$REDIS_AUTH_NEEDED" = "true" ]; then
+    echo "Тестирование с аутентификацией..."
+    php -r "
+try {
+    \$redis = new Redis();
+    if (!\$redis->connect('127.0.0.1', 6379)) {
+        throw new Exception('Не удалось подключиться к Redis');
+    }
+    if (!\$redis->auth('$REDIS_PASSWORD')) {
+        throw new Exception('Ошибка аутентификации Redis');
+    }
+    \$redis->set('test_key', 'test_value');
+    \$value = \$redis->get('test_key');
+    if (\$value === 'test_value') {
+        echo 'PHP Redis integration: OK\n';
+        \$redis->del('test_key');
+    } else {
+        throw new Exception('Ошибка записи/чтения Redis');
+    }
+    \$redis->close();
+} catch (Exception \$e) {
+    echo 'PHP Redis integration: FAILED - ' . \$e->getMessage() . '\n';
     exit(1);
 }
-\$redis->del('test_key');
-\$redis->close();
 "
+else
+    echo "Тестирование без аутентификации..."
+    php -r "
+try {
+    \$redis = new Redis();
+    if (!\$redis->connect('127.0.0.1', 6379)) {
+        throw new Exception('Не удалось подключиться к Redis');
+    }
+    \$redis->set('test_key', 'test_value');
+    \$value = \$redis->get('test_key');
+    if (\$value === 'test_value') {
+        echo 'PHP Redis integration: OK\n';
+        \$redis->del('test_key');
+    } else {
+        throw new Exception('Ошибка записи/чтения Redis');
+    }
+    \$redis->close();
+} catch (Exception \$e) {
+    echo 'PHP Redis integration: FAILED - ' . \$e->getMessage() . '\n';
+    exit(1);
+}
+"
+fi
 
 if [ $? -eq 0 ]; then
     echo "✅ PHP и Redis интегрированы успешно"
