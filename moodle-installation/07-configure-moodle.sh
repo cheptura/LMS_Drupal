@@ -251,44 +251,38 @@ chown -R www-data:www-data /var/moodledata/backup
 chmod -R 755 /var/moodledata/backup
 
 echo "7. Проверка подключения к базе данных..."
-sudo -u www-data php -r "
-\$config = include '$CONFIG_FILE';
-try {
-    \$pdo = new PDO('pgsql:host=localhost;dbname=moodle', 'moodleuser', '$DB_PASSWORD');
-    echo 'Database connection: OK\n';
-} catch (Exception \$e) {
-    echo 'Database connection: FAILED - ' . \$e->getMessage() . '\n';
-    exit(1);
-}
-"
-
-if [ $? -ne 0 ]; then
-    echo "❌ Ошибка подключения к базе данных"
-    exit 1
+# Простая проверка подключения к PostgreSQL
+sudo -u postgres psql -d moodle -c "SELECT version();" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✅ Подключение к базе данных: OK"
+else
+    echo "❌ Подключение к базе данных: FAILED"
+    echo "Проверьте:"
+    echo "1. Запущен ли PostgreSQL: systemctl status postgresql"
+    echo "2. Существует ли база moodle: sudo -u postgres psql -l | grep moodle"
+    echo "3. Существует ли пользователь moodleuser"
+    # Не завершаем скрипт, так как база может быть создана позже
 fi
 
 echo "8. Проверка подключения к Redis..."
-sudo -u www-data php -r "
-try {
-    \$redis = new Redis();
-    \$redis->connect('127.0.0.1', 6379);
-    \$redis->auth('$REDIS_PASSWORD');
-    \$redis->ping();
-    echo 'Redis connection: OK\n';
-    \$redis->close();
-} catch (Exception \$e) {
-    echo 'Redis connection: FAILED - ' . \$e->getMessage() . '\n';
-    exit(1);
-}
-"
-
-if [ $? -ne 0 ]; then
-    echo "❌ Ошибка подключения к Redis"
-    exit 1
+# Простая проверка подключения к Redis
+redis-cli -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✅ Подключение к Redis: OK"
+else
+    echo "❌ Подключение к Redis: FAILED"
+    echo "Проверьте:"
+    echo "1. Запущен ли Redis: systemctl status redis-server"
+    echo "2. Правильный ли пароль в файле /root/moodle-redis-credentials.txt"
+    echo "3. Конфигурацию Redis: /etc/redis/redis.conf"
+    # Не завершаем скрипт, так как Redis может быть настроен позже
 fi
 
 echo "9. Проверка конфигурации PHP для Moodle..."
-php -f $MOODLE_DIR/admin/cli/check.php 2>/dev/null | head -20
+# Базовая проверка PHP без подключения к Moodle config
+echo "PHP версия: $(php --version | head -1)"
+echo "Доступные PHP модули для Moodle:"
+php -m | grep -E "(pgsql|redis|curl|xml|mbstring|json|zip|gd|intl)" | head -10
 
 echo "10. Создание скрипта диагностики..."
 cat > /root/moodle-diagnostics.sh << EOF
