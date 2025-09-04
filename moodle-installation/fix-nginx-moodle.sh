@@ -73,33 +73,36 @@ server {
         fastcgi_temp_file_write_size 256k;
     }
 
-    # Moodle JavaScript and CSS combo handler
-    location ~ ^/theme/yui_combo\.php {
+    # Moodle JavaScript handler with path info
+    location ~ ^(/lib/javascript\.php)(/.*)?$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
+        fastcgi_param PATH_INFO \$2;
         include fastcgi_params;
         fastcgi_read_timeout 300;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
-    # Moodle JavaScript handler
-    location ~ ^/lib/javascript\.php {
+    # Moodle CSS handler with path info
+    location ~ ^(/theme/styles\.php)(/.*)?$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
+        fastcgi_param PATH_INFO \$2;
         include fastcgi_params;
         fastcgi_read_timeout 300;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
-    # Moodle CSS handler
-    location ~ ^/theme/styles\.php {
+    # Moodle YUI combo handler with path info
+    location ~ ^(/theme/yui_combo\.php)(/.*)?$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
+        fastcgi_param PATH_INFO \$2;
         include fastcgi_params;
         fastcgi_read_timeout 300;
         expires 1y;
