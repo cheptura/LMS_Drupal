@@ -120,9 +120,9 @@ sudo ./restore-moodle.sh /path/to/backup.tar.gz  # Восстановление 
 - Сохраняются в файле `/var/log/moodle-install.log`
 
 ### 📁 Важные директории:
-- **Код Moodle:** `/var/www/html/moodle`
+- **Код Moodle:** `/var/www/moodle` (новые установки) или `/var/www/html/moodle` (старые установки)
 - **Данные:** `/var/moodledata`
-- **Конфигурация:** `/var/www/html/moodle/config.php`
+- **Конфигурация:** `/var/www/moodle/config.php`
 - **Логи Nginx:** `/var/log/nginx/`
 - **Логи PHP:** `/var/log/php8.3-fpm.log`
 
