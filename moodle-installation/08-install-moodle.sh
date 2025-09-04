@@ -95,31 +95,67 @@ echo "4. Создание администратора по умолчанию..
 ADMIN_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-16)
 ADMIN_EMAIL="admin@rtti.tj"
 
-echo "5. Запуск установки Moodle через CLI..."
+echo "5. Проверка состояния установки Moodle..."
 echo "Это может занять несколько минут..."
 
 cd $MOODLE_DIR
 
-# Установка через CLI
-sudo -u www-data php admin/cli/install.php \
-    --non-interactive \
-    --agree-license \
-    --lang=ru \
-    --wwwroot=https://lms.rtti.tj \
-    --dataroot=/var/moodledata \
-    --dbtype=pgsql \
-    --dbhost=localhost \
-    --dbname=moodle \
-    --dbuser=moodleuser \
-    --dbpass=$DB_PASSWORD \
-    --prefix=mdl_ \
-    --fullname="RTTI Learning Management System" \
-    --shortname="RTTI LMS" \
-    --adminuser=admin \
-    --adminpass=$ADMIN_PASSWORD \
-    --adminemail=$ADMIN_EMAIL
+# Проверяем, существует ли уже база данных Moodle
+DB_EXISTS=$(sudo -u postgres psql -d moodle -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'mdl_config');" -t 2>/dev/null | tr -d ' ')
 
-INSTALL_RESULT=$?
+if [ "$DB_EXISTS" = "t" ]; then
+    echo "ℹ️ Обнаружена существующая установка Moodle в базе данных"
+    echo "🔄 Обновление существующей установки..."
+    
+    # Обновляем существующую установку
+    sudo -u www-data php admin/cli/upgrade.php --non-interactive
+    INSTALL_RESULT=$?
+    
+    if [ $INSTALL_RESULT -eq 0 ]; then
+        echo "✅ Обновление Moodle завершено успешно"
+    else
+        echo "❌ Ошибка обновления Moodle"
+        echo "Попытка установки только базы данных..."
+        
+        # Попытка установки только базы данных
+        sudo -u www-data php admin/cli/install_database.php \
+            --agree-license \
+            --fullname="RTTI Learning Management System" \
+            --shortname="RTTI LMS" \
+            --adminuser=admin \
+            --adminpass=$ADMIN_PASSWORD \
+            --adminemail=$ADMIN_EMAIL
+        INSTALL_RESULT=$?
+    fi
+else
+    echo "🆕 Новая установка Moodle..."
+    
+    # Удаляем config.php если он существует но база пустая
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "ℹ️ Удаление неполного файла конфигурации..."
+        rm -f "$CONFIG_FILE"
+    fi
+    
+    # Полная новая установка
+    sudo -u www-data php admin/cli/install.php \
+        --non-interactive \
+        --agree-license \
+        --lang=ru \
+        --wwwroot=https://lms.rtti.tj \
+        --dataroot=/var/moodledata \
+        --dbtype=pgsql \
+        --dbhost=localhost \
+        --dbname=moodle \
+        --dbuser=moodleuser \
+        --dbpass=$DB_PASSWORD \
+        --prefix=mdl_ \
+        --fullname="RTTI Learning Management System" \
+        --shortname="RTTI LMS" \
+        --adminuser=admin \
+        --adminpass=$ADMIN_PASSWORD \
+        --adminemail=$ADMIN_EMAIL
+    INSTALL_RESULT=$?
+fi
 
 if [ $INSTALL_RESULT -eq 0 ]; then
     echo "✅ Базовая установка Moodle завершена успешно"
