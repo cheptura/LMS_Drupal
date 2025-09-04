@@ -18,15 +18,20 @@ echo "1. Установка Nginx..."
 apt update
 apt install -y nginx
 
-echo "2. Добавление репозитория PHP 8.3..."
+echo "2. Удаление всех существующих версий PHP..."
+# Сначала полностью очищаем систему от PHP
+apt remove --purge -y php* 2>/dev/null || true
+apt autoremove -y
+
+echo "3. Добавление репозитория PHP..."
 add-apt-repository ppa:ondrej/php -y
 apt update
 
-echo "3. Установка PHP 8.3 и необходимых расширений для Drupal 11..."
+echo "4. Установка ТОЛЬКО PHP 8.3 и необходимых расширений для Drupal 11..."
+# Устанавливаем только конкретные пакеты PHP 8.3, БЕЗ метапакета php
 apt install -y \
-    php8.3 \
-    php8.3-fpm \
     php8.3-cli \
+    php8.3-fpm \
     php8.3-common \
     php8.3-pgsql \
     php8.3-mysql \
@@ -46,7 +51,20 @@ apt install -y \
     php8.3-apcu \
     php8.3-uploadprogress
 
-echo "4. Установка Composer для управления зависимостями..."
+echo "5. Проверка и удаление случайно установленных других версий PHP..."
+# Удаляем любые другие версии PHP, которые могли установиться как зависимости
+apt remove --purge -y php8.0* php8.1* php8.2* php8.4* php7* 2>/dev/null || true
+apt autoremove -y
+
+echo "6. Установка PHP 8.3 как версии по умолчанию..."
+update-alternatives --install /usr/bin/php php /usr/bin/php8.3 100
+update-alternatives --set php /usr/bin/php8.3
+
+echo "7. Закрепление PHP 8.3 от автоматических обновлений..."
+# Закрепляем пакеты PHP 8.3, чтобы они не обновлялись автоматически до PHP 8.4
+apt-mark hold php8.3-*
+
+echo "8. Установка Composer для управления зависимостями..."
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 chmod +x /usr/local/bin/composer
@@ -59,7 +77,7 @@ else
     exit 1
 fi
 
-echo "5. Настройка PHP 8.3 для Drupal..."
+echo "9. Настройка PHP 8.3 для Drupal..."
 PHP_INI="/etc/php/8.3/fpm/php.ini"
 PHP_CLI_INI="/etc/php/8.3/cli/php.ini"
 
@@ -117,7 +135,7 @@ EOF
 # Копирование настроек для CLI
 cp /etc/php/8.3/fpm/conf.d/99-drupal.ini /etc/php/8.3/cli/conf.d/99-drupal.ini
 
-echo "6. Настройка PHP-FPM пула для Drupal..."
+echo "10. Настройка PHP-FPM пула для Drupal..."
 cat > /etc/php/8.3/fpm/pool.d/drupal.conf << 'EOF'
 [drupal]
 user = www-data
@@ -158,7 +176,7 @@ php_admin_value[post_max_size] = 100M
 php_admin_value[max_input_vars] = 3000
 EOF
 
-echo "7. Создание базовой конфигурации Nginx для Drupal..."
+echo "11. Создание базовой конфигурации Nginx для Drupal..."
 cat > /etc/nginx/sites-available/drupal-default << 'EOF'
 server {
     listen 80;
@@ -281,11 +299,11 @@ server {
 }
 EOF
 
-echo "8. Создание каталога для Drupal..."
+echo "12. Создание каталога для Drupal..."
 mkdir -p /var/www/drupal
 chown -R www-data:www-data /var/www/drupal
 
-echo "9. Создание тестовой страницы PHP..."
+echo "13. Создание тестовой страницы PHP..."
 cat > /var/www/drupal/phpinfo.php << 'EOF'
 <?php
 // Временная страница для проверки PHP
@@ -318,7 +336,7 @@ EOF
 
 chown www-data:www-data /var/www/drupal/phpinfo.php
 
-echo "10. Активация конфигурации Nginx..."
+echo "14. Активация конфигурации Nginx..."
 # Отключение сайта по умолчанию
 if [ -L /etc/nginx/sites-enabled/default ]; then
     unlink /etc/nginx/sites-enabled/default
@@ -327,27 +345,37 @@ fi
 # Активация конфигурации Drupal
 ln -sf /etc/nginx/sites-available/drupal-default /etc/nginx/sites-enabled/
 
-echo "11. Проверка конфигурации Nginx..."
+echo "15. Проверка конфигурации Nginx..."
 nginx -t
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка конфигурации Nginx"
     exit 1
 fi
 
-echo "12. Запуск и включение сервисов..."
+echo "16. Запуск и включение сервисов..."
 systemctl start nginx
 systemctl enable nginx
 systemctl start php8.3-fpm
 systemctl enable php8.3-fpm
 
-echo "13. Проверка статуса сервисов..."
+echo "17. Проверка статуса сервисов..."
 echo "Nginx статус:"
 systemctl status nginx --no-pager -l | head -3
 
 echo -e "\nPHP-FPM статус:"
 systemctl status php8.3-fpm --no-pager -l | head -3
 
-echo "14. Создание скрипта мониторинга веб-сервера..."
+echo "18. Финальная проверка версии PHP..."
+echo "📋 Установленная версия PHP:"
+php -v
+echo
+echo "📋 Установленные пакеты PHP 8.3:"
+dpkg -l | grep php8.3 | head -10
+echo
+echo "📋 Проверка на наличие других версий PHP:"
+dpkg -l | grep -E "php[0-9]" | grep -v php8.3 || echo "✅ Других версий PHP не найдено"
+
+echo "19. Создание скрипта мониторинга веб-сервера..."
 cat > /root/drupal-webserver-monitor.sh << 'EOF'
 #!/bin/bash
 echo "=== Drupal Web Server Monitor ==="
@@ -382,7 +410,7 @@ EOF
 
 chmod +x /root/drupal-webserver-monitor.sh
 
-echo "15. Создание информационного файла..."
+echo "20. Создание информационного файла..."
 cat > /root/drupal-webserver-info.txt << EOF
 # Информация о веб-сервере для Drupal
 # Дата установки: $(date)
