@@ -1,0 +1,575 @@
+<?php
+
+/**
+ * @file
+ * Модуль интеграции с Moodle LMS для Drupal
+ * Обеспечивает SSO аутентификацию и синхронизацию данных
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\user\Entity\User;
+use Drupal\node\Entity\Node;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+
+/**
+ * Implements hook_help().
+ */
+function moodle_integration_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.moodle_integration':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Модуль интеграции с Moodle LMS для синхронизации пользователей и контента.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function moodle_integration_menu() {
+  $items = [];
+  
+  $items['admin/config/services/moodle-integration'] = [
+    'title' => 'Настройки интеграции с Moodle',
+    'description' => 'Конфигурация параметров интеграции с Moodle LMS',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['moodle_integration_admin_form'],
+    'access arguments' => ['administer site configuration'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  
+  $items['api/moodle/books'] = [
+    'title' => 'API: Список книг',
+    'page callback' => 'moodle_integration_api_books',
+    'access callback' => 'moodle_integration_api_access',
+    'type' => MENU_CALLBACK,
+  ];
+  
+  $items['api/moodle/user-progress'] = [
+    'title' => 'API: Прогресс пользователя',
+    'page callback' => 'moodle_integration_api_user_progress',
+    'access callback' => 'moodle_integration_api_access',
+    'type' => MENU_CALLBACK,
+  ];
+  
+  $items['sso/login'] = [
+    'title' => 'SSO Login',
+    'page callback' => 'moodle_integration_sso_login',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  ];
+  
+  return $items;
+}
+
+/**
+ * Форма настроек модуля
+ */
+function moodle_integration_admin_form($form, &$form_state) {
+  $form['moodle_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Настройки Moodle'),
+    '#collapsible' => TRUE,
+  ];
+  
+  $form['moodle_settings']['moodle_base_url'] = [
+    '#type' => 'textfield',
+    '#title' => t('URL Moodle LMS'),
+    '#default_value' => variable_get('moodle_base_url', 'https://lms.rtti.tj'),
+    '#description' => t('Базовый URL вашего сайта Moodle'),
+    '#required' => TRUE,
+  ];
+  
+  $form['moodle_settings']['moodle_api_key'] = [
+    '#type' => 'textfield',
+    '#title' => t('API ключ Moodle'),
+    '#default_value' => variable_get('moodle_api_key', ''),
+    '#description' => t('API ключ для взаимодействия с Moodle'),
+    '#required' => TRUE,
+  ];
+  
+  $form['drupal_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Настройки Drupal'),
+    '#collapsible' => TRUE,
+  ];
+  
+  $form['drupal_settings']['drupal_api_key'] = [
+    '#type' => 'textfield',
+    '#title' => t('API ключ Drupal'),
+    '#default_value' => variable_get('drupal_api_key', ''),
+    '#description' => t('API ключ для входящих запросов от Moodle'),
+    '#required' => TRUE,
+  ];
+  
+  $form['sso_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Настройки SSO'),
+    '#collapsible' => TRUE,
+  ];
+  
+  $form['sso_settings']['sso_enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Включить SSO аутентификацию'),
+    '#default_value' => variable_get('sso_enabled', TRUE),
+    '#description' => t('Разрешить автоматический вход пользователей из Moodle'),
+  ];
+  
+  $form['sso_settings']['sso_token_lifetime'] = [
+    '#type' => 'textfield',
+    '#title' => t('Время жизни SSO токена (секунды)'),
+    '#default_value' => variable_get('sso_token_lifetime', 3600),
+    '#description' => t('Как долго SSO токен остается действительным'),
+  ];
+  
+  $form['integration_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Настройки интеграции'),
+    '#collapsible' => TRUE,
+  ];
+  
+  $form['integration_settings']['auto_create_users'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Автоматически создавать пользователей'),
+    '#default_value' => variable_get('auto_create_users', TRUE),
+    '#description' => t('Создавать учетные записи Drupal для пользователей Moodle'),
+  ];
+  
+  $form['integration_settings']['sync_user_data'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Синхронизировать данные пользователей'),
+    '#default_value' => variable_get('sync_user_data', TRUE),
+    '#description' => t('Обновлять профили пользователей при изменениях в Moodle'),
+  ];
+  
+  return system_settings_form($form);
+}
+
+/**
+ * Проверка доступа к API
+ */
+function moodle_integration_api_access() {
+  $api_key = $_SERVER['HTTP_X_API_KEY'] ?? $_GET['api_key'] ?? '';
+  $expected_key = variable_get('drupal_api_key', '');
+  
+  return !empty($api_key) && hash_equals($expected_key, $api_key);
+}
+
+/**
+ * API: Получение списка книг
+ */
+function moodle_integration_api_books() {
+  $request = Request::createFromGlobals();
+  $subject = $request->query->get('subject');
+  $category = $request->query->get('category');
+  $limit = $request->query->get('limit', 50);
+  
+  $query = \Drupal::entityQuery('node')
+    ->condition('type', 'digital_book')
+    ->condition('status', 1)
+    ->range(0, $limit)
+    ->sort('created', 'DESC');
+  
+  // Фильтр по предмету
+  if ($subject) {
+    $query->condition('field_book_subject.entity.name', $subject, 'CONTAINS');
+  }
+  
+  // Фильтр по категории
+  if ($category) {
+    $query->condition('field_book_category.entity.name', $category, 'CONTAINS');
+  }
+  
+  $nids = $query->execute();
+  $books = [];
+  
+  foreach ($nids as $nid) {
+    $node = Node::load($nid);
+    if ($node) {
+      $books[] = [
+        'id' => $node->id(),
+        'title' => $node->getTitle(),
+        'summary' => $node->get('body')->summary ?? '',
+        'url' => $node->toUrl('canonical', ['absolute' => TRUE])->toString(),
+        'file_url' => _moodle_integration_get_book_file_url($node),
+        'category' => _moodle_integration_get_term_name($node, 'field_book_category'),
+        'subject' => _moodle_integration_get_term_name($node, 'field_book_subject'),
+        'author' => $node->get('field_book_author')->value ?? '',
+        'isbn' => $node->get('field_book_isbn')->value ?? '',
+        'created' => $node->getCreatedTime(),
+        'updated' => $node->getChangedTime(),
+      ];
+    }
+  }
+  
+  return new JsonResponse([
+    'status' => 'success',
+    'data' => $books,
+    'total' => count($books),
+  ]);
+}
+
+/**
+ * API: Сохранение прогресса пользователя
+ */
+function moodle_integration_api_user_progress() {
+  $request = Request::createFromGlobals();
+  $data = json_decode($request->getContent(), TRUE);
+  
+  if (!$data || !isset($data['user_id']) || !isset($data['progress'])) {
+    return new JsonResponse([
+      'status' => 'error',
+      'message' => 'Неверные данные запроса',
+    ], 400);
+  }
+  
+  // Найти пользователя по ID из Moodle
+  $user = _moodle_integration_find_user_by_moodle_id($data['user_id']);
+  
+  if (!$user) {
+    return new JsonResponse([
+      'status' => 'error',
+      'message' => 'Пользователь не найден',
+    ], 404);
+  }
+  
+  // Сохранить прогресс в кастомной таблице
+  $progress_data = [
+    'uid' => $user->id(),
+    'moodle_user_id' => $data['user_id'],
+    'course_id' => $data['course_id'] ?? 0,
+    'progress_data' => json_encode($data['progress']),
+    'timestamp' => time(),
+  ];
+  
+  \Drupal::database()->merge('moodle_user_progress')
+    ->key(['uid' => $user->id(), 'course_id' => $data['course_id']])
+    ->fields($progress_data)
+    ->execute();
+  
+  return new JsonResponse([
+    'status' => 'success',
+    'message' => 'Прогресс сохранен',
+  ]);
+}
+
+/**
+ * SSO вход пользователя
+ */
+function moodle_integration_sso_login() {
+  if (!variable_get('sso_enabled', TRUE)) {
+    drupal_set_message(t('SSO аутентификация отключена'), 'error');
+    drupal_goto('<front>');
+    return;
+  }
+  
+  $token = $_GET['token'] ?? '';
+  
+  if (empty($token)) {
+    drupal_set_message(t('Отсутствует токен аутентификации'), 'error');
+    drupal_goto('user/login');
+    return;
+  }
+  
+  $user_data = _moodle_integration_verify_sso_token($token);
+  
+  if (!$user_data) {
+    drupal_set_message(t('Недействительный токен аутентификации'), 'error');
+    drupal_goto('user/login');
+    return;
+  }
+  
+  // Найти или создать пользователя
+  $user = _moodle_integration_find_or_create_user($user_data);
+  
+  if ($user) {
+    // Выполнить вход
+    global $user as $current_user;
+    $current_user = $user;
+    user_login_finalize();
+    
+    drupal_set_message(t('Добро пожаловать в библиотеку RTTI!'));
+    drupal_goto('<front>');
+  } else {
+    drupal_set_message(t('Ошибка при создании учетной записи'), 'error');
+    drupal_goto('user/login');
+  }
+}
+
+/**
+ * Проверка SSO токена
+ */
+function _moodle_integration_verify_sso_token($token) {
+  $parts = explode('.', $token);
+  if (count($parts) !== 2) {
+    return FALSE;
+  }
+  
+  list($data, $signature) = $parts;
+  
+  // Проверяем подпись
+  $moodle_api_key = variable_get('moodle_api_key', '');
+  $expected_signature = hash_hmac('sha256', $data, $moodle_api_key);
+  
+  if (!hash_equals($expected_signature, $signature)) {
+    return FALSE;
+  }
+  
+  // Декодируем данные
+  $token_data = json_decode(base64_decode($data), TRUE);
+  if (!$token_data) {
+    return FALSE;
+  }
+  
+  // Проверяем срок действия
+  if ($token_data['expires'] < time()) {
+    return FALSE;
+  }
+  
+  return $token_data;
+}
+
+/**
+ * Поиск или создание пользователя
+ */
+function _moodle_integration_find_or_create_user($user_data) {
+  // Ищем существующего пользователя
+  $users = \Drupal::entityTypeManager()
+    ->getStorage('user')
+    ->loadByProperties(['mail' => $user_data['email']]);
+  
+  if (!empty($users)) {
+    $user = reset($users);
+    
+    // Обновляем данные пользователя если включена синхронизация
+    if (variable_get('sync_user_data', TRUE)) {
+      $user->setUsername($user_data['username']);
+      $user->set('field_moodle_user_id', $user_data['user_id']);
+      $user->save();
+    }
+    
+    return $user;
+  }
+  
+  // Создаем нового пользователя если разрешено
+  if (variable_get('auto_create_users', TRUE)) {
+    $user = User::create([
+      'name' => $user_data['username'],
+      'mail' => $user_data['email'],
+      'status' => 1,
+      'field_moodle_user_id' => $user_data['user_id'],
+    ]);
+    
+    $user->save();
+    return $user;
+  }
+  
+  return FALSE;
+}
+
+/**
+ * Поиск пользователя по Moodle ID
+ */
+function _moodle_integration_find_user_by_moodle_id($moodle_id) {
+  $users = \Drupal::entityTypeManager()
+    ->getStorage('user')
+    ->loadByProperties(['field_moodle_user_id' => $moodle_id]);
+  
+  return !empty($users) ? reset($users) : FALSE;
+}
+
+/**
+ * Получение URL файла книги
+ */
+function _moodle_integration_get_book_file_url($node) {
+  if ($node->hasField('field_book_file') && !$node->get('field_book_file')->isEmpty()) {
+    $file = $node->get('field_book_file')->entity;
+    if ($file) {
+      return file_create_url($file->getFileUri());
+    }
+  }
+  return '';
+}
+
+/**
+ * Получение названия термина таксономии
+ */
+function _moodle_integration_get_term_name($node, $field_name) {
+  if ($node->hasField($field_name) && !$node->get($field_name)->isEmpty()) {
+    $term = $node->get($field_name)->entity;
+    if ($term) {
+      return $term->getName();
+    }
+  }
+  return '';
+}
+
+/**
+ * Implements hook_install().
+ */
+function moodle_integration_install() {
+  // Создание таблицы для хранения прогресса пользователей
+  $schema = [
+    'description' => 'Хранит прогресс пользователей из Moodle',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Уникальный ID записи',
+      ],
+      'uid' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'ID пользователя Drupal',
+      ],
+      'moodle_user_id' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'ID пользователя в Moodle',
+      ],
+      'course_id' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'ID курса в Moodle',
+      ],
+      'progress_data' => [
+        'type' => 'text',
+        'not null' => FALSE,
+        'description' => 'JSON данные о прогрессе',
+      ],
+      'timestamp' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Время последнего обновления',
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'uid' => ['uid'],
+      'moodle_user_id' => ['moodle_user_id'],
+      'course_id' => ['course_id'],
+    ],
+  ];
+  
+  db_create_table('moodle_user_progress', $schema);
+  
+  // Установка значений по умолчанию
+  variable_set('moodle_base_url', 'https://lms.rtti.tj');
+  variable_set('drupal_api_key', 'rtti_drupal_api_key_' . md5(time()));
+  variable_set('sso_enabled', TRUE);
+  variable_set('sso_token_lifetime', 3600);
+  variable_set('auto_create_users', TRUE);
+  variable_set('sync_user_data', TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function moodle_integration_uninstall() {
+  // Удаление таблицы
+  db_drop_table('moodle_user_progress');
+  
+  // Удаление переменных
+  variable_del('moodle_base_url');
+  variable_del('moodle_api_key');
+  variable_del('drupal_api_key');
+  variable_del('sso_enabled');
+  variable_del('sso_token_lifetime');
+  variable_del('auto_create_users');
+  variable_del('sync_user_data');
+}
+
+/**
+ * Вспомогательные функции для работы с API
+ */
+
+/**
+ * Отправка данных в Moodle API
+ */
+function moodle_integration_send_to_moodle($endpoint, $data) {
+  $moodle_url = variable_get('moodle_base_url', '');
+  $api_key = variable_get('moodle_api_key', '');
+  
+  if (empty($moodle_url) || empty($api_key)) {
+    return FALSE;
+  }
+  
+  $url = rtrim($moodle_url, '/') . '/webservice/rest/server.php';
+  
+  $post_data = [
+    'wstoken' => $api_key,
+    'wsfunction' => $endpoint,
+    'moodlewsrestformat' => 'json',
+  ];
+  
+  $post_data = array_merge($post_data, $data);
+  
+  $options = [
+    'http' => [
+      'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+      'method' => 'POST',
+      'content' => http_build_query($post_data),
+    ],
+  ];
+  
+  $context = stream_context_create($options);
+  $result = file_get_contents($url, FALSE, $context);
+  
+  return json_decode($result, TRUE);
+}
+
+/**
+ * Получение статистики использования книг
+ */
+function moodle_integration_get_book_stats() {
+  $query = \Drupal::database()->select('node_counter', 'nc');
+  $query->leftJoin('node_field_data', 'n', 'nc.nid = n.nid');
+  $query->fields('n', ['nid', 'title']);
+  $query->fields('nc', ['totalcount', 'daycount', 'timestamp']);
+  $query->condition('n.type', 'digital_book');
+  $query->condition('n.status', 1);
+  $query->orderBy('nc.totalcount', 'DESC');
+  $query->range(0, 20);
+  
+  return $query->execute()->fetchAll();
+}
+
+/**
+ * Создание отчета для администраторов
+ */
+function moodle_integration_generate_report() {
+  $report = [
+    'generated' => date('Y-m-d H:i:s'),
+    'total_books' => 0,
+    'total_users' => 0,
+    'popular_books' => [],
+    'recent_activity' => [],
+  ];
+  
+  // Общее количество книг
+  $query = \Drupal::entityQuery('node')
+    ->condition('type', 'digital_book')
+    ->condition('status', 1);
+  $report['total_books'] = $query->count()->execute();
+  
+  // Общее количество пользователей с Moodle ID
+  $query = \Drupal::entityQuery('user')
+    ->exists('field_moodle_user_id');
+  $report['total_users'] = $query->count()->execute();
+  
+  // Популярные книги
+  $report['popular_books'] = moodle_integration_get_book_stats();
+  
+  // Недавняя активность
+  $query = \Drupal::database()->select('moodle_user_progress', 'mup');
+  $query->leftJoin('users_field_data', 'u', 'mup.uid = u.uid');
+  $query->fields('mup', ['course_id', 'progress_data', 'timestamp']);
+  $query->fields('u', ['name', 'mail']);
+  $query->orderBy('mup.timestamp', 'DESC');
+  $query->range(0, 10);
+  
+  $report['recent_activity'] = $query->execute()->fetchAll();
+  
+  return $report;
+}
