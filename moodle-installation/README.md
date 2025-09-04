@@ -26,7 +26,7 @@ sudo chmod +x *.sh
 
 ### 📦 Основные установочные скрипты:
 1. **01-prepare-system.sh** - Подготовка системы Ubuntu
-2. **02-install-webserver.sh** - Установка и настройка Nginx + PHP 8.2
+2. **02-install-webserver.sh** - Установка и настройка Nginx + PHP 8.3
 3. **03-install-database.sh** - Установка PostgreSQL 16 СУБД
 4. **04-install-cache.sh** - Установка и настройка Redis
 5. **05-configure-ssl.sh** - Настройка SSL сертификатов
@@ -43,7 +43,7 @@ sudo chmod +x *.sh
 - **diagnose-moodle.sh** - Полная диагностика системы Moodle
 - **fix-config-issues.sh** - Исправление проблем конфигурации
 - **diagnose-php-fpm.sh** - Диагностика и исправление PHP-FPM
-- **fix-php-versions.sh** - Исправление проблем с версиями PHP (устанавливает только PHP 8.2)
+- **fix-php-versions.sh** - Исправление проблем с версиями PHP (устанавливает только PHP 8.3)
 
 ### 📋 Автоматическая установка:
 - **install-moodle.sh** - Полная автоматическая установка всех компонентов
@@ -58,7 +58,7 @@ sudo chmod +x *.sh
 
 # Поэтапное выполнение
 sudo ./01-prepare-system.sh      # Подготовка системы Ubuntu
-sudo ./02-install-webserver.sh   # Установка Nginx и PHP 8.2
+sudo ./02-install-webserver.sh   # Установка Nginx и PHP 8.3
 sudo ./03-install-database.sh    # Установка PostgreSQL 16
 sudo ./04-install-cache.sh       # Установка и настройка Redis
 sudo ./05-configure-ssl.sh       # Настройка SSL сертификатов
@@ -74,7 +74,7 @@ sudo ./10-final-check.sh         # Финальная проверка и вал
 ### 🔍 Диагностика системы
 ```bash
 sudo ./diagnose-moodle.sh  # Полная проверка всех компонентов
-systemctl status nginx postgresql php8.2-fpm  # Статус сервисов
+systemctl status nginx postgresql php8.3-fpm  # Статус сервисов
 ```
 
 ### 💾 Резервное копирование
@@ -121,7 +121,34 @@ sudo ./restore-moodle.sh /path/to/backup.tar.gz  # Восстановление 
 - **Данные:** `/var/moodledata`
 - **Конфигурация:** `/var/www/html/moodle/config.php`
 - **Логи Nginx:** `/var/log/nginx/`
-- **Логи PHP:** `/var/log/php8.2-fpm.log`
+- **Логи PHP:** `/var/log/php8.3-fpm.log`
+
+## 📦 PHP 8.3 Расширения
+
+### ✅ Обязательные расширения (автоматически устанавливаются):
+- **ctype** - Встроено в PHP 8.3
+- **curl** - HTTP клиент (php8.3-curl)
+- **dom** - Встроено в php8.3-xml
+- **gd** - Обработка изображений (php8.3-gd)
+- **iconv** - Встроено в PHP 8.3
+- **intl** - Интернационализация (php8.3-intl)
+- **json** - Встроено в PHP 8.3
+- **mbstring** - Многобайтовые строки (php8.3-mbstring)
+- **pcre** - Встроено в PHP 8.3
+- **simplexml** - Встроено в php8.3-xml
+- **spl** - Встроено в PHP 8.3
+- **xml** - XML парсер (php8.3-xml)
+- **zip** - Работа с архивами (php8.3-zip)
+- **pgsql** - PostgreSQL драйвер (php8.3-pgsql)
+
+### 🔧 Рекомендуемые расширения:
+- **openssl** - Встроено в PHP 8.3
+- **soap** - Web services (php8.3-soap)
+- **sodium** - Криптография (php8.3-sodium)
+- **tokenizer** - Встроено в PHP 8.3
+- **xmlrpc** - XML-RPC протокол (php8.3-xmlrpc)
+- **ldap** - LDAP аутентификация (php8.3-ldap)
+- **redis** - Redis кэш (php8.3-redis)
 
 ## Поддержка и troubleshooting
 
@@ -139,9 +166,9 @@ sudo -u postgres psql -d moodle -c "SELECT version();"
 redis-cli ping
 ```
 
-#### Ошибка "php8.2-fpm.service not found" или проблемы с версиями PHP
+#### Ошибка "php8.3-fpm.service not found" или проблемы с версиями PHP
 ```bash
-# НОВАЯ ПРОБЛЕМА: Установилась PHP 8.4 вместо PHP 8.2
+# НОВАЯ ПРОБЛЕМА: Установилась PHP 8.4
 # Проявления: "database driver problem detected", "PGSQL extension is not loaded"
 # Причина: репозиторий ppa:ondrej/php автоматически устанавливает PHP 8.4
 
@@ -149,23 +176,43 @@ redis-cli ping
 sudo ./fix-php-versions.sh
 
 # Решение 2: Используйте исправленный скрипт установки:
-sudo ./02-install-webserver.sh  # Теперь гарантированно ставит только PHP 8.2
+sudo ./02-install-webserver.sh  # Теперь гарантированно ставит только PHP 8.3
 
-# Это полностью очистит все версии PHP и установит только PHP 8.2
+# Это полностью очистит все версии PHP и установит только PHP 8.3
 # с всеми необходимыми расширениями для Moodle
 
 # Проверка установленной версии:
-php --version                    # Должна показать PHP 8.2.x
-dpkg -l | grep php8.2           # Список установленных пакетов PHP 8.2
-dpkg -l | grep -E "php[0-9]" | grep -v php8.2  # Проверка других версий
+php --version                    # Должна показать PHP 8.3.x
+dpkg -l | grep php8.3           # Список установленных пакетов PHP 8.3
+dpkg -l | grep -E "php[0-9]" | grep -v php8.3  # Проверка других версий
 
 # Или определите версию PHP и исправьте вручную:
 php --version
-sudo systemctl start php8.1-fpm  # или другую доступную версию
-sudo systemctl enable php8.1-fpm
+sudo systemctl start php8.3-fpm  # или другую доступную версию
+sudo systemctl enable php8.3-fpm
 
 # Запустите диагностику PHP-FPM:
 sudo ./diagnose-php-fpm.sh
+```
+
+#### Проверка PHP расширений для Moodle
+```bash
+# Проверка всех необходимых расширений:
+php -m | grep -E "(curl|gd|intl|mbstring|xml|zip|pgsql|soap|sodium)"
+
+# Создание тестового файла для проверки:
+php -r "
+echo 'PHP Version: ' . phpversion() . PHP_EOL;
+echo 'Required extensions:' . PHP_EOL;
+\$required = ['curl', 'gd', 'intl', 'mbstring', 'xml', 'zip', 'pgsql'];
+foreach (\$required as \$ext) {
+    echo \$ext . ': ' . (extension_loaded(\$ext) ? 'OK' : 'MISSING') . PHP_EOL;
+}
+"
+
+# Установка недостающих расширений:
+sudo apt install -y php8.3-pgsql php8.3-gd php8.3-curl php8.3-mbstring php8.3-xml php8.3-zip php8.3-intl php8.3-soap
+sudo systemctl restart php8.3-fpm
 ```
 
 #### Ошибка "database driver problem detected" (PGSQL extension)
@@ -174,8 +221,8 @@ sudo ./diagnose-php-fpm.sh
 sudo ./fix-php-versions.sh  # Это установит все необходимые расширения
 
 # Или установите вручную:
-sudo apt install -y php8.2-pgsql
-sudo systemctl restart php8.2-fpm
+sudo apt install -y php8.3-pgsql
+sudo systemctl restart php8.3-fpm
 ```
 
 #### Общие проблемы конфигурации
@@ -191,12 +238,12 @@ sudo ./diagnose-moodle.sh
 ```bash
 # Проверка логов при проблемах
 sudo tail -f /var/log/nginx/error.log
-sudo tail -f /var/log/php8.2-fpm.log
+sudo tail -f /var/log/php8.3-fpm.log
 sudo journalctl -u nginx -f
 
 # Перезапуск сервисов
 sudo systemctl restart nginx
-sudo systemctl restart php8.2-fpm
+sudo systemctl restart php8.3-fpm
 sudo systemctl restart postgresql
 ```
 

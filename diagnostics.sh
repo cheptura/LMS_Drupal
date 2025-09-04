@@ -61,7 +61,6 @@ echo "════════════════════════�
 check_service "nginx"
 check_service "postgresql"
 check_service "redis-server"
-check_service "php8.2-fpm"
 check_service "php8.3-fpm"
 check_service "prometheus" 2>/dev/null || echo "ℹ️  prometheus: Не установлен"
 check_service "grafana-server" 2>/dev/null || echo "ℹ️  grafana-server: Не установлен"

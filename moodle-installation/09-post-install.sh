@@ -158,7 +158,7 @@ echo -e "\n6. Дисковое пространство:"
 df -h | grep -E "(Filesystem|/var|/)"
 
 echo -e "\n7. Статус сервисов:"
-for service in nginx php8.2-fpm postgresql redis-server; do
+for service in nginx php8.3-fpm postgresql redis-server; do
     status=$(systemctl is-active $service)
     echo "$service: $status"
 done
@@ -184,11 +184,11 @@ apt update && apt upgrade -y
 
 # Обновление PHP пакетов
 echo "Обновление PHP..."
-apt install -y php8.2-cli php8.2-fpm php8.2-pgsql php8.2-redis php8.2-gd php8.2-curl php8.2-zip php8.2-mbstring php8.2-xml php8.2-intl
+apt install -y php8.3-cli php8.3-fpm php8.3-pgsql php8.3-redis php8.3-gd php8.3-curl php8.3-zip php8.3-mbstring php8.3-xml php8.3-intl php8.3-soap php8.3-sodium
 
 # Перезапуск сервисов
 echo "Перезапуск сервисов..."
-systemctl restart php8.2-fpm nginx
+systemctl restart php8.3-fpm nginx
 
 # Очистка кэша Moodle
 echo "Очистка кэша Moodle..."

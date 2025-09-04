@@ -143,7 +143,7 @@ fi
 PHP_VERSION=$(php -v | head -1 | awk '{print $2}')
 echo "🐘 PHP версия: $PHP_VERSION"
 
-if systemctl is-active --quiet php8.2-fpm; then
+if systemctl is-active --quiet php8.3-fpm; then
     echo "✅ PHP-FPM: Активен"
 else
     echo "❌ PHP-FPM: Не активен"
@@ -210,8 +210,8 @@ if [ -f "/var/log/nginx/error.log" ]; then
 fi
 
 # Логи PHP
-if [ -f "/var/log/php8.2-fpm.log" ]; then
-    PHP_ERRORS=$(tail -100 /var/log/php8.2-fpm.log | grep "$(date +%Y-%m-%d)" | wc -l)
+if [ -f "/var/log/php8.3-fpm.log" ]; then
+    PHP_ERRORS=$(tail -100 /var/log/php8.3-fpm.log | grep "$(date +%Y-%m-%d)" | wc -l)
     echo "🐘 Ошибки PHP сегодня: $PHP_ERRORS"
 fi
 

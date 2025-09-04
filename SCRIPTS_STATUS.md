@@ -7,7 +7,7 @@
 #### ✅ Существующие основные скрипты:
 - `install-moodle.sh` - ✅ Главный установщик (с автозагрузкой)
 - `01-prepare-system.sh` - ✅ Подготовка системы
-- `02-install-webserver.sh` - ✅ Nginx + PHP 8.2
+- `02-install-webserver.sh` - ✅ Nginx + PHP 8.3
 - `03-install-database.sh` - ✅ PostgreSQL 16
 - `04-install-cache.sh` - ✅ Redis
 - `05-configure-domain.sh` - ✅ Настройка домена

@@ -78,7 +78,7 @@ echo
 echo "2. Проверка сетевых сервисов..."
 
 # Проверка статуса сервисов
-SERVICES=("nginx" "php8.2-fpm" "postgresql" "redis-server")
+SERVICES=("nginx" "php8.3-fpm" "postgresql" "redis-server")
 for service in "${SERVICES[@]}"; do
     if systemctl is-active --quiet $service; then
         echo_success "$service: активен"

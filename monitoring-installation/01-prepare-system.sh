@@ -139,7 +139,7 @@ echo
 
 if [ "$SERVER_ROLE" = "moodle" ]; then
     echo "=== Moodle Services ==="
-    systemctl is-active nginx php8.2-fpm postgresql redis-server
+    systemctl is-active nginx php8.3-fpm postgresql redis-server
 elif [ "$SERVER_ROLE" = "drupal" ]; then
     echo "=== Drupal Services ==="
     systemctl is-active nginx php8.3-fpm postgresql redis-server memcached

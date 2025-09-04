@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # LMS_Drupal - Moodle Installation Script
-# Шаг 2: Установка веб-сервера (Nginx + PHP 8.2)
+# Шаг 2: Установка веб-сервера (Nginx + PHP 8.3)
 # Сервер: lms.rtti.tj (92.242.60.172)
 # Автор: cheptura (GitHub: https://github.com/cheptura/LMS_Drupal)
 # Дата: $(date)
@@ -33,51 +33,55 @@ echo "3. Добавление репозитория PHP..."
 add-apt-repository ppa:ondrej/php -y
 apt update
 
-echo "4. Установка ТОЛЬКО PHP 8.2 и всех необходимых расширений для Moodle..."
-# Устанавливаем только конкретные пакеты PHP 8.2, БЕЗ метапакета php
+echo "4. Установка ТОЛЬКО PHP 8.3 и всех необходимых расширений для Moodle..."
+# Устанавливаем только конкретные пакеты PHP 8.3, БЕЗ метапакета php
+# Список основан на официальных требованиях Moodle:
+
+# REQUIRED extensions (обязательные):
 apt install -y \
-    php8.2-cli \
-    php8.2-fpm \
-    php8.2-common \
-    php8.2-pgsql \
-    php8.2-mysql \
-    php8.2-xml \
-    php8.2-xmlrpc \
-    php8.2-curl \
-    php8.2-gd \
-    php8.2-imagick \
-    php8.2-dev \
-    php8.2-imap \
-    php8.2-mbstring \
-    php8.2-opcache \
-    php8.2-soap \
-    php8.2-zip \
-    php8.2-intl \
-    php8.2-bcmath \
-    php8.2-ldap \
-    php8.2-redis \
-    php8.2-fileinfo \
-    php8.2-ctype \
-    php8.2-tokenizer \
-    php8.2-exif \
-    php8.2-json \
-    php8.2-dom
+    php8.3-cli \
+    php8.3-fpm \
+    php8.3-common \
+    php8.3-curl \
+    php8.3-gd \
+    php8.3-intl \
+    php8.3-mbstring \
+    php8.3-xml \
+    php8.3-zip \
+    php8.3-pgsql \
+    php8.3-mysql \
+    php8.3-opcache
+
+# RECOMMENDED extensions (рекомендуемые):
+apt install -y \
+    php8.3-soap \
+    php8.3-sodium \
+    php8.3-xmlrpc \
+    php8.3-ldap \
+    php8.3-redis \
+    php8.3-imagick \
+    php8.3-bcmath \
+    php8.3-exif \
+    php8.3-imap
+
+# Note: ctype, dom, iconv, json, pcre, simplexml, spl, tokenizer, openssl
+# встроены в PHP 8.3 и не требуют отдельной установки
 
 echo "5. Проверка и удаление случайно установленных других версий PHP..."
 # Удаляем любые другие версии PHP, которые могли установиться как зависимости
-apt remove --purge -y php8.0* php8.1* php8.3* php8.4* php7* 2>/dev/null || true
+apt remove --purge -y php8.0* php8.1* php8.2* php8.4* php7* 2>/dev/null || true
 apt autoremove -y
 
-echo "6. Установка PHP 8.2 как версии по умолчанию..."
-update-alternatives --install /usr/bin/php php /usr/bin/php8.2 100
-update-alternatives --set php /usr/bin/php8.2
+echo "6. Установка PHP 8.3 как версии по умолчанию..."
+update-alternatives --install /usr/bin/php php /usr/bin/php8.3 100
+update-alternatives --set php /usr/bin/php8.3
 
-echo "7. Закрепление PHP 8.2 от автоматических обновлений..."
-# Закрепляем пакеты PHP 8.2, чтобы они не обновлялись автоматически до PHP 8.3/8.4
-apt-mark hold php8.2-*
+echo "7. Закрепление PHP 8.3 от автоматических обновлений..."
+# Закрепляем пакеты PHP 8.3, чтобы они не обновлялись автоматически до PHP 8.4
+apt-mark hold php8.3-*
 
 echo "8. Оптимизация настроек PHP для Moodle..."
-PHP_INI="/etc/php/8.2/fpm/php.ini"
+PHP_INI="/etc/php/8.3/fpm/php.ini"
 cp $PHP_INI ${PHP_INI}.backup
 
 # Настройки производительности для Moodle
@@ -113,7 +117,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_read_timeout 300;
@@ -164,8 +168,8 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "12. Запуск и включение автозапуска служб..."
-systemctl enable nginx php8.2-fpm
-systemctl start nginx php8.2-fpm
+systemctl enable nginx php8.3-fpm
+systemctl start nginx php8.3-fpm
 
 echo "13. Настройка firewall..."
 ufw allow 'Nginx Full'
@@ -193,37 +197,37 @@ foreach ($required_extensions as $ext) {
 EOF
 
 echo "16. Перезапуск служб..."
-systemctl restart nginx php8.2-fpm
+systemctl restart nginx php8.3-fpm
 
 echo "17. Проверка статуса..."
 systemctl status nginx --no-pager -l
-systemctl status php8.2-fpm --no-pager -l
+systemctl status php8.3-fpm --no-pager -l
 
 echo "18. Финальная проверка версии PHP..."
 echo "📋 Установленная версия PHP:"
 php -v
 echo
-echo "📋 Установленные пакеты PHP 8.2:"
-dpkg -l | grep php8.2 | head -10
+echo "📋 Установленные пакеты PHP 8.3:"
+dpkg -l | grep php8.3 | head -10
 echo
 echo "📋 Проверка на наличие других версий PHP:"
-dpkg -l | grep -E "php[0-9]" | grep -v php8.2 || echo "✅ Других версий PHP не найдено"
+dpkg -l | grep -E "php[0-9]" | grep -v php8.3 || echo "✅ Других версий PHP не найдено"
 
 echo "19. Сохранение информации о PHP версии..."
 cat > /root/moodle-php-info.txt << EOF
 # Информация о PHP для Moodle
 # Дата установки: $(date)
-PHP_VERSION=8.2
-PHP_FPM_SERVICE=php8.2-fpm
-PHP_INI_PATH=/etc/php/8.2/fpm/php.ini
-PHP_SOCKET_PATH=/var/run/php/php8.2-fpm.sock
+PHP_VERSION=8.3
+PHP_FPM_SERVICE=php8.3-fpm
+PHP_INI_PATH=/etc/php/8.3/fpm/php.ini
+PHP_SOCKET_PATH=/var/run/php/php8.3-fpm.sock
 EOF
 
 echo "✅ Информация о PHP сохранена в /root/moodle-php-info.txt"
 
 echo
 echo "✅ Шаг 2 завершен успешно!"
-echo "📌 Nginx и PHP 8.2 установлены и настроены"
+echo "📌 Nginx и PHP 8.3 установлены и настроены"
 echo "📌 Проверьте: http://lms.rtti.tj/info.php"
 echo "📌 Следующий шаг: ./03-install-database.sh"
 echo

@@ -30,7 +30,7 @@ fi
 
 echo "1. Проверка состояния всех сервисов..."
 
-SERVICES=("nginx" "php8.2-fpm" "postgresql" "redis-server")
+SERVICES=("nginx" "php8.3-fpm" "postgresql" "redis-server")
 for service in "${SERVICES[@]}"; do
     if systemctl is-active --quiet $service; then
         echo "✅ $service: работает"
@@ -43,7 +43,7 @@ for service in "${SERVICES[@]}"; do
             echo "✅ $service: запущен"
         else
             echo "❌ Не удалось запустить $service"
-            if [ "$service" = "php8.2-fpm" ]; then
+            if [ "$service" = "php8.3-fpm" ]; then
                 echo "Попытка установки $service..."
                 apt install -y $service
                 systemctl enable $service
@@ -125,7 +125,7 @@ if [ $INSTALL_RESULT -eq 0 ]; then
     echo "✅ Базовая установка Moodle завершена успешно"
 else
     echo "❌ Ошибка установки Moodle"
-    echo "Проверьте логи в /var/log/nginx/ и /var/log/php8.2-fpm.log"
+    echo "Проверьте логи в /var/log/nginx/ и /var/log/php8.3-fpm.log"
     exit 1
 fi
 
@@ -254,7 +254,7 @@ Email: $ADMIN_EMAIL
 === КОМПОНЕНТЫ ===
 ✅ Ubuntu 24.04 LTS
 ✅ Nginx (веб-сервер)
-✅ PHP 8.2 + расширения
+✅ PHP 8.3 + расширения
 ✅ PostgreSQL 16 (база данных)
 ✅ Redis (кэширование)
 ✅ Let's Encrypt SSL
@@ -281,7 +281,7 @@ Email: $ADMIN_EMAIL
 
 === ПОДДЕРЖКА ===
 Логи Nginx: /var/log/nginx/
-Логи PHP: /var/log/php8.2-fpm.log
+Логи PHP: /var/log/php8.3-fpm.log
 Логи PostgreSQL: /var/log/postgresql/
 Логи Moodle: /var/moodledata/
 EOF
@@ -289,7 +289,7 @@ EOF
 echo "15. Финальная проверка всех компонентов..."
 echo "Проверка доступности компонентов:"
 echo -n "Nginx: "; systemctl is-active nginx
-echo -n "PHP-FPM: "; systemctl is-active php8.2-fpm
+echo -n "PHP-FPM: "; systemctl is-active php8.3-fpm
 echo -n "PostgreSQL: "; systemctl is-active postgresql
 echo -n "Redis: "; systemctl is-active redis-server
 

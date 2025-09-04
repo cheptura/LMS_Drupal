@@ -107,17 +107,17 @@ if [ -d "/var/log/nginx" ]; then
     echo "✅ Логи Nginx исправлены"
 fi
 
-if [ -d "/var/log/php8.2-fpm" ]; then
-    chown -R www-data:adm /var/log/php8.2-fpm
-    chmod 755 /var/log/php8.2-fpm
+if [ -d "/var/log/php8.3-fpm" ]; then
+    chown -R www-data:adm /var/log/php8.3-fpm
+    chmod 755 /var/log/php8.3-fpm
     echo "✅ Логи PHP-FPM исправлены"
 fi
 
 # Исправление прав для Unix socket
 echo "🔌 Проверка Unix socket..."
-if [ -S "/run/php/php8.2-fpm.sock" ]; then
-    chown www-data:www-data /run/php/php8.2-fpm.sock
-    chmod 660 /run/php/php8.2-fpm.sock
+if [ -S "/run/php/php8.3-fpm.sock" ]; then
+    chown www-data:www-data /run/php/php8.3-fpm.sock
+    chmod 660 /run/php/php8.3-fpm.sock
     echo "✅ PHP-FPM socket исправлен"
 fi
 
@@ -140,7 +140,7 @@ fi
 
 # Перезапуск сервисов
 echo "🔄 Перезапуск сервисов..."
-systemctl restart php8.2-fpm
+systemctl restart php8.3-fpm
 systemctl restart nginx
 
 # Проверка статуса сервисов
@@ -151,7 +151,7 @@ else
     echo "❌ Nginx: Проблема"
 fi
 
-if systemctl is-active --quiet php8.2-fpm; then
+if systemctl is-active --quiet php8.3-fpm; then
     echo "✅ PHP-FPM: Активен"
 else
     echo "❌ PHP-FPM: Проблема"
@@ -200,7 +200,7 @@ Applied Permissions:
 
 Services Status:
 - Nginx: $(systemctl is-active nginx)
-- PHP-FPM: $(systemctl is-active php8.2-fpm)
+- PHP-FPM: $(systemctl is-active php8.3-fpm)
 
 Critical Directories:
 $(ls -la $MOODLE_DIR | head -5)

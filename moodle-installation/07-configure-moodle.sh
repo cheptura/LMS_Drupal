@@ -298,7 +298,7 @@ echo -e "\n2. Статус веб-сервера:"
 systemctl status nginx --no-pager -l | head -3
 
 echo -e "\n3. Статус PHP-FPM:"
-systemctl status php8.2-fpm --no-pager -l | head -3
+systemctl status php8.3-fpm --no-pager -l | head -3
 
 echo -e "\n4. Статус PostgreSQL:"
 systemctl status postgresql --no-pager -l | head -3

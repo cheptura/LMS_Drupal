@@ -176,17 +176,17 @@ if [ ${#MISSING_EXTENSIONS[@]} -gt 0 ]; then
     echo "⚠️  Отсутствуют PHP расширения: ${MISSING_EXTENSIONS[*]}"
     echo "Установка недостающих расширений..."
     for ext in "${MISSING_EXTENSIONS[@]}"; do
-        apt install -y php8.2-$ext
+        apt install -y php8.3-$ext
     done
-    
-    # Перезапуск PHP 8.2 FPM
-    echo "Перезапуск PHP 8.2 FPM..."
-    systemctl restart php8.2-fpm
-    if systemctl is-active --quiet php8.2-fpm; then
-        echo "✅ PHP 8.2 FPM перезапущен"
+
+    # Перезапуск PHP 8.3 FPM
+    echo "Перезапуск PHP 8.3 FPM..."
+    systemctl restart php8.3-fpm
+    if systemctl is-active --quiet php8.3-fpm; then
+        echo "✅ PHP 8.3 FPM перезапущен"
     else
-        echo "❌ Ошибка перезапуска PHP 8.2 FPM"
-        echo "Проверьте: systemctl status php8.2-fpm"
+        echo "❌ Ошибка перезапуска PHP 8.3 FPM"
+        echo "Проверьте: systemctl status php8.3-fpm"
     fi
 fi
 

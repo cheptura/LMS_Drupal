@@ -1,10 +1,13 @@
 #!/bin/bash
 
 # RTTI Moodle - Исправление PHP версий
-# Полная очистка и установка только PHP 8.2
+# Полная очистка и установка толь    systemctl status php8.3-fpm --no-pager -l
+else
+    echo "❌ PHP 8.3 FPM не работает"
+    journalctl -u php8.3-fpm --no-pager -n 10HP 8.3
 
 echo "=== RTTI Moodle - Исправление PHP версий ==="
-echo "🔧 Полная очистка и установка PHP 8.2"
+echo "🔧 Полная очистка и установка PHP 8.3"
 echo "📅 Дата: $(date)"
 echo
 
@@ -17,7 +20,7 @@ fi
 echo "1. Остановка всех PHP-FPM сервисов..."
 systemctl stop php*.* 2>/dev/null || true
 
-echo "2. Удаление всех версий PHP кроме 8.2..."
+echo "2. Удаление всех версий PHP кроме 8.3..."
 apt remove --purge -y php8.0* php8.1* php8.3* php8.4* 2>/dev/null || true
 apt autoremove -y
 
@@ -25,47 +28,45 @@ echo "3. Добавление репозитория PHP..."
 add-apt-repository ppa:ondrej/php -y
 apt update
 
-echo "4. Установка PHP 8.2 и всех необходимых расширений..."
+echo "4. Установка PHP 8.3 и всех необходимых расширений..."
+# REQUIRED extensions (обязательные по требованиям Moodle):
 apt install -y \
-    php8.2 \
-    php8.2-fpm \
-    php8.2-common \
-    php8.2-cli \
-    php8.2-pgsql \
-    php8.2-mysql \
-    php8.2-xml \
-    php8.2-xmlrpc \
-    php8.2-curl \
-    php8.2-gd \
-    php8.2-imagick \
-    php8.2-dev \
-    php8.2-imap \
-    php8.2-mbstring \
-    php8.2-opcache \
-    php8.2-soap \
-    php8.2-zip \
-    php8.2-intl \
-    php8.2-bcmath \
-    php8.2-ldap \
-    php8.2-redis \
-    php8.2-fileinfo \
-    php8.2-ctype \
-    php8.2-tokenizer \
-    php8.2-exif \
-    php8.2-json \
-    php8.2-dom
+    php8.3-cli \
+    php8.3-fpm \
+    php8.3-common \
+    php8.3-curl \
+    php8.3-gd \
+    php8.3-intl \
+    php8.3-mbstring \
+    php8.3-xml \
+    php8.3-zip \
+    php8.3-pgsql \
+    php8.3-mysql \
+    php8.3-opcache
 
-echo "5. Установка PHP 8.2 как версии по умолчанию..."
-update-alternatives --install /usr/bin/php php /usr/bin/php8.2 100
-update-alternatives --set php /usr/bin/php8.2
+# RECOMMENDED extensions (рекомендуемые):
+apt install -y \
+    php8.3-soap \
+    php8.3-sodium \
+    php8.3-xmlrpc \
+    php8.3-ldap \
+    php8.3-redis \
+    php8.3-imagick \
+    php8.3-bcmath \
+    php8.3-exif \
+    php8.3-imap
+
+echo "5. Установка PHP 8.3 как версии по умолчанию..."
+update-alternatives --install /usr/bin/php php /usr/bin/php8.3 100
+update-alternatives --set php /usr/bin/php8.3
 
 echo "6. Проверка установленных расширений..."
 echo "Версия PHP: $(php --version | head -1)"
 echo "Установленные расширения для Moodle:"
 php -m | grep -E "(pgsql|redis|curl|xml|mbstring|json|zip|gd|intl|opcache)"
 
-echo "7. Настройка PHP 8.2 для Moodle..."
-PHP_INI="/etc/php/8.2/fpm/php.ini"
+echo "7. Настройка PHP 8.3 для Moodle..."
+PHP_INI="/etc/php/8.3/fpm/php.ini"
 if [ -f "$PHP_INI" ]; then
     cp $PHP_INI ${PHP_INI}.backup-$(date +%Y%m%d)
     
@@ -79,20 +80,20 @@ if [ -f "$PHP_INI" ]; then
     sed -i 's/^;opcache.enable=1/opcache.enable=1/' $PHP_INI
     sed -i 's/^;opcache.memory_consumption=128/opcache.memory_consumption=256/' $PHP_INI
     
-    echo "✅ PHP 8.2 настроен для Moodle"
+    echo "✅ PHP 8.3 настроен для Moodle"
 fi
 
-echo "8. Запуск и включение автозапуска PHP 8.2 FPM..."
-systemctl enable php8.2-fpm
-systemctl start php8.2-fpm
+echo "8. Запуск и включение автозапуска PHP 8.3 FPM..."
+systemctl enable php8.3-fpm
+systemctl start php8.3-fpm
 
-echo "9. Проверка статуса PHP 8.2 FPM..."
-if systemctl is-active --quiet php8.2-fpm; then
-    echo "✅ PHP 8.2 FPM работает"
-    systemctl status php8.2-fpm --no-pager -l
+echo "9. Проверка статуса PHP 8.3 FPM..."
+if systemctl is-active --quiet php8.3-fpm; then
+    echo "✅ PHP 8.3 FPM работает"
+    systemctl status php8.3-fpm --no-pager -l
 else
-    echo "❌ PHP 8.2 FPM не запущен"
-    journalctl -u php8.2-fpm --no-pager -n 10
+    echo "❌ PHP 8.3 FPM не запущен"
+    journalctl -u php8.3-fpm --no-pager -n 10
     exit 1
 fi
 
@@ -100,7 +101,7 @@ echo "10. Обновление конфигурации Nginx..."
 NGINX_CONFIG="/etc/nginx/sites-available/lms.rtti.tj"
 if [ -f "$NGINX_CONFIG" ]; then
     # Исправляем путь к PHP-FPM сокету
-    sed -i 's|fastcgi_pass unix:/var/run/php/php.*-fpm\.sock;|fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;|g' $NGINX_CONFIG
+    sed -i 's|fastcgi_pass unix:/var/run/php/php.*-fpm\.sock;|fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;|g' $NGINX_CONFIG
     echo "✅ Конфигурация Nginx обновлена"
     
     # Проверяем конфигурацию
@@ -117,20 +118,20 @@ echo "11. Сохранение информации о PHP..."
 cat > /root/moodle-php-info.txt << EOF
 # Информация о PHP для Moodle
 # Дата установки: $(date)
-PHP_VERSION=8.2
-PHP_FPM_SERVICE=php8.2-fpm
-PHP_INI_PATH=/etc/php/8.2/fpm/php.ini
-PHP_SOCKET_PATH=/var/run/php/php8.2-fpm.sock
+PHP_VERSION=8.3
+PHP_FPM_SERVICE=php8.3-fpm
+PHP_INI_PATH=/etc/php/8.3/fpm/php.ini
+PHP_SOCKET_PATH=/var/run/php/php8.3-fpm.sock
 EOF
 
 echo "12. Финальная проверка..."
 echo "PHP версия: $(php --version | head -1)"
-echo "PHP-FPM статус: $(systemctl is-active php8.2-fpm)"
+echo "PHP-FPM статус: $(systemctl is-active php8.3-fpm)"
 echo "Nginx статус: $(systemctl is-active nginx)"
 
 echo
 echo "✅ Исправление PHP завершено!"
-echo "📌 Установлен и настроен только PHP 8.2"
+echo "📌 Установлен и настроен только PHP 8.3"
 echo "📌 Все другие версии PHP удалены"
 echo "📌 Конфигурация обновлена"
 echo "📌 Теперь можно продолжить установку: ./08-install-moodle.sh"
