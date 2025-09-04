@@ -56,6 +56,16 @@ git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
 sudo chmod +x *.sh
 
+### 🔄 Обновление существующего репозитория:
+```bash
+# Если репозиторий уже склонирован
+cd LMS_Drupal
+git reset --hard HEAD
+git pull --force origin main
+cd drupal-installation
+sudo chmod +x *.sh
+```
+
 # Поэтапное выполнение
 sudo ./01-prepare-system.sh      # Подготовка системы Ubuntu
 sudo ./02-install-webserver.sh   # Установка Nginx и PHP 8.3
