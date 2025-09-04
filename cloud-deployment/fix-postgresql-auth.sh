@@ -33,10 +33,22 @@ fi
 # Проверяем существует ли пользователь moodleuser
 log "Проверка существования пользователя moodleuser..."
 if sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='moodleuser'" | grep -q 1; then
-    log "Пользователь moodleuser существует"
+    log "Пользователь moodleuser существует, выполняем правильную очистку..."
     
-    # Пересоздаем пользователя с новым паролем
-    log "Пересоздание пользователя moodleuser с новым паролем..."
+    # Сначала удаляем базу данных
+    log "Удаление базы данных moodle..."
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS moodle;"
+    
+    # Затем переназначаем объекты принадлежащие пользователю
+    log "Переназначение объектов пользователя moodleuser..."
+    sudo -u postgres psql -c "REASSIGN OWNED BY moodleuser TO postgres;" 2>/dev/null || true
+    
+    # Удаляем объекты принадлежащие пользователю
+    log "Удаление объектов принадлежащих moodleuser..."
+    sudo -u postgres psql -c "DROP OWNED BY moodleuser;" 2>/dev/null || true
+    
+    # Теперь можем безопасно удалить пользователя
+    log "Удаление пользователя moodleuser..."
     sudo -u postgres psql -c "DROP USER IF EXISTS moodleuser;"
 else
     log "Пользователь moodleuser не существует, создаем..."

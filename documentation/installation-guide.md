@@ -423,33 +423,46 @@ sudo chmod -R 777 /var/www/html/drupal/sites/default/files
 sudo ./install-moodle-cloud.sh cleanup
 ```
 
+**Быстрое исправление специфической ошибки "role cannot be dropped":**
+```bash
+# Скачать и запустить специальный скрипт исправления
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/fix-postgresql-drop-user.sh
+chmod +x fix-postgresql-drop-user.sh
+sudo ./fix-postgresql-drop-user.sh
+```
+
 **Ручное решение:**
 ```bash
 # 1. Проверить существующих пользователей
 sudo -u postgres psql -c '\du'
 
-# 2. Пересоздать пользователя с правильным паролем
+# 2. Правильно удалить базу данных и пользователя (в правильном порядке!)
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS moodle;"
 sudo -u postgres psql -c "DROP USER IF EXISTS moodleuser;"
 
-# 3. Создать нового пользователя (пароль будет сгенерирован автоматически)
+# 3. Если пользователь не удаляется из-за зависимостей:
+sudo -u postgres psql -c "REASSIGN OWNED BY moodleuser TO postgres;"
+sudo -u postgres psql -c "DROP OWNED BY moodleuser;"
+sudo -u postgres psql -c "DROP USER IF EXISTS moodleuser;"
+
+# 4. Создать нового пользователя (пароль будет сгенерирован автоматически)
 DB_PASSWORD=$(openssl rand -base64 32)
 sudo -u postgres psql -c "CREATE USER moodleuser WITH PASSWORD '$DB_PASSWORD';"
 sudo -u postgres psql -c "ALTER USER moodleuser CREATEDB;"
 
-# 4. Создать базу данных
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS moodle;"
+# 5. Создать базу данных
 sudo -u postgres psql -c "CREATE DATABASE moodle OWNER moodleuser;"
 
-# 5. Обновить config.php с новым паролем
+# 6. Обновить config.php с новым паролем
 sudo sed -i "s/\$CFG->dbpass = .*/\$CFG->dbpass = '$DB_PASSWORD';/" /var/www/html/moodle/config.php
 
-# 6. Сохранить пароль для справки
+# 7. Сохранить пароль для справки
 echo "DB_PASSWORD=$DB_PASSWORD" >> /root/moodle-credentials.txt
 
-# 7. Перезапустить PostgreSQL
+# 8. Перезапустить PostgreSQL
 sudo systemctl restart postgresql
 
-# 8. Тест подключения
+# 9. Тест подключения
 sudo -u postgres psql -d moodle -c "SELECT version();"
 ```
 
