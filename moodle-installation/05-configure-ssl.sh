@@ -3,6 +3,11 @@
 # RTTI Moodle - Шаг 5: Настройка SSL/TLS
 # Сервер: lms.rtti.tj (92.242.60.172)
 # ИСПРАВЛЕНО: убрана поддержка www домена
+#
+# ✅ ИНТЕГРИРОВАННЫЕ ИСПРАВЛЕНИЯ (2025-09-05):
+# - Content Security Policy с 'unsafe-eval' для YUI framework  
+# - Обработчики font.php и image.php с PATH_INFO поддержкой
+# - Все необходимые JavaScript/CSS handlers для SSL
 
 echo "=== RTTI Moodle - Шаг 5: Настройка SSL/TLS для lms.rtti.tj ==="
 echo "🔒 Let's Encrypt SSL сертификаты"
@@ -41,7 +46,7 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
-echo "4. Создание базовой конфигурации Nginx для $DOMAIN..."
+echo "4. Создание SSL конфигурации Nginx с CSP и обработчиками для $DOMAIN..."
 cat > /etc/nginx/sites-available/moodle-ssl << EOF
 server {
     listen 80;
@@ -72,7 +77,7 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self';" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     
     # Размеры загрузки файлов
@@ -94,16 +99,88 @@ server {
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
     }
+
+    # Moodle JavaScript handler
+    location ~ ^/lib/javascript\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$2;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Moodle CSS/theme handler
+    location ~ ^/theme/styles\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$2;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Moodle pluginfile handler
+    location ~ ^/pluginfile\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    # Moodle font.php handler
+    location ~ ^/font\.php/(.+)$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root/font.php;
+        fastcgi_param PATH_INFO \$1;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    # Moodle image.php handler  
+    location ~ ^/image\.php/(.+)$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root/image.php;
+        fastcgi_param PATH_INFO \$1;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
     
     # Статические файлы
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
+
+    # Дополнительные статические файлы с правильным кэшированием
+    location ~* \.(woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Vary Accept-Encoding;
+        try_files \$uri =404;
+    }
     
     # Moodle специфичные настройки
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    # Moodle dataroot protection
+    location ^~ /dataroot/ {
+        internal;
+        alias /var/moodledata/;
+    }
+
+    # Block access to various Moodle internal paths
+    location ~ ^/(backup|local/temp|local/cache)/ {
+        deny all;
     }
     
     # Запрет доступа к конфигурационным файлам
@@ -270,7 +347,7 @@ echo "✅ Шаг 5 завершен успешно!"
 echo "📌 SSL/TLS настроен для https://$DOMAIN"
 echo "📌 Let's Encrypt сертификат установлен"
 echo "📌 Автоматическое обновление настроено"
-echo "📌 Конфигурация Nginx обновлена"
+echo "📌 Конфигурация Nginx обновлена с CSP и обработчиками"
 echo "📌 Скрипт проверки: /root/ssl-check.sh"
 echo "📌 Информация о SSL: /root/moodle-ssl-info.txt"
 echo "📌 Следующий шаг: ./06-download-moodle.sh"

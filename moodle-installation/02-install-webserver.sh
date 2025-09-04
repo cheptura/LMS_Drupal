@@ -5,6 +5,11 @@
 # Сервер: lms.rtti.tj (92.242.60.172)
 # Автор: cheptura (GitHub: https://github.com/cheptura/LMS_Drupal)
 # Дата: $(date)
+#
+# ✅ ИНТЕГРИРОВАННЫЕ ИСПРАВЛЕНИЯ (2025-01-02):
+# - Content Security Policy с 'unsafe-eval' для YUI framework
+# - Обработчики font.php и image.php с PATH_INFO поддержкой
+# - Все необходимые JavaScript/CSS handlers
 
 set -e
 
@@ -132,7 +137,7 @@ configure_php_ini $PHP_CLI_INI
 
 echo "✅ Настройки PHP применены для FPM и CLI"
 
-echo "9. Создание конфигурации Nginx для Moodle..."
+echo "9. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
 cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
 server {
     listen 80;
@@ -148,6 +153,7 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self';" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
     # Main location
@@ -209,6 +215,26 @@ server {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    # Moodle font.php handler
+    location ~ ^/font\.php/(.+)$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root/font.php;
+        fastcgi_param PATH_INFO $1;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    # Moodle image.php handler  
+    location ~ ^/image\.php/(.+)$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root/image.php;
+        fastcgi_param PATH_INFO $1;
         include fastcgi_params;
         fastcgi_read_timeout 300;
     }
@@ -326,6 +352,7 @@ echo "✅ Информация о PHP сохранена в /root/moodle-php-inf
 echo
 echo "✅ Шаг 2 завершен успешно!"
 echo "📌 Nginx и PHP 8.3 установлены и настроены"
+echo "📌 Включены: CSP для YUI, обработчики font.php/image.php"
 echo "📌 Проверьте: http://lms.rtti.tj/info.php"
 echo "📌 Следующий шаг: ./03-install-database.sh"
 echo
