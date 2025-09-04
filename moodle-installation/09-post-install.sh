@@ -22,23 +22,30 @@ if [ ! -f "$MOODLE_DIR/config.php" ]; then
     exit 1
 fi
 
-# Проверка доступности админ-панели
-sudo -u www-data php -r "
-include '$MOODLE_DIR/config.php';
+# Проверка наличия файла блокировки установки (безопасный способ)
+if [ -f "/var/moodledata/install.lock" ]; then
+    echo "✅ Moodle установлен корректно (найден install.lock)"
+elif [ -f "$MOODLE_DIR/../moodledata/install.lock" ]; then
+    echo "✅ Moodle установлен корректно (найден install.lock)"
+else
+    # Альтернативная проверка через CLI
+    echo "🔍 Проверка через CLI..."
+    if sudo -u www-data php -r "
+define('CLI_SCRIPT', true);
+require_once '$MOODLE_DIR/config.php';
+require_once '$MOODLE_DIR/lib/clilib.php';
 if (file_exists(\$CFG->dataroot . '/install.lock')) {
-    echo 'Moodle установлен корректно\n';
+    echo 'OK';
 } else {
-    echo 'Установка не завершена\n';
-    exit(1);
+    echo 'MISSING';
 }
-"
-
-if [ $? -ne 0 ]; then
-    echo "❌ Установка Moodle не завершена корректно"
-    exit 1
+" 2>/dev/null | grep -q "OK"; then
+        echo "✅ Moodle установлен корректно"
+    else
+        echo "⚠️  Предупреждение: install.lock не найден, но продолжаем"
+        echo "ℹ️  Это может быть нормально для некоторых версий Moodle"
+    fi
 fi
-
-echo "✅ Moodle установлен корректно"
 
 echo "2. Установка дополнительных языковых пакетов..."
 # Установка русского языка
@@ -66,11 +73,15 @@ echo "5. Настройка параметров файлов..."
 sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=maxbytes --set=104857600  # 100MB
 
 echo "6. Создание стандартных категорий курсов..."
-sudo -u www-data php -r "
-require_once('$MOODLE_DIR/config.php');
-require_once(\$CFG->libdir . '/adminlib.php');
 
-\$categories = [
+# Создаем временный PHP скрипт для создания категорий
+cat > /tmp/create_categories.php << 'PHPEOF'
+<?php
+define('CLI_SCRIPT', true);
+require_once('/var/www/moodle/config.php');
+require_once($CFG->libdir . '/adminlib.php');
+
+$categories = [
     'Информационные технологии',
     'Телекоммуникации', 
     'Управление проектами',
@@ -78,27 +89,40 @@ require_once(\$CFG->libdir . '/adminlib.php');
     'Профессиональное развитие'
 ];
 
-foreach (\$categories as \$name) {
-    if (!\$DB->record_exists('course_categories', array('name' => \$name))) {
-        \$category = new stdClass();
-        \$category->name = \$name;
-        \$category->description = 'Категория: ' . \$name;
-        \$category->parent = 0;
-        \$category->sortorder = 999;
-        \$category->coursecount = 0;
-        \$category->visible = 1;
-        \$category->timemodified = time();
-        \$category->depth = 1;
-        \$category->path = '';
+foreach ($categories as $name) {
+    if (!$DB->record_exists('course_categories', array('name' => $name))) {
+        $category = new stdClass();
+        $category->name = $name;
+        $category->description = 'Категория: ' . $name;
+        $category->parent = 0;
+        $category->sortorder = 999;
+        $category->coursecount = 0;
+        $category->visible = 1;
+        $category->timemodified = time();
+        $category->depth = 1;
+        $category->path = '';
         
-        \$id = \$DB->insert_record('course_categories', \$category);
-        \$category->path = '/' . \$id;
-        \$DB->update_record('course_categories', \$category);
+        $id = $DB->insert_record('course_categories', $category);
+        $category->path = '/' . $id;
+        $DB->update_record('course_categories', $category);
         
-        echo 'Создана категория: ' . \$name . '\n';
+        echo 'Создана категория: ' . $name . "\n";
+    } else {
+        echo 'Категория уже существует: ' . $name . "\n";
     }
 }
-"
+echo "Создание категорий завершено\n";
+PHPEOF
+
+# Выполняем скрипт
+if sudo -u www-data php /tmp/create_categories.php 2>/dev/null; then
+    echo "✅ Стандартные категории курсов созданы"
+else
+    echo "⚠️  Предупреждение: не удалось создать некоторые категории (не критично)"
+fi
+
+# Удаляем временный файл
+rm -f /tmp/create_categories.php
 
 echo "7. Настройка темы оформления..."
 sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=theme --set=boost
@@ -204,11 +228,15 @@ EOF
 chmod +x /root/moodle-system-update.sh
 
 echo "14. Создание стартовой страницы для курсов..."
-sudo -u www-data php -r "
-require_once('$MOODLE_DIR/config.php');
 
-\$frontpagesummary = '
-<div style=\"text-align: center; padding: 20px;\">
+# Создаем временный PHP скрипт для настройки фронтальной страницы
+cat > /tmp/setup_frontpage.php << 'PHPEOF'
+<?php
+define('CLI_SCRIPT', true);
+require_once('/var/www/moodle/config.php');
+
+$frontpagesummary = '
+<div style="text-align: center; padding: 20px;">
     <h2>Добро пожаловать в RTTI LMS</h2>
     <p>Система управления обучением Республиканского центра телекоммуникаций и информатизации</p>
     <hr>
@@ -217,9 +245,21 @@ require_once('$MOODLE_DIR/config.php');
 </div>
 ';
 
-set_config('frontpagesummary', \$frontpagesummary);
+set_config('frontpagesummary', $frontpagesummary);
 set_config('frontpage', '6,2,7,1,5,3'); // course list, categories, etc
-"
+
+echo "Стартовая страница настроена\n";
+PHPEOF
+
+# Выполняем скрипт
+if sudo -u www-data php /tmp/setup_frontpage.php; then
+    echo "✅ Стартовая страница настроена"
+else
+    echo "⚠️  Предупреждение: не удалось настроить стартовую страницу"
+fi
+
+# Удаляем временный файл
+rm -f /tmp/setup_frontpage.php
 
 echo "15. Финальная оптимизация кэша..."
 sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php

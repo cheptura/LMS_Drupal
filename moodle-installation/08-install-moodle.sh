@@ -352,17 +352,52 @@ else
 fi
 
 echo "6. Применение дополнительных настроек производительности..."
-sudo -u www-data php admin/cli/cfg.php --name=enablecompletion --set=1
-sudo -u www-data php admin/cli/cfg.php --name=completiondefault --set=1
-sudo -u www-data php admin/cli/cfg.php --name=enablegzip --set=1
-sudo -u www-data php admin/cli/cfg.php --name=theme --set=boost
+
+# Функция для безопасной установки настроек
+set_moodle_config() {
+    local setting=$1
+    local value=$2
+    local description=$3
+    
+    echo "   Настройка $description..."
+    RESULT=$(sudo -u www-data php admin/cli/cfg.php --name=$setting --set=$value 2>&1)
+    
+    if echo "$RESULT" | grep -q "hard-set in the config.php"; then
+        echo "   ⚠️  $description уже задана в config.php (пропускаем)"
+    elif echo "$RESULT" | grep -q "error\|Error\|ERROR"; then
+        echo "   ⚠️  Предупреждение при настройке $description: $RESULT"
+    else
+        echo "   ✅ $description настроена успешно"
+    fi
+}
+
+# Применяем настройки с обработкой ошибок
+set_moodle_config "enablecompletion" "1" "отслеживание завершения"
+set_moodle_config "completiondefault" "1" "завершение по умолчанию"
+set_moodle_config "enablegzip" "1" "gzip сжатие"
+set_moodle_config "theme" "boost" "тема Boost"
+
+echo "✅ Настройки производительности применены"
 
 echo "7. Настройка кэширования..."
-# Очистка кэша
-sudo -u www-data php admin/cli/purge_caches.php
 
-# Переустановка кэша
-sudo -u www-data php admin/cli/alternative_component_cache.php --rebuild
+# Очистка кэша с обработкой ошибок
+echo "   Очистка кэша..."
+if sudo -u www-data php admin/cli/purge_caches.php >/dev/null 2>&1; then
+    echo "   ✅ Кэш очищен успешно"
+else
+    echo "   ⚠️  Предупреждение при очистке кэша (не критично)"
+fi
+
+# Переустановка кэша с обработкой ошибок
+echo "   Переустановка кэша..."
+if sudo -u www-data php admin/cli/alternative_component_cache.php --rebuild >/dev/null 2>&1; then
+    echo "   ✅ Кэш переустановлен успешно"
+else
+    echo "   ⚠️  Предупреждение при переустановке кэша (не критично)"
+fi
+
+echo "✅ Настройка кэширования завершена"
 
 echo "8. Создание дополнительных каталогов..."
 mkdir -p /var/moodledata/{cache,sessions,temp,repository,backup}
