@@ -1,7 +1,12 @@
 # Moodle Installation Scripts
 
 ## Описание
-Автоматизированные скрипты для установки Moodle 5.0+ на Ubuntu 24.04 LTS с оптимизациями для RTTI.
+Автоматизированные скрипты для установки Moodle 5.0+ на U### 📁 Важные директории:
+- **Код Moodle:** `/var/www/html/moodle`
+- **Данные:** `/var/moodledata`
+- **Конфигурация:** `/var/www/html/moodle/config.php`
+- **Логи Nginx:** `/var/log/nginx/`
+- **Логи PHP:** `/var/log/php8.2-fpm.log`24.04 LTS с оптимизациями для RTTI.
 
 ## 🚀 QUICK_INSTALL
 ```bash
@@ -37,21 +42,22 @@ sudo chmod +x install-moodle.sh && sudo ./install-moodle.sh
 ## Поэтапная установка
 ```bash
 # Подготовка
+rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
 sudo chmod +x *.sh
 
 # Поэтапное выполнение
-sudo ./01-system-update.sh     # Обновление системы
-sudo ./02-install-nginx.sh     # Веб-сервер
-sudo ./03-install-php.sh       # PHP платформа
-sudo ./04-install-postgresql.sh # База данных
-sudo ./05-configure-database.sh # Настройка БД
-sudo ./06-download-moodle.sh   # Загрузка Moodle
-sudo ./07-configure-moodle.sh  # Конфигурация
-sudo ./08-configure-nginx-site.sh # Веб-сервер
-sudo ./09-install-ssl.sh       # SSL защита
-sudo ./10-final-setup.sh       # Финализация
+sudo ./01-prepare-system.sh      # Подготовка системы Ubuntu
+sudo ./02-install-webserver.sh   # Установка Nginx и PHP 8.2
+sudo ./03-install-database.sh    # Установка PostgreSQL 16
+sudo ./04-install-cache.sh       # Установка и настройка Redis
+sudo ./05-configure-ssl.sh       # Настройка SSL сертификатов
+sudo ./06-download-moodle.sh     # Загрузка Moodle 5.0
+sudo ./07-configure-moodle.sh    # Настройка конфигурации Moodle
+sudo ./08-install-moodle.sh      # Установка Moodle в систему
+sudo ./09-post-install.sh        # Пост-установочная настройка
+sudo ./10-final-check.sh         # Финальная проверка и валидация
 ```
 
 ## Администрирование
@@ -59,7 +65,7 @@ sudo ./10-final-setup.sh       # Финализация
 ### 🔍 Диагностика системы
 ```bash
 sudo ./diagnose-moodle.sh  # Полная проверка всех компонентов
-systemctl status nginx postgresql php8.3-fpm  # Статус сервисов
+systemctl status nginx postgresql php8.2-fpm  # Статус сервисов
 ```
 
 ### � Резервное копирование
@@ -112,11 +118,11 @@ sudo ./restore-moodle.sh /path/to/backup.tar.gz  # Восстановление 
 ```bash
 # Проверка логов при проблемах
 sudo tail -f /var/log/nginx/error.log
-sudo tail -f /var/log/php8.3-fpm.log
+sudo tail -f /var/log/php8.2-fpm.log
 sudo journalctl -u nginx -f
 
 # Перезапуск сервисов
 sudo systemctl restart nginx
-sudo systemctl restart php8.3-fpm
+sudo systemctl restart php8.2-fpm
 sudo systemctl restart postgresql
 ```

@@ -5,10 +5,21 @@
 
 ## 🚀 QUICK_INSTALL
 ```bash
-# Быстрая установка (одной командой)
+# Быстрая установка с заменой файлов (одной командой)
+rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
 sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
+```
+
+### 🔄 Обновление существующего репозитория:
+```bash
+# Если репозиторий уже склонирован
+cd LMS_Drupal
+git reset --hard HEAD
+git pull --force origin main
+cd drupal-installation
+sudo chmod +x *.sh
 ```
 
 ## Состав скриптов
@@ -36,22 +47,23 @@ sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
 
 ## Поэтапная установка
 ```bash
-# Подготовка
+# Подготовка с заменой файлов
+rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
 sudo chmod +x *.sh
 
 # Поэтапное выполнение
-sudo ./01-system-update.sh     # Обновление системы
-sudo ./02-install-nginx.sh     # Веб-сервер
-sudo ./03-install-php.sh       # PHP платформа
-sudo ./04-install-postgresql.sh # База данных
-sudo ./05-configure-database.sh # Настройка БД
-sudo ./06-install-composer.sh  # Composer
-sudo ./07-download-drupal.sh   # Загрузка Drupal
-sudo ./08-configure-drupal.sh  # Конфигурация
-sudo ./09-install-ssl.sh       # SSL защита
-sudo ./10-final-setup.sh       # Финализация
+sudo ./01-prepare-system.sh      # Подготовка системы Ubuntu
+sudo ./02-install-webserver.sh   # Установка Nginx и PHP
+sudo ./03-install-database.sh    # Установка PostgreSQL 16
+sudo ./04-install-cache.sh       # Установка и настройка Redis
+sudo ./05-configure-ssl.sh       # Настройка SSL сертификатов
+sudo ./06-install-drupal.sh      # Загрузка и установка Drupal 11
+sudo ./07-configure-drupal.sh    # Настройка конфигурации Drupal
+sudo ./08-post-install.sh        # Пост-установочная настройка
+sudo ./09-security.sh            # Настройка безопасности
+sudo ./10-final-check.sh         # Финальная проверка
 ```
 
 ## Администрирование

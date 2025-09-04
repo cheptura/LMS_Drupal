@@ -22,35 +22,9 @@ REDIS_CONF="/etc/redis/redis.conf"
 cp $REDIS_CONF ${REDIS_CONF}.backup
 
 echo "3. Настройка Redis для Moodle..."
+echo "3. Настройка Redis для Moodle..."
 # Привязка к localhost для безопасности
 sed -i 's/^bind 127.0.0.1/bind 127.0.0.1/' $REDIS_CONF
-
-echo "9. Проверка PHP расширения Redis...": lms.rtti.tj (92.242.60.172)
-
-echo "=== RTTI Moodle - Шаг 4: Установка Redis для кэширования ==="
-echo "🚀 Redis для ускорения Moodle"
-echo "📅 Дата: $(date)"
-echo
-
-# Проверка прав root
-if [ "$EUID" -ne 0 ]; then
-    echo "❌ Ошибка: Запустите скрипт с правами root"
-    exit 1
-fi
-
-echo "1. Установка Redis сервера..."
-apt install -y redis-server php-redis
-
-echo "2. Настройка Redis для продакшен..."
-REDIS_CONF="/etc/redis/redis.conf"
-cp $REDIS_CONF ${REDIS_CONF}.backup
-
-echo "3. Конфигурация Redis..."
-# Привязка к localhost
-sed -i 's/^bind 127.0.0.1/bind 127.0.0.1/' $REDIS_CONF
-
-# Защищенный режим
-sed -i 's/^protected-mode yes/protected-mode yes/' $REDIS_CONF
 
 # Порт по умолчанию
 sed -i 's/^port 6379/port 6379/' $REDIS_CONF
@@ -70,6 +44,18 @@ sed -i 's/^# rdbchecksum yes/rdbchecksum yes/' $REDIS_CONF
 
 echo "4. Генерация пароля для Redis..."
 REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+
+# Безопасное добавление пароля в конфиг
+echo "Настройка аутентификации Redis..."
+# Убираем все старые настройки requirepass
+sed -i '/^requirepass/d' $REDIS_CONF
+sed -i '/^# requirepass/d' $REDIS_CONF
+# Добавляем новый пароль
+echo "requirepass $REDIS_PASSWORD" >> $REDIS_CONF
+
+echo "5. Включение и запуск Redis..."
+systemctl enable redis-server
+systemctl restart redis-server
 
 # Безопасное добавление пароля в конфиг
 echo "Настройка аутентификации Redis..."
