@@ -180,6 +180,26 @@ install_database() {
     # Создание базы данных и пользователя
     log "Настройка базы данных PostgreSQL..."
     
+    # Проверяем существует ли база данных
+    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+        warning "База данных $DB_NAME уже существует!"
+        read -p "Удалить существующую базу данных и создать новую? (y/N): " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            log "Удаляем существующую базу данных..."
+            sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+            sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
+        else
+            log "Используем существующую базу данных..."
+            # Пытаемся найти существующий пароль
+            if [ -f "/root/moodle-credentials.txt" ]; then
+                log "Используем существующие учетные данные из /root/moodle-credentials.txt"
+                return 0
+            else
+                error "Не найдены учетные данные для существующей базы данных"
+            fi
+        fi
+    fi
+    
     DB_PASSWORD=$(openssl rand -base64 32)
     
     sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
@@ -188,7 +208,8 @@ install_database() {
     sudo -u postgres psql -c "ALTER USER $DB_USER CREATEDB;"
     
     # Сохраняем пароль
-    echo "DB_PASSWORD=$DB_PASSWORD" >> /root/moodle-credentials.txt
+    echo "DB_PASSWORD=$DB_PASSWORD" > /root/moodle-credentials.txt
+    chmod 600 /root/moodle-credentials.txt
     
     log "PostgreSQL настроен"
 }
@@ -720,6 +741,50 @@ final_check() {
     log "Финальная проверка завершена"
 }
 
+# Функция полной очистки для переустановки
+cleanup_previous_installation() {
+    log "Очистка предыдущей установки Moodle..."
+    
+    read -p "Это удалит все данные Moodle! Продолжить? (y/N): " -r
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log "Очистка отменена"
+        return 0
+    fi
+    
+    # Остановка сервисов
+    systemctl stop nginx php8.2-fpm postgresql redis-server 2>/dev/null || true
+    
+    # Удаление файлов Moodle
+    rm -rf "$MOODLE_ROOT" 2>/dev/null || true
+    rm -rf "$MOODLE_DATA" 2>/dev/null || true
+    
+    # Удаление конфигураций Nginx
+    rm -f /etc/nginx/sites-available/moodle 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/moodle 2>/dev/null || true
+    
+    # Удаление конфигураций PHP-FPM
+    rm -f /etc/php/8.2/fpm/pool.d/moodle.conf 2>/dev/null || true
+    
+    # Удаление базы данных
+    if systemctl is-active --quiet postgresql; then
+        sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
+        sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
+    fi
+    
+    # Удаление файлов логов и данных
+    rm -f /root/moodle-credentials.txt 2>/dev/null || true
+    rm -f /root/moodle-installation-info.txt 2>/dev/null || true
+    rm -f /var/log/moodle-*.log 2>/dev/null || true
+    
+    # Очистка cron заданий
+    crontab -l 2>/dev/null | grep -v moodle | crontab - 2>/dev/null || true
+    
+    # Перезапуск сервисов
+    systemctl start postgresql redis-server 2>/dev/null || true
+    
+    log "Предыдущая установка очищена"
+}
+
 # Главная функция
 main() {
     echo "========================================"
@@ -766,5 +831,20 @@ main() {
     echo "========================================"
 }
 
-# Запуск установки
-main "$@"
+# Обработка параметров командной строки
+case "${1:-install}" in
+    "cleanup"|"clean")
+        echo "========================================"
+        echo "    Очистка установки Moodle 5.0+     "
+        echo "========================================"
+        check_root
+        cleanup_previous_installation
+        echo "========================================"
+        log "Очистка завершена! Теперь можно установить заново:"
+        log "./install-moodle-cloud.sh"
+        echo "========================================"
+        ;;
+    "install"|*)
+        main
+        ;;
+esac
