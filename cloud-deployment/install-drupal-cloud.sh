@@ -1,9 +1,34 @@
 #!/bin/bash
 # Скрипт установки Drupal 11 для облачного развертывания
 # Поддержка: AWS, DigitalOcean, Google Cloud, Azure
-# Usage: ./install-drupal-cloud.sh
+# Usage: ./install-drupal-cloud.sh [cleanup|install]
+#
+# Параметры:
+#   cleanup  - Автоматически удалить существующую базу данных и файлы
+#   install  - Обычная установка (по умолчанию)
+#
+# Примеры:
+#   ./install-drupal-cloud.sh          # Обычная установка
+#   ./install-drupal-cloud.sh cleanup  # Полная переустановка
 
 set -e
+
+# Обработка параметров командной строки
+INSTALL_MODE="install"
+if [[ "$1" == "cleanup" ]]; then
+    INSTALL_MODE="cleanup"
+    FORCE_CLEANUP="true"
+    log "Режим: Полная переустановка с очисткой"
+elif [[ "$1" == "install" ]] || [[ -z "$1" ]]; then
+    INSTALL_MODE="install"
+    FORCE_CLEANUP="false"
+    log "Режим: Обычная установка"
+else
+    echo "Использование: $0 [cleanup|install]"
+    echo "  cleanup  - Автоматически удалить существующую базу данных и файлы"
+    echo "  install  - Обычная установка (по умолчанию)"
+    exit 1
+fi
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -143,6 +168,38 @@ install_php() {
     log "PHP 8.3 установлен"
 }
 
+# Функция полной очистки предыдущей установки
+cleanup_previous_installation() {
+    log "Выполняется полная очистка предыдущей установки..."
+    
+    # Остановка веб-сервера
+    systemctl stop nginx 2>/dev/null || true
+    
+    # Удаление базы данных
+    log "Удаление базы данных PostgreSQL..."
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
+    sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
+    
+    # Удаление файлов Drupal
+    log "Удаление файлов Drupal..."
+    rm -rf /var/www/html/drupal 2>/dev/null || true
+    rm -rf /var/www/drupal 2>/dev/null || true
+    
+    # Удаление конфигурации Nginx
+    log "Удаление конфигурации Nginx..."
+    rm -f /etc/nginx/sites-available/drupal 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/drupal 2>/dev/null || true
+    
+    # Удаление учетных данных
+    rm -f /root/drupal-credentials.txt 2>/dev/null || true
+    rm -f /root/drupal-admin-credentials.txt 2>/dev/null || true
+    
+    # Перезапуск Nginx
+    systemctl start nginx 2>/dev/null || true
+    
+    log "Очистка завершена"
+}
+
 # Установка и настройка Nginx
 install_nginx() {
     log "Установка Nginx..."
@@ -177,6 +234,51 @@ install_database() {
     
     # Создание базы данных и пользователя
     log "Настройка базы данных PostgreSQL..."
+    
+    # Проверяем существует ли база данных
+    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+        warning "База данных $DB_NAME уже существует!"
+        
+        # Проверяем параметры командной строки
+        if [[ "$1" == "cleanup" ]] || [[ "$FORCE_CLEANUP" == "true" ]]; then
+            log "Автоматическое удаление существующей базы данных..."
+            sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+            sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
+            # Также удаляем файлы Drupal если они есть
+            if [ -d "/var/www/html/drupal" ]; then
+                log "Удаляем существующие файлы Drupal..."
+                rm -rf /var/www/html/drupal
+            fi
+            if [ -f "/root/drupal-credentials.txt" ]; then
+                rm -f /root/drupal-credentials.txt
+            fi
+        else
+            # Интерактивный режим
+            read -p "Удалить существующую базу данных и создать новую? (y/N): " -r
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log "Удаляем существующую базу данных..."
+                sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+                sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
+                # Также удаляем файлы Drupal если они есть
+                if [ -d "/var/www/html/drupal" ]; then
+                    log "Удаляем существующие файлы Drupal..."
+                    rm -rf /var/www/html/drupal
+                fi
+                if [ -f "/root/drupal-credentials.txt" ]; then
+                    rm -f /root/drupal-credentials.txt
+                fi
+            else
+                log "Используем существующую базу данных..."
+                # Пытаемся найти существующий пароль
+                if [ -f "/root/drupal-credentials.txt" ]; then
+                    log "Используем существующие учетные данные из /root/drupal-credentials.txt"
+                    return 0
+                else
+                    error "Не найдены учетные данные для существующей базы данных"
+                fi
+            fi
+        fi
+    fi
     
     DB_PASSWORD=$(openssl rand -base64 32)
     

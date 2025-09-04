@@ -1,9 +1,34 @@
 #!/bin/bash
 # Скрипт установки Moodle 5.0.2 для облачного развертывания
 # Поддержка: AWS, DigitalOcean, Google Cloud, Azure
-# Usage: ./install-moodle-cloud.sh
+# Usage: ./install-moodle-cloud.sh [cleanup|install]
+#
+# Параметры:
+#   cleanup  - Автоматически удалить существующую базу данных и файлы
+#   install  - Обычная установка (по умолчанию)
+#
+# Примеры:
+#   ./install-moodle-cloud.sh          # Обычная установка
+#   ./install-moodle-cloud.sh cleanup  # Полная переустановка
 
 set -e
+
+# Обработка параметров командной строки
+INSTALL_MODE="install"
+if [[ "$1" == "cleanup" ]]; then
+    INSTALL_MODE="cleanup"
+    FORCE_CLEANUP="true"
+    log "Режим: Полная переустановка с очисткой"
+elif [[ "$1" == "install" ]] || [[ -z "$1" ]]; then
+    INSTALL_MODE="install"
+    FORCE_CLEANUP="false"
+    log "Режим: Обычная установка"
+else
+    echo "Использование: $0 [cleanup|install]"
+    echo "  cleanup  - Автоматически удалить существующую базу данных и файлы"
+    echo "  install  - Обычная установка (по умолчанию)"
+    exit 1
+fi
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -159,6 +184,39 @@ install_nginx() {
     log "Nginx установлен и настроен"
 }
 
+# Функция полной очистки предыдущей установки
+cleanup_previous_installation() {
+    log "Выполняется полная очистка предыдущей установки..."
+    
+    # Остановка веб-сервера
+    systemctl stop nginx 2>/dev/null || true
+    
+    # Удаление базы данных
+    log "Удаление базы данных PostgreSQL..."
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
+    sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
+    
+    # Удаление файлов Moodle
+    log "Удаление файлов Moodle..."
+    rm -rf /var/www/html/moodle 2>/dev/null || true
+    rm -rf /var/www/moodle 2>/dev/null || true
+    rm -rf /var/moodledata 2>/dev/null || true
+    
+    # Удаление конфигурации Nginx
+    log "Удаление конфигурации Nginx..."
+    rm -f /etc/nginx/sites-available/moodle 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/moodle 2>/dev/null || true
+    
+    # Удаление учетных данных
+    rm -f /root/moodle-credentials.txt 2>/dev/null || true
+    rm -f /root/moodle-admin-credentials.txt 2>/dev/null || true
+    
+    # Перезапуск Nginx
+    systemctl start nginx 2>/dev/null || true
+    
+    log "Очистка завершена"
+}
+
 # Установка базы данных
 install_database() {
     if [[ "$USE_CLOUD_DB" == "true" ]]; then
@@ -183,19 +241,44 @@ install_database() {
     # Проверяем существует ли база данных
     if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
         warning "База данных $DB_NAME уже существует!"
-        read -p "Удалить существующую базу данных и создать новую? (y/N): " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            log "Удаляем существующую базу данных..."
+        
+        # Проверяем параметры командной строки
+        if [[ "$1" == "cleanup" ]] || [[ "$FORCE_CLEANUP" == "true" ]]; then
+            log "Автоматическое удаление существующей базы данных..."
             sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
             sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
-        else
-            log "Используем существующую базу данных..."
-            # Пытаемся найти существующий пароль
+            # Также удаляем файлы Moodle если они есть
+            if [ -d "/var/www/html/moodle" ]; then
+                log "Удаляем существующие файлы Moodle..."
+                rm -rf /var/www/html/moodle
+            fi
             if [ -f "/root/moodle-credentials.txt" ]; then
-                log "Используем существующие учетные данные из /root/moodle-credentials.txt"
-                return 0
+                rm -f /root/moodle-credentials.txt
+            fi
+        else
+            # Интерактивный режим
+            read -p "Удалить существующую базу данных и создать новую? (y/N): " -r
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log "Удаляем существующую базу данных..."
+                sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+                sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
+                # Также удаляем файлы Moodle если они есть
+                if [ -d "/var/www/html/moodle" ]; then
+                    log "Удаляем существующие файлы Moodle..."
+                    rm -rf /var/www/html/moodle
+                fi
+                if [ -f "/root/moodle-credentials.txt" ]; then
+                    rm -f /root/moodle-credentials.txt
+                fi
             else
-                error "Не найдены учетные данные для существующей базы данных"
+                log "Используем существующую базу данных..."
+                # Пытаемся найти существующий пароль
+                if [ -f "/root/moodle-credentials.txt" ]; then
+                    log "Используем существующие учетные данные из /root/moodle-credentials.txt"
+                    return 0
+                else
+                    error "Не найдены учетные данные для существующей базы данных"
+                fi
             fi
         fi
     fi

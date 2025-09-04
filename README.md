@@ -66,20 +66,42 @@ LMS_Drupal/
 
 #### Установка Moodle 5.0+ на lms.rtti.tj (92.242.60.172)
 
-1. **Установка Moodle**
+1. **Обычная установка Moodle**
    ```bash
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-moodle-cloud.sh
    chmod +x install-moodle-cloud.sh
    sudo ./install-moodle-cloud.sh
    ```
 
+2. **Переустановка Moodle (если база данных уже существует)**
+   ```bash
+   # Автоматическая очистка и установка
+   sudo ./install-moodle-cloud.sh cleanup
+   
+   # ИЛИ полная переустановка
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/reinstall-moodle.sh
+   chmod +x reinstall-moodle.sh
+   sudo ./reinstall-moodle.sh
+   ```
+
 #### Установка Drupal 11 на library.rtti.tj (92.242.61.204)
 
-2. **Установка Drupal**
+3. **Обычная установка Drupal**
    ```bash
    wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-drupal-cloud.sh
    chmod +x install-drupal-cloud.sh
    sudo ./install-drupal-cloud.sh
+   ```
+
+4. **Переустановка Drupal (если база данных уже существует)**
+   ```bash
+   # Автоматическая очистка и установка
+   sudo ./install-drupal-cloud.sh cleanup
+   
+   # ИЛИ полная переустановка
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/reinstall-drupal.sh
+   chmod +x reinstall-drupal.sh
+   sudo ./reinstall-drupal.sh
    ```
 
 #### Продакшн развертывание с NAS (альтернативно)
@@ -465,7 +487,91 @@ graph TB
 
 ---
 
-## 🔗 Полезные ссылки
+## � Устранение неполадок
+
+### Проблемы установки
+
+#### "ERROR: database 'moodle' already exists"
+Эта ошибка возникает при повторной установке Moodle.
+
+**Решение 1 (автоматическое, рекомендуется):**
+```bash
+sudo ./install-moodle-cloud.sh cleanup
+```
+
+**Решение 2 (полная переустановка):**
+```bash
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/reinstall-moodle.sh
+chmod +x reinstall-moodle.sh
+sudo ./reinstall-moodle.sh
+```
+
+**Решение 3 (ручная очистка):**
+```bash
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS moodle;"
+sudo -u postgres psql -c "DROP USER IF EXISTS moodleuser;"
+sudo rm -rf /var/www/html/moodle /var/moodledata
+sudo ./install-moodle-cloud.sh
+```
+
+#### "ERROR: database 'drupal' already exists"
+Аналогичная ошибка для Drupal при повторной установке.
+
+**Решение 1 (автоматическое, рекомендуется):**
+```bash
+sudo ./install-drupal-cloud.sh cleanup
+```
+
+**Решение 2 (полная переустановка):**
+```bash
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/reinstall-drupal.sh
+chmod +x reinstall-drupal.sh
+sudo ./reinstall-drupal.sh
+```
+
+**Решение 3 (ручная очистка):**
+```bash
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS drupal;"
+sudo -u postgres psql -c "DROP USER IF EXISTS drupaluser;"
+sudo rm -rf /var/www/html/drupal
+sudo ./install-drupal-cloud.sh
+```
+
+#### Ошибки PHP или Nginx
+- Проверьте логи: `sudo tail -f /var/log/nginx/error.log`
+- Перезапустите службы: `sudo systemctl restart nginx php8.2-fpm php8.3-fpm`
+- Проверьте конфигурацию: `sudo nginx -t`
+
+#### Проблемы с правами доступа
+
+**Для Moodle:**
+```bash
+sudo chown -R www-data:www-data /var/www/html/moodle
+sudo chown -R www-data:www-data /var/moodledata
+sudo chmod -R 755 /var/www/html/moodle
+sudo chmod -R 777 /var/moodledata
+```
+
+**Для Drupal:**
+```bash
+sudo chown -R www-data:www-data /var/www/html/drupal
+sudo chmod -R 755 /var/www/html/drupal
+sudo chmod -R 777 /var/www/html/drupal/web/sites/default/files
+```
+
+### Мониторинг и диагностика
+- **Системные ресурсы**: `htop`, `df -h`, `free -m`
+- **Логи приложений**: `/var/log/nginx/`, `/var/log/postgresql/`
+- **Статус служб**: `systemctl status nginx postgresql redis`
+
+### Полезные скрипты переустановки
+- **Moodle**: [cloud-deployment/reinstall-moodle.sh](cloud-deployment/reinstall-moodle.sh)
+- **Drupal**: [cloud-deployment/reinstall-drupal.sh](cloud-deployment/reinstall-drupal.sh)
+- **Database Fix Guide**: [cloud-deployment/database-fix-guide.md](cloud-deployment/database-fix-guide.md)
+
+---
+
+## �🔗 Полезные ссылки
 
 ### RTTI LMS Серверы
 - **🎓 Moodle LMS**: [https://lms.rtti.tj](https://lms.rtti.tj) (92.242.60.172)
