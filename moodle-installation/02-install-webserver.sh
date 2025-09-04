@@ -81,17 +81,56 @@ apt-mark hold php8.3-*
 
 echo "8. Оптимизация настроек PHP для Moodle..."
 PHP_INI="/etc/php/8.3/fpm/php.ini"
-cp $PHP_INI ${PHP_INI}.backup
+PHP_CLI_INI="/etc/php/8.3/cli/php.ini"
 
-# Настройки производительности для Moodle
-sed -i 's/^max_execution_time = 30/max_execution_time = 300/' $PHP_INI
-sed -i 's/^max_input_time = 60/max_input_time = 300/' $PHP_INI
-sed -i 's/^memory_limit = 128M/memory_limit = 512M/' $PHP_INI
-sed -i 's/^post_max_size = 8M/post_max_size = 100M/' $PHP_INI
-sed -i 's/^upload_max_filesize = 2M/upload_max_filesize = 100M/' $PHP_INI
-sed -i 's/^;max_input_vars = 1000/max_input_vars = 5000/' $PHP_INI
-sed -i 's/^;opcache.enable=1/opcache.enable=1/' $PHP_INI
-sed -i 's/^;opcache.memory_consumption=128/opcache.memory_consumption=256/' $PHP_INI
+# Создаем резервные копии
+cp $PHP_INI ${PHP_INI}.backup
+cp $PHP_CLI_INI ${PHP_CLI_INI}.backup
+
+# Функция для настройки PHP INI файла
+configure_php_ini() {
+    local ini_file=$1
+    echo "Настройка $ini_file..."
+    
+    # Настройки производительности для Moodle
+    sed -i 's/^max_execution_time = .*/max_execution_time = 300/' $ini_file
+    sed -i 's/^max_input_time = .*/max_input_time = 300/' $ini_file
+    sed -i 's/^memory_limit = .*/memory_limit = 512M/' $ini_file
+    sed -i 's/^post_max_size = .*/post_max_size = 100M/' $ini_file
+    sed -i 's/^upload_max_filesize = .*/upload_max_filesize = 100M/' $ini_file
+    
+    # Обрабатываем max_input_vars (может быть закомментирован или уже установлен)
+    if grep -q "^max_input_vars" $ini_file; then
+        sed -i 's/^max_input_vars = .*/max_input_vars = 5000/' $ini_file
+    elif grep -q "^;max_input_vars" $ini_file; then
+        sed -i 's/^;max_input_vars = .*/max_input_vars = 5000/' $ini_file
+    else
+        echo "max_input_vars = 5000" >> $ini_file
+    fi
+    
+    # Настройки OPcache
+    if grep -q "^opcache.enable" $ini_file; then
+        sed -i 's/^opcache.enable=.*/opcache.enable=1/' $ini_file
+    elif grep -q "^;opcache.enable" $ini_file; then
+        sed -i 's/^;opcache.enable=.*/opcache.enable=1/' $ini_file
+    else
+        echo "opcache.enable=1" >> $ini_file
+    fi
+    
+    if grep -q "^opcache.memory_consumption" $ini_file; then
+        sed -i 's/^opcache.memory_consumption=.*/opcache.memory_consumption=256/' $ini_file
+    elif grep -q "^;opcache.memory_consumption" $ini_file; then
+        sed -i 's/^;opcache.memory_consumption=.*/opcache.memory_consumption=256/' $ini_file
+    else
+        echo "opcache.memory_consumption=256" >> $ini_file
+    fi
+}
+
+# Настраиваем оба INI файла
+configure_php_ini $PHP_INI
+configure_php_ini $PHP_CLI_INI
+
+echo "✅ Настройки PHP применены для FPM и CLI"
 
 echo "9. Создание конфигурации Nginx для Moodle..."
 cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
