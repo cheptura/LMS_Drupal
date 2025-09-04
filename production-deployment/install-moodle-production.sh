@@ -30,7 +30,7 @@ info() {
 }
 
 # Конфигурация по умолчанию
-MOODLE_VERSION="5.0.2"
+MOODLE_VERSION="5.0"  # Moodle 5.0+ (latest stable)
 PHP_VERSION="8.2"
 MOODLE_DOMAIN="lms.rtti.tj"  # Установлен конкретный домен
 SERVER_IP="92.242.60.172"    # IP сервера LMS
@@ -276,12 +276,34 @@ install_moodle() {
     mkdir -p "$MOODLE_ROOT"
     mkdir -p "$MOODLE_DATA_NAS"
     
-    # Скачивание Moodle
+    # Скачивание Moodle 5.0+
     cd /tmp
-    wget -O moodle-$MOODLE_VERSION.tgz "https://download.moodle.org/download.php/direct/stable${MOODLE_VERSION//./}/moodle-$MOODLE_VERSION.tgz"
+    wget "https://download.moodle.org/download.php/stable500/moodle-latest-500.tgz" -O "moodle-$MOODLE_VERSION.tgz"
+    
+    if [ ! -f "moodle-$MOODLE_VERSION.tgz" ]; then
+        # Альтернативная ссылка если основная не работает
+        log "Пробуем альтернативную ссылку..."
+        wget "https://github.com/moodle/moodle/archive/refs/heads/MOODLE_500_STABLE.tar.gz" -O "moodle-$MOODLE_VERSION.tgz"
+    fi
     
     tar -xzf moodle-$MOODLE_VERSION.tgz
-    cp -R moodle/* "$MOODLE_ROOT/"
+    
+    # Копируем файлы (проверяем структуру архива для Moodle 5.0)
+    if [ -d "moodle" ]; then
+        cp -R moodle/* "$MOODLE_ROOT/"
+    elif [ -d "moodle-latest-500" ]; then
+        cp -R "moodle-latest-500"/* "$MOODLE_ROOT/"
+    elif [ -d "moodle-MOODLE_500_STABLE" ]; then
+        cp -R "moodle-MOODLE_500_STABLE"/* "$MOODLE_ROOT/"
+    else
+        # Ищем любую директорию с moodle
+        MOODLE_DIR=$(find . -maxdepth 1 -type d -name "*moodle*" | head -1)
+        if [ -n "$MOODLE_DIR" ]; then
+            cp -R "$MOODLE_DIR"/* "$MOODLE_ROOT/"
+        else
+            error "Не удалось найти файлы Moodle в архиве"
+        fi
+    fi
     
     # Настройка прав доступа
     chown -R www-data:www-data "$MOODLE_ROOT"
