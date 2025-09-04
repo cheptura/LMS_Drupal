@@ -51,11 +51,11 @@ SCRIPTS_TO_DOWNLOAD=(
     "02-install-prometheus.sh"
     "03-install-grafana.sh"
     "04-install-alertmanager.sh"
-    "05-configure-exporters.sh"
-    "06-setup-dashboards.sh"
-    "07-configure-alerts.sh"
-    "08-setup-notifications.sh"
-    "09-configure-backup.sh"
+    "05-install-exporters.sh"
+    "06-configure-alerts.sh"
+    "07-create-dashboards.sh"
+    "08-optimize-monitoring.sh"
+    "09-setup-backup.sh"
     "10-final-check.sh"
 )
 
@@ -103,12 +103,12 @@ STEPS=(
     "02-install-prometheus.sh:Установка Prometheus сервера"
     "03-install-grafana.sh:Установка Grafana"
     "04-install-alertmanager.sh:Установка Alertmanager"
-    "05-configure-exporters.sh:Установка exporters (Node/Nginx/Postgres)"
+    "05-install-exporters.sh:Установка экспортеров метрик"
     "06-configure-alerts.sh:Настройка правил алертов"
-    "07-setup-dashboards.sh:Импорт дашбордов Grafana"
-    "08-configure-remote.sh:Настройка мониторинга удаленных серверов"
-    "09-setup-backup.sh:Настройка резервного копирования"
-    "10-test-monitoring.sh:Тестирование системы мониторинга"
+    "07-create-dashboards.sh:Создание дашбордов Grafana"
+    "08-optimize-monitoring.sh:Оптимизация мониторинга"
+    "09-setup-backup.sh:Настройка системы резервного копирования"
+    "10-final-check.sh:Финальная проверка системы"
 )
 
 TOTAL_STEPS=${#STEPS[@]}

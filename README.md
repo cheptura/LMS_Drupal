@@ -61,16 +61,16 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 
 ### 🎓 Moodle Installation (14 скриптов)
 **Основные скрипты:**
-- `01-system-update.sh` - Обновление системы
-- `02-install-nginx.sh` - Nginx веб-сервер
-- `03-install-php.sh` - PHP 8.3 с модулями
-- `04-install-postgresql.sh` - PostgreSQL 16
-- `05-configure-database.sh` - Настройка БД
+- `01-prepare-system.sh` - Подготовка системы
+- `02-install-webserver.sh` - Nginx веб-сервер
+- `03-install-database.sh` - PostgreSQL 16
+- `04-install-cache.sh` - Redis кэш
+- `05-configure-ssl.sh` - SSL сертификаты
 - `06-download-moodle.sh` - Загрузка Moodle 5.0
 - `07-configure-moodle.sh` - Конфигурация
-- `08-configure-nginx-site.sh` - Настройка веб-сервера
-- `09-install-ssl.sh` - SSL сертификаты
-- `10-final-setup.sh` - Финальная настройка
+- `08-install-moodle.sh` - Установка Moodle
+- `09-post-install.sh` - Пост-установка
+- `10-final-check.sh` - Финальная проверка
 
 **Утилиты администрирования:**
 - `update-moodle.sh` - Обновление Moodle
@@ -80,16 +80,16 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 
 ### 📚 Drupal Installation (14 скриптов)
 **Основные скрипты:**
-- `01-system-update.sh` - Обновление системы
-- `02-install-nginx.sh` - Nginx веб-сервер
-- `03-install-php.sh` - PHP 8.3 с модулями
-- `04-install-postgresql.sh` - PostgreSQL 16
-- `05-configure-database.sh` - Настройка БД
-- `06-install-composer.sh` - Composer
-- `07-download-drupal.sh` - Загрузка Drupal 11
-- `08-configure-drupal.sh` - Конфигурация
-- `09-install-ssl.sh` - SSL сертификаты
-- `10-final-setup.sh` - Финальная настройка
+- `01-prepare-system.sh` - Подготовка системы
+- `02-install-webserver.sh` - Nginx веб-сервер
+- `03-install-database.sh` - PostgreSQL 16
+- `04-install-cache.sh` - Redis кэш
+- `05-configure-ssl.sh` - SSL сертификаты
+- `06-install-drupal.sh` - Загрузка Drupal 11
+- `07-configure-drupal.sh` - Конфигурация
+- `08-post-install.sh` - Пост-установка
+- `09-security.sh` - Настройка безопасности
+- `10-final-check.sh` - Финальная проверка
 
 **Утилиты администрирования:**
 - `update-drupal.sh` - Обновление через Composer
@@ -99,16 +99,16 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 
 ### 📊 Monitoring Installation (14 скриптов)
 **Основные скрипты:**
-- `01-system-update.sh` - Обновление системы
+- `01-prepare-system.sh` - Подготовка системы
 - `02-install-prometheus.sh` - Prometheus сервер
 - `03-install-grafana.sh` - Grafana дашборды
-- `04-install-alertmanager.sh` - Система алертов
+- `04-install-alertmanager.sh` - Alertmanager для алертов
 - `05-install-exporters.sh` - Экспортеры метрик
-- `06-configure-monitoring.sh` - Конфигурации
-- `07-setup-dashboards.sh` - Дашборды
-- `08-configure-alerts.sh` - Алерты
-- `09-install-ssl.sh` - SSL сертификаты
-- `10-final-setup.sh` - Финальная настройка
+- `06-configure-alerts.sh` - Настройка алертов
+- `07-create-dashboards.sh` - Дашборды
+- `08-optimize-monitoring.sh` - Оптимизация
+- `09-backup-monitoring.sh` - Бэкап настроек
+- `10-final-check.sh` - Финальная проверка
 
 **Утилиты администрирования:**
 - `install-remote-agents.sh` - Установка удаленных агентов

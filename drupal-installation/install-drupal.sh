@@ -51,12 +51,12 @@ SCRIPTS_TO_DOWNLOAD=(
     "02-install-webserver.sh"
     "03-install-database.sh"
     "04-install-cache.sh"
-    "05-configure-domain.sh"
-    "06-install-ssl.sh"
-    "07-download-drupal.sh"
-    "08-configure-drupal.sh"
-    "09-optimize-drupal.sh"
-    "10-final-setup.sh"
+    "05-configure-ssl.sh"
+    "06-install-drupal.sh"
+    "07-configure-drupal.sh"
+    "08-post-install.sh"
+    "09-security.sh"
+    "10-final-check.sh"
 )
 
 # Функция загрузки скрипта
@@ -103,12 +103,12 @@ STEPS=(
     "02-install-webserver.sh:Установка Nginx + PHP 8.3"
     "03-install-database.sh:Установка PostgreSQL 16"
     "04-install-cache.sh:Установка Redis"
-    "05-configure-domain.sh:Настройка домена library.rtti.tj"
-    "06-install-ssl.sh:Установка SSL сертификатов"
-    "07-install-composer.sh:Установка Composer"
-    "08-download-drupal.sh:Загрузка и установка Drupal 11"
-    "09-configure-drupal.sh:Конфигурация библиотеки"
-    "10-setup-modules.sh:Установка модулей библиотеки"
+    "05-configure-ssl.sh:Настройка SSL сертификатов"
+    "06-install-drupal.sh:Загрузка и установка Drupal 11"
+    "07-configure-drupal.sh:Конфигурация Drupal"
+    "08-post-install.sh:Пост-установочная настройка"
+    "09-security.sh:Настройка безопасности"
+    "10-final-check.sh:Финальная проверка системы"
 )
 
 TOTAL_STEPS=${#STEPS[@]}

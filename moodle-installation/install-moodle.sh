@@ -44,15 +44,15 @@ echo
 # Массив шагов установки
 STEPS=(
     "01-prepare-system.sh:Подготовка системы Ubuntu"
-    "02-install-webserver.sh:Установка Nginx + PHP 8.2"
+    "02-install-webserver.sh:Установка Nginx + PHP 8.3"
     "03-install-database.sh:Установка PostgreSQL 16"
     "04-install-cache.sh:Установка Redis"
-    "05-configure-domain.sh:Настройка домена lms.rtti.tj"
-    "06-install-ssl.sh:Установка SSL сертификатов"
-    "07-download-moodle.sh:Загрузка Moodle 5.0+"
-    "08-configure-moodle.sh:Конфигурация и установка Moodle"
-    "09-optimize-moodle.sh:Оптимизация производительности"
-    "10-backup-setup.sh:Настройка резервного копирования"
+    "05-configure-ssl.sh:Настройка SSL сертификатов"
+    "06-download-moodle.sh:Загрузка Moodle 5.0+"
+    "07-configure-moodle.sh:Конфигурация Moodle"
+    "08-install-moodle.sh:Установка Moodle"
+    "09-post-install.sh:Пост-установочная настройка"
+    "10-final-check.sh:Финальная проверка системы"
 )
 
 TOTAL_STEPS=${#STEPS[@]}
@@ -108,12 +108,12 @@ SCRIPTS_TO_DOWNLOAD=(
     "02-install-webserver.sh"
     "03-install-database.sh"
     "04-install-cache.sh"
-    "05-configure-domain.sh"
-    "06-install-ssl.sh"
-    "07-download-moodle.sh"
-    "08-configure-moodle.sh"
-    "09-optimize-moodle.sh"
-    "10-backup-setup.sh"
+    "05-configure-ssl.sh"
+    "06-download-moodle.sh"
+    "07-configure-moodle.sh"
+    "08-install-moodle.sh"
+    "09-post-install.sh"
+    "10-final-check.sh"
 )
 
 # Функция загрузки скрипта
