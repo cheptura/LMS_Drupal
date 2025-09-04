@@ -13,23 +13,6 @@
 
 set -e
 
-# Обработка параметров командной строки
-INSTALL_MODE="install"
-if [[ "$1" == "cleanup" ]]; then
-    INSTALL_MODE="cleanup"
-    FORCE_CLEANUP="true"
-    log "Режим: Полная переустановка с очисткой"
-elif [[ "$1" == "install" ]] || [[ -z "$1" ]]; then
-    INSTALL_MODE="install"
-    FORCE_CLEANUP="false"
-    log "Режим: Обычная установка"
-else
-    echo "Использование: $0 [cleanup|install]"
-    echo "  cleanup  - Автоматически удалить существующую базу данных и файлы"
-    echo "  install  - Обычная установка (по умолчанию)"
-    exit 1
-fi
-
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -54,6 +37,23 @@ warning() {
 info() {
     echo -e "${BLUE}[INFO] $1${NC}"
 }
+
+# Обработка параметров командной строки
+INSTALL_MODE="install"
+if [[ "$1" == "cleanup" ]]; then
+    INSTALL_MODE="cleanup"
+    FORCE_CLEANUP="true"
+    log "Режим: Полная переустановка с очисткой"
+elif [[ "$1" == "install" ]] || [[ -z "$1" ]]; then
+    INSTALL_MODE="install"
+    FORCE_CLEANUP="false"
+    log "Режим: Обычная установка"
+else
+    echo "Использование: $0 [cleanup|install]"
+    echo "  cleanup  - Автоматически удалить существующую базу данных и файлы"
+    echo "  install  - Обычная установка (по умолчанию)"
+    exit 1
+fi
 
 # Конфигурация
 DRUPAL_VERSION="11.0"
