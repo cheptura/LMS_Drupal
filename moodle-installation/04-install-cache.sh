@@ -1,12 +1,29 @@
 #!/bin/bash
 
-# RTTI Moodle - Шаг 4: Установка системы кэшированияif systemctl status redis-server --no-pager | grep -q "active (running)"; then
-    echo "✅ Redis сервер работает корректно"
-else
-    echo "❌ Проблемы с Redis сервером"
-    systemctl status redis-server --no-pager
+# RTTI Moodle - Шаг 4: Установка системы кэширования
+# Сервер: lms.rtti.tj (92.242.60.172)
+
+echo "=== RTTI Moodle - Шаг 4: Установка Redis ==="
+echo "🔄 Настройка системы кэширования"
+echo "📅 Дата: $(date)"
+echo
+
+# Проверка прав root
+if [ "$EUID" -ne 0 ]; then
+    echo "❌ Ошибка: Запустите скрипт с правами root"
     exit 1
 fi
+
+echo "1. Установка Redis сервера..."
+apt install -y redis-server
+
+echo "2. Создание резервной копии конфигурации..."
+REDIS_CONF="/etc/redis/redis.conf"
+cp $REDIS_CONF ${REDIS_CONF}.backup
+
+echo "3. Настройка Redis для Moodle..."
+# Привязка к localhost для безопасности
+sed -i 's/^bind 127.0.0.1/bind 127.0.0.1/' $REDIS_CONF
 
 echo "9. Проверка PHP расширения Redis...": lms.rtti.tj (92.242.60.172)
 
