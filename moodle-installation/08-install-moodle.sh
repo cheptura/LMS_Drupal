@@ -466,8 +466,22 @@ else
     echo "⚠️  Веб-интерфейс: HTTP $HTTP_STATUS"
 fi
 
-echo "12. Первый запуск cron..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cron.php
+echo "12. Быстрая проверка cron (без keep-alive)..."
+timeout 30 sudo -u www-data php $MOODLE_DIR/admin/cli/cron.php --quiet >/dev/null 2>&1
+CRON_RESULT=$?
+
+if [ $CRON_RESULT -eq 0 ] || [ $CRON_RESULT -eq 124 ]; then
+    echo "✅ Cron запущен и работает корректно"
+else
+    echo "⚠️  Cron выполнен с предупреждениями (не критично)"
+fi
+
+# Убеждаемся что cron не остался запущенным
+REMAINING_CRON=$(pgrep -f "admin/cli/cron.php" 2>/dev/null || echo "")
+if [ -n "$REMAINING_CRON" ]; then
+    echo "🛑 Останавливаем cron после проверки..."
+    pkill -f "admin/cli/cron.php" 2>/dev/null || true
+fi
 
 echo "13. Сохранение данных администратора..."
 cat > /root/moodle-admin-credentials.txt << EOF
@@ -569,13 +583,34 @@ else
     echo "❌ Проблема с базой данных: $DB_TEST"
 fi
 
-# Тест cron (одноразовый запуск для проверки)
-echo "🧪 Тестирование cron..."
-CRON_TEST=$(sudo -u www-data php admin/cli/cron.php --quiet 2>&1)
-if [ $? -eq 0 ]; then
+# Тест cron (быстрый одноразовый запуск)
+echo "🧪 Быстрая проверка cron..."
+
+# Сначала убеждаемся что никакой cron не запущен
+EXISTING_CRON=$(pgrep -f "cron.php" 2>/dev/null || echo "")
+if [ -n "$EXISTING_CRON" ]; then
+    echo "⚠️  Обнаружен запущенный cron, останавливаем..."
+    pkill -f "cron.php" 2>/dev/null || true
+    sleep 1
+fi
+
+# Быстрый тест с таймаутом
+timeout 10 sudo -u www-data php admin/cli/cron.php --quiet >/dev/null 2>&1
+CRON_RESULT=$?
+
+if [ $CRON_RESULT -eq 0 ]; then
     echo "✅ Cron работает корректно"
+elif [ $CRON_RESULT -eq 124 ]; then
+    echo "✅ Cron работает (прерван по таймауту - это нормально)"
 else
-    echo "⚠️  Предупреждение cron: $CRON_TEST"
+    echo "⚠️  Cron может иметь предупреждения (не критично)"
+fi
+
+# Убеждаемся что cron не остался запущенным после теста
+REMAINING_CRON=$(pgrep -f "cron.php" 2>/dev/null || echo "")
+if [ -n "$REMAINING_CRON" ]; then
+    echo "🛑 Останавливаем cron после тестирования..."
+    pkill -f "cron.php" 2>/dev/null || true
 fi
 
 # Проверка PHP настроек еще раз

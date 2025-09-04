@@ -67,6 +67,17 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 
 ## 🛠️ Устранение неполадок
 
+### Если cron работает непрерывно во время установки:
+```bash
+# В другом терминале (НЕ прерывая установку):
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/moodle-installation/emergency-stop-cron.sh
+chmod +x emergency-stop-cron.sh
+sudo ./emergency-stop-cron.sh
+
+# Или быстрая команда:
+sudo pkill -f "cron.php"; sudo pkill -9 -f "cron.php"
+```
+
 ### Если загрузка не работает:
 ```bash
 # Проверить доступность репозитория

@@ -160,15 +160,24 @@ sudo ./restore-moodle.sh /path/to/backup.tar.gz  # Восстановление 
 ```bash
 # Если cron работает непрерывно и не останавливается
 # Проявления: "Continuing to check for tasks for XXX more seconds"
+# ИЛИ: "Execute scheduled task: Cleanup old sessions" и зависает
+
+# БЫСТРОЕ РЕШЕНИЕ (в новом терминале):
+sudo pkill -f "cron.php"
+sudo pkill -9 -f "cron.php"
 
 # Решение 1: Используйте утилиту управления cron:
 sudo chmod +x manage-cron.sh && sudo ./manage-cron.sh
-
 # В меню выберите:
 # 3) Остановить все запущенные cron процессы
 # 1) Настроить системный cron (рекомендуется)
 
-# Решение 2: Остановка вручную
+# Решение 2: Экстренная остановка
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/moodle-installation/quick-stop-cron.sh
+chmod +x quick-stop-cron.sh
+sudo ./quick-stop-cron.sh
+
+# Решение 3: Остановка вручную
 # Найти все запущенные процессы cron:
 ps aux | grep cron.php
 
@@ -178,7 +187,7 @@ sudo kill [PID1] [PID2] ...
 # Или принудительно:
 sudo pkill -f cron.php
 
-# Решение 3: Правильная настройка системного cron
+# Решение 4: Правильная настройка системного cron
 # Создать файл /etc/cron.d/moodle:
 sudo nano /etc/cron.d/moodle
 
