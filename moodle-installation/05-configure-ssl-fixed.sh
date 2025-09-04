@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# RTTI Moodle - Шаг 5: Настройка SSL/TLS
+# RTTI Moodle - Шаг 5: Настройка SSL/TLS (Исправленная версия)
 # Сервер: lms.rtti.tj (92.242.60.172)
-# ИСПРАВЛЕНО: убрана поддержка www домена
 
-echo "=== RTTI Moodle - Шаг 5: Настройка SSL/TLS для lms.rtti.tj ==="
+echo "=== RTTI Moodle - Шаг 5: Настройка SSL/TLS для lms.rtti.tj (Исправленная версия) ==="
 echo "🔒 Let's Encrypt SSL сертификаты"
 echo "📅 Дата: $(date)"
 echo
@@ -41,8 +40,104 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
+echo "3a. Проверка доступности www.$DOMAIN..."
+ping -c 1 www.$DOMAIN >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✅ www.$DOMAIN доступен - будет включен в сертификат"
+    DOMAINS="$DOMAIN,www.$DOMAIN"
+    WWW_ENABLED=true
+else
+    echo "⚠️  www.$DOMAIN недоступен - будет использован только основной домен"
+    DOMAINS="$DOMAIN"
+    WWW_ENABLED=false
+fi
+
 echo "4. Создание базовой конфигурации Nginx для $DOMAIN..."
-cat > /etc/nginx/sites-available/moodle-ssl << EOF
+
+if [ "$WWW_ENABLED" = true ]; then
+    # Конфигурация с поддержкой www
+    cat > /etc/nginx/sites-available/moodle-ssl << EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    
+    # Для проверки Let's Encrypt
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+    
+    # Перенаправление на HTTPS
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name $DOMAIN www.$DOMAIN;
+    
+    root /var/www/moodle;
+    index index.php;
+    
+    # SSL конфигурация (будет добавлена Certbot)
+    
+    # Безопасность
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # Размеры загрузки файлов
+    client_max_body_size 100M;
+    
+    # PHP обработка
+    location ~ \.php$ {
+        try_files \$uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+        
+        # Moodle специфичные настройки
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED \$document_root\$fastcgi_path_info;
+        fastcgi_read_timeout 300;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+    }
+    
+    # Статические файлы
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Moodle специфичные настройки
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+    
+    # Запрет доступа к конфигурационным файлам
+    location ~ /\.ht {
+        deny all;
+    }
+    
+    location ~ /config\.php {
+        deny all;
+    }
+    
+    # Блокировка доступа к скрытым файлам
+    location ~ /\. {
+        deny all;
+    }
+}
+EOF
+else
+    # Конфигурация только для основного домена
+    cat > /etc/nginx/sites-available/moodle-ssl << EOF
 server {
     listen 80;
     server_name $DOMAIN;
@@ -121,13 +216,32 @@ server {
     }
 }
 EOF
+fi
 
 echo "5. Создание временного HTTP сайта для получения сертификата..."
 mkdir -p /var/www/html
 echo "<!DOCTYPE html><html><head><title>RTTI LMS</title></head><body><h1>RTTI LMS - SSL Setup</h1><p>Настройка SSL...</p></body></html>" > /var/www/html/index.html
 
 # Временная конфигурация только для HTTP
-cat > /etc/nginx/sites-available/moodle-temp << EOF
+if [ "$WWW_ENABLED" = true ]; then
+    cat > /etc/nginx/sites-available/moodle-temp << EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    root /var/www/html;
+    index index.html;
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+    
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+else
+    cat > /etc/nginx/sites-available/moodle-temp << EOF
 server {
     listen 80;
     server_name $DOMAIN;
@@ -143,6 +257,7 @@ server {
     }
 }
 EOF
+fi
 
 # Активация временной конфигурации
 ln -sf /etc/nginx/sites-available/moodle-temp /etc/nginx/sites-enabled/
@@ -152,25 +267,30 @@ echo "6. Перезапуск Nginx..."
 systemctl reload nginx
 
 echo "7. Получение SSL сертификата от Let's Encrypt..."
+echo "   Запрашиваем сертификат для: $DOMAINS"
+
 certbot certonly \
     --nginx \
     --non-interactive \
     --agree-tos \
     --email $EMAIL \
-    --domains $DOMAIN
+    --domains $DOMAINS
 
 if [ $? -eq 0 ]; then
     echo "✅ SSL сертификат получен успешно"
 else
     echo "❌ Ошибка получения SSL сертификата"
     echo "Проверьте:"
-    echo "1. DNS записи для $DOMAIN (A-запись должна указывать на $(hostname -I | awk '{print $1}'))"
-    echo "2. Доступность порта 80 (ufw allow 80/tcp)"
+    echo "1. DNS записи для $DOMAINS"
+    echo "2. Доступность порта 80"
     echo "3. Корректность email $EMAIL"
     echo "4. Логи: /var/log/letsencrypt/letsencrypt.log"
-    echo ""
-    echo "Команда для повторной попытки:"
-    echo "certbot certonly --nginx --non-interactive --agree-tos --email $EMAIL --domains $DOMAIN"
+    
+    echo "🔧 Возможные решения:"
+    echo "   - Убедитесь, что DNS A-запись для $DOMAIN указывает на $(hostname -I | awk '{print $1}')"
+    echo "   - Проверьте, что порт 80 открыт: ufw status"
+    echo "   - Если www.$DOMAIN не нужен, удалите его из DNS или используйте только основной домен"
+    
     exit 1
 fi
 
@@ -246,7 +366,7 @@ cat > /root/moodle-ssl-info.txt << EOF
 # Дата создания: $(date)
 # Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
 
-Домен: $DOMAIN
+Домен: $DOMAINS
 SSL сертификат: Let's Encrypt
 Путь к сертификату: /etc/letsencrypt/live/$DOMAIN/
 Конфигурация Nginx: /etc/nginx/sites-available/moodle-ssl
@@ -268,7 +388,7 @@ EOF
 echo
 echo "✅ Шаг 5 завершен успешно!"
 echo "📌 SSL/TLS настроен для https://$DOMAIN"
-echo "📌 Let's Encrypt сертификат установлен"
+echo "📌 Let's Encrypt сертификат установлен для: $DOMAINS"
 echo "📌 Автоматическое обновление настроено"
 echo "📌 Конфигурация Nginx обновлена"
 echo "📌 Скрипт проверки: /root/ssl-check.sh"

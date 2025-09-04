@@ -2,6 +2,7 @@
 
 # RTTI Drupal - Шаг 5: Настройка SSL/TLS
 # Сервер: library.rtti.tj (92.242.61.204)
+# ИСПРАВЛЕНО: убрана поддержка www домена
 
 echo "=== RTTI Drupal - Шаг 5: Настройка SSL/TLS для library.rtti.tj ==="
 echo "🔒 Let's Encrypt SSL сертификаты для цифровой библиотеки"
@@ -35,7 +36,7 @@ echo "<!DOCTYPE html><html><head><title>RTTI Digital Library</title></head><body
 cat > /etc/nginx/sites-available/drupal-temp << EOF
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $DOMAIN;
     root /var/www/html;
     index index.html;
     
@@ -62,16 +63,20 @@ certbot certonly \
     --non-interactive \
     --agree-tos \
     --email $EMAIL \
-    --domains $DOMAIN,www.$DOMAIN
+    --domains $DOMAIN
 
 if [ $? -eq 0 ]; then
     echo "✅ SSL сертификат получен успешно"
 else
     echo "❌ Ошибка получения SSL сертификата"
     echo "Проверьте:"
-    echo "1. DNS записи для $DOMAIN"
-    echo "2. Доступность порта 80"
+    echo "1. DNS записи для $DOMAIN (A-запись должна указывать на $(hostname -I | awk '{print $1}'))"
+    echo "2. Доступность порта 80 (ufw allow 80/tcp)"
     echo "3. Корректность email $EMAIL"
+    echo "4. Логи: /var/log/letsencrypt/letsencrypt.log"
+    echo ""
+    echo "Команда для повторной попытки:"
+    echo "certbot certonly --nginx --non-interactive --agree-tos --email $EMAIL --domains $DOMAIN"
     exit 1
 fi
 
@@ -80,7 +85,7 @@ cat > /etc/nginx/sites-available/drupal-ssl << EOF
 # HTTP redirect to HTTPS
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $DOMAIN;
     
     location /.well-known/acme-challenge/ {
         root /var/www/html;
@@ -94,7 +99,7 @@ server {
 # HTTPS server for Drupal
 server {
     listen 443 ssl http2;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $DOMAIN;
     
     root /var/www/drupal/web;
     index index.php;
