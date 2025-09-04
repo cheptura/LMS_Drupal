@@ -43,7 +43,7 @@
 ```bash
 # Скачайте и запустите установку
 cd /tmp
-wget https://github.com/rtti-lms/setup/monitoring/install-prometheus-stack.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-prometheus-stack.sh
 chmod +x install-prometheus-stack.sh
 sudo ./install-prometheus-stack.sh
 ```
@@ -55,7 +55,7 @@ sudo ./install-prometheus-stack.sh
 ```bash
 # Установка Zabbix Server
 cd /tmp
-wget https://github.com/rtti-lms/setup/monitoring/install-zabbix.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-zabbix.sh
 chmod +x install-zabbix.sh
 sudo ./install-zabbix.sh
 # Выберите: 1 (Zabbix Server)
@@ -68,7 +68,7 @@ sudo ./install-zabbix.sh
 ```bash
 # Установка агентов на существующие серверы
 cd /tmp
-wget https://github.com/rtti-lms/setup/monitoring/install-monitoring-agents.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-monitoring-agents.sh
 chmod +x install-monitoring-agents.sh
 sudo ./install-monitoring-agents.sh
 # Выберите тип мониторинга: 1, 2 или 3
@@ -406,7 +406,8 @@ curl -X POST -H "Content-Type: application/json" \
 - [Zabbix Templates](https://www.zabbix.com/integrations)
 
 ### Сообщество
-- [RTTI LMS Support](mailto:support@rtti.tj)
+- **🔗 GitHub Repository**: [https://github.com/cheptura/LMS_Drupal](https://github.com/cheptura/LMS_Drupal)
+- **🐛 GitHub Issues**: [https://github.com/cheptura/LMS_Drupal/issues](https://github.com/cheptura/LMS_Drupal/issues)
 - [Prometheus Community](https://prometheus.io/community/)
 - [Zabbix Forums](https://www.zabbix.com/forum/)
 
@@ -414,12 +415,13 @@ curl -X POST -H "Content-Type: application/json" \
 
 ## 🏷️ Теги версий
 
+- **v2.1** - Система мониторинга + GitHub Repository
 - **v2.0** - Поддержка Moodle 5.0.2 + Drupal 11
 - **v1.5** - Prometheus Stack + Zabbix опции
 - **v1.0** - Базовый мониторинг
 
 ---
 
-**📧 Поддержка**: [monitoring@rtti.tj](mailto:monitoring@rtti.tj)  
-**🌐 Веб-сайт**: [https://lms.rtti.tj](https://lms.rtti.tj)  
-**📖 Документация**: [https://docs.rtti.tj/monitoring](https://docs.rtti.tj/monitoring)
+**� GitHub**: [https://github.com/cheptura/LMS_Drupal](https://github.com/cheptura/LMS_Drupal)  
+**🌐 Проект**: RTTI LMS - Learning Management System  
+**� Поддержка**: [GitHub Issues](https://github.com/cheptura/LMS_Drupal/issues)

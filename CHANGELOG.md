@@ -1,5 +1,34 @@
 # CHANGELOG - LMS RTTI Project
 
+## [2.1.1] - 2025-09-04 - GITHUB REPOSITORY & LINKS UPDATE
+
+### 🔗 GitHub Repository публикация
+- ➕ **Репозиторий опубликован**: https://github.com/cheptura/LMS_Drupal
+- 🔄 **Все ссылки обновлены** на правильный GitHub репозиторий
+- 📝 **Документация обновлена** с корректными ссылками для скачивания
+
+### 🛠️ Обновленные файлы:
+- 📝 **README.md**: обновлены все wget ссылки + добавлен раздел "Полезные ссылки"
+- 📝 **monitoring/README.md**: обновлены ссылки на скрипты + GitHub ссылки
+- 📝 **documentation/installation-guide.md**: все wget команды теперь указывают на правильный репозиторий
+- 📝 **CHANGELOG.md**: добавлена информация о GitHub репозитории
+
+### 🌐 Новые ссылки в проекте:
+```
+Основной репозиторий: https://github.com/cheptura/LMS_Drupal
+Issues & Support: https://github.com/cheptura/LMS_Drupal/issues
+Wiki: https://github.com/cheptura/LMS_Drupal/wiki
+Releases: https://github.com/cheptura/LMS_Drupal/releases
+
+Скрипты для скачивания:
+https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/
+https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/
+https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/
+https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/migration-tools/
+```
+
+---
+
 ## [2.1.0] - 2025-09-04 - СИСТЕМА МОНИТОРИНГА ДОБАВЛЕНА
 
 ### ✨ Новые возможности - Полная система мониторинга
@@ -199,7 +228,8 @@ monitoring/
 При вопросах по новой документации обращайтесь:
 - **Email**: tech@rtti.tj
 - **Telegram**: @rtti_support
-- **GitHub Issues**: https://github.com/rtti-tj/lms/issues
+- **GitHub Repository**: https://github.com/cheptura/LMS_Drupal
+- **Issues**: https://github.com/cheptura/LMS_Drupal/issues
 
 ---
 

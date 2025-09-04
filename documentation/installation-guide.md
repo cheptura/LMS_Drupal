@@ -67,7 +67,7 @@ sudo ufw allow ssh
 
 ```bash
 # Скачивание и запуск скрипта установки
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/cloud-deployment/install-moodle-cloud.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-moodle-cloud.sh
 chmod +x install-moodle-cloud.sh
 
 # Запуск установки (следуйте инструкциям на экране)
@@ -87,7 +87,7 @@ sudo ./install-moodle-cloud.sh
 
 ```bash
 # На втором облачном сервере
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/cloud-deployment/install-drupal-cloud.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-drupal-cloud.sh
 chmod +x install-drupal-cloud.sh
 
 # Запуск установки
@@ -167,7 +167,7 @@ sudo mkdir -p /mnt/nas
 
 ```bash
 # На продакшн сервере (желательно единая машина для начала миграции)
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/migration-tools/cloud-to-production.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/migration-tools/cloud-to-production.sh
 chmod +x cloud-to-production.sh
 
 # Запуск миграции (следуйте инструкциям)
@@ -194,7 +194,7 @@ sudo ./cloud-to-production.sh
 
 ```bash
 # Скачивание и запуск скрипта продакшн установки
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/production-deployment/install-moodle-production.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-moodle-production.sh
 chmod +x install-moodle-production.sh
 
 # Запуск установки с NAS интеграцией
@@ -205,7 +205,7 @@ sudo ./install-moodle-production.sh
 
 ```bash
 # На втором продакшн сервере или том же (если ресурсы позволяют)
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/production-deployment/install-drupal-production.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-drupal-production.sh
 chmod +x install-drupal-production.sh
 
 # Запуск установки с NAS интеграцией
@@ -220,7 +220,7 @@ sudo ./install-drupal-production.sh
 
 ```bash
 # Скачивание скрипта резервного копирования
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/production-deployment/nas-backup.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/nas-backup.sh
 chmod +x nas-backup.sh
 sudo cp nas-backup.sh /opt/
 

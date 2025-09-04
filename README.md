@@ -60,23 +60,23 @@ LMS_Drupal/
 
 1. **Установка Moodle 5.0.2 в облаке**
    ```bash
-   wget https://raw.githubusercontent.com/rtti-tj/lms/main/cloud-deployment/install-moodle-cloud.sh
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-moodle-cloud.sh
    chmod +x install-moodle-cloud.sh
    sudo ./install-moodle-cloud.sh
    ```
 
 2. **Установка Drupal 11 в облаке**
    ```bash
-   wget https://raw.githubusercontent.com/rtti-tj/lms/main/cloud-deployment/install-drupal-cloud.sh
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/cloud-deployment/install-drupal-cloud.sh
    chmod +x install-drupal-cloud.sh
    sudo ./install-drupal-cloud.sh
    ```
 
 #### Этап 2: Миграция в продакшн
 
-3. **Миграция с облака в продакшн с NAS**
+3. **Миграция из облака в продакшн**
    ```bash
-   wget https://raw.githubusercontent.com/rtti-tj/lms/main/migration-tools/cloud-to-production.sh
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/migration-tools/cloud-to-production.sh
    chmod +x cloud-to-production.sh
    sudo ./cloud-to-production.sh
    ```
@@ -86,12 +86,12 @@ LMS_Drupal/
 4. **Установка напрямую в продакшн**
    ```bash
    # Moodle с NAS
-   wget https://raw.githubusercontent.com/rtti-tj/lms/main/production-deployment/install-moodle-production.sh
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-moodle-production.sh
    chmod +x install-moodle-production.sh
    sudo ./install-moodle-production.sh
    
    # Drupal с NAS
-   wget https://raw.githubusercontent.com/rtti-tj/lms/main/production-deployment/install-drupal-production.sh
+   wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/production-deployment/install-drupal-production.sh
    chmod +x install-drupal-production.sh
    sudo ./install-drupal-production.sh
    ```
@@ -103,7 +103,7 @@ LMS_Drupal/
 ### 🔵 Prometheus + Grafana + AlertManager (рекомендуется)
 ```bash
 # Установка современного стека мониторинга
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/monitoring/install-prometheus-stack.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-prometheus-stack.sh
 chmod +x install-prometheus-stack.sh
 sudo ./install-prometheus-stack.sh
 ```
@@ -113,7 +113,7 @@ sudo ./install-prometheus-stack.sh
 ### 🟠 Zabbix Server + Agent (классическое решение)
 ```bash
 # Установка Zabbix для корпоративного мониторинга
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/monitoring/install-zabbix.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-zabbix.sh
 chmod +x install-zabbix.sh
 sudo ./install-zabbix.sh
 ```
@@ -123,7 +123,7 @@ sudo ./install-zabbix.sh
 ### 🔍 Агенты для дополнительных серверов
 ```bash
 # Установка только агентов мониторинга
-wget https://raw.githubusercontent.com/rtti-tj/lms/main/monitoring/install-monitoring-agents.sh
+wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring/install-monitoring-agents.sh
 chmod +x install-monitoring-agents.sh
 sudo ./install-monitoring-agents.sh
 ```
@@ -460,7 +460,28 @@ graph TB
 
 ---
 
+## 🔗 Полезные ссылки
+
+### Проект
+- **🌐 GitHub Repository**: [https://github.com/cheptura/LMS_Drupal](https://github.com/cheptura/LMS_Drupal)
+- **🐛 Issues & Support**: [https://github.com/cheptura/LMS_Drupal/issues](https://github.com/cheptura/LMS_Drupal/issues)
+- **📖 Wiki**: [https://github.com/cheptura/LMS_Drupal/wiki](https://github.com/cheptura/LMS_Drupal/wiki)
+- **🏷️ Releases**: [https://github.com/cheptura/LMS_Drupal/releases](https://github.com/cheptura/LMS_Drupal/releases)
+
+### Документация
+- **📋 Installation Guide**: [documentation/installation-guide.md](documentation/installation-guide.md)
+- **📊 Monitoring Guide**: [monitoring/README.md](monitoring/README.md)
+- **🔧 Technical Requirements**: [documentation/technical-requirements.md](documentation/technical-requirements.md)
+- **🚨 Troubleshooting**: [documentation/troubleshooting.md](documentation/troubleshooting.md)
+
+### Платформы
+- **Moodle 5.0.2**: [https://moodle.org](https://moodle.org)
+- **Drupal 11**: [https://drupal.org](https://drupal.org)
+- **Ubuntu 24.04**: [https://ubuntu.com](https://ubuntu.com)
+
+---
+
 **Последнее обновление**: Сентябрь 2025  
-**Версия документации**: 2.0 (Moodle 5.0.2 + Drupal 11 + Облачная архитектура)  
+**Версия документации**: 2.1 (Moodle 5.0.2 + Drupal 11 + Monitoring System)  
 **Ответственный**: Команда разработки RTTI LMS  
-**Архитектура**: Облако-первый подход с NAS интеграцией
+**Архитектура**: Облако-первый подход с NAS интеграцией и полным мониторингом
