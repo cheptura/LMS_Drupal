@@ -1,154 +1,122 @@
-# Moodle 5.0+ LMS - Полная установка
+# Moodle Installation Scripts
 
-Автоматическая установка Moodle Learning Management System для RTTI.
+## Описание
+Автоматизированные скрипты для установки Moodle 5.0+ на Ubuntu 24.04 LTS с оптимизациями для RTTI.
 
-## 🎯 Целевой сервер
-
-- **Домен**: lms.rtti.tj
-- **IP**: 92.242.60.172
-- **ОС**: Ubuntu Server 24.04 LTS
-- **Версия**: Moodle 5.0+
-
-## 🚀 Быстрая установка
-
-### Одной командой
+## 🚀 QUICK_INSTALL
 ```bash
-wget -O install-moodle.sh https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/moodle-installation/install-moodle.sh
-chmod +x install-moodle.sh
-sudo ./install-moodle.sh
-```
-
-### Локальная установка
-```bash
+# Быстрая установка (одной командой)
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
-chmod +x *.sh
-sudo ./install-moodle.sh
+sudo chmod +x install-all.sh && sudo ./install-all.sh
 ```
 
-## 📝 Пошаговая установка
+## Состав скриптов
 
-Если нужен контроль над каждым этапом:
+### 📦 Основные установочные скрипты:
+1. **01-system-update.sh** - Обновление системы и базовые пакеты
+2. **02-install-nginx.sh** - Установка и настройка Nginx веб-сервера
+3. **03-install-php.sh** - Установка PHP 8.3 с модулями для Moodle
+4. **04-install-postgresql.sh** - Установка PostgreSQL 16 СУБД
+5. **05-configure-database.sh** - Создание базы данных и пользователя
+6. **06-download-moodle.sh** - Загрузка последней версии Moodle 5.0
+7. **07-configure-moodle.sh** - Настройка конфигурации config.php
+8. **08-configure-nginx-site.sh** - Настройка виртуального хоста
+9. **09-install-ssl.sh** - Установка SSL сертификатов Let's Encrypt
+10. **10-final-setup.sh** - Финальная настройка и оптимизация
 
+### �️ Утилиты администрирования:
+- **update-moodle.sh** - Обновление Moodle до новых версий
+- **backup-moodle.sh** - Создание полных резервных копий
+- **restore-moodle.sh** - Восстановление из резервных копий
+- **diagnose-moodle.sh** - Полная диагностика системы Moodle
+
+### 📋 Автоматическая установка:
+- **install-all.sh** - Полная автоматическая установка всех компонентов
+
+## Поэтапная установка
 ```bash
-sudo ./01-prepare-system.sh      # Подготовка системы
-sudo ./02-install-webserver.sh   # Nginx + PHP 8.2
-sudo ./03-install-database.sh    # PostgreSQL 16
-sudo ./04-install-cache.sh       # Redis
-sudo ./05-configure-domain.sh    # Настройка домена
-sudo ./06-install-ssl.sh         # SSL сертификаты
-sudo ./07-download-moodle.sh     # Скачивание Moodle
-sudo ./08-configure-moodle.sh    # Настройка и установка
-sudo ./09-optimize-moodle.sh     # Оптимизация
-sudo ./10-backup-setup.sh        # Настройка бэкапов
+# Подготовка
+git clone https://github.com/cheptura/LMS_Drupal.git
+cd LMS_Drupal/moodle-installation
+sudo chmod +x *.sh
+
+# Поэтапное выполнение
+sudo ./01-system-update.sh     # Обновление системы
+sudo ./02-install-nginx.sh     # Веб-сервер
+sudo ./03-install-php.sh       # PHP платформа
+sudo ./04-install-postgresql.sh # База данных
+sudo ./05-configure-database.sh # Настройка БД
+sudo ./06-download-moodle.sh   # Загрузка Moodle
+sudo ./07-configure-moodle.sh  # Конфигурация
+sudo ./08-configure-nginx-site.sh # Веб-сервер
+sudo ./09-install-ssl.sh       # SSL защита
+sudo ./10-final-setup.sh       # Финализация
 ```
 
-## 🔧 Технические характеристики
+## Администрирование
 
-### Программное обеспечение
-- **Moodle**: 5.0+ (Latest Stable)
-- **PHP**: 8.2 + необходимые расширения
-- **Database**: PostgreSQL 16
-- **Web Server**: Nginx 1.24+
-- **Cache**: Redis 7+
-- **SSL**: Let's Encrypt
-
-### Системные требования
-- **CPU**: 4+ cores (рекомендуется 8)
-- **RAM**: 16GB (рекомендуется 32GB)
-- **Storage**: 200GB+ SSD
-- **Network**: 1Gbps
-
-## 📁 Структура после установки
-
-```
-/var/www/html/moodle/          # Moodle файлы
-/var/moodledata/               # Данные Moodle
-/root/moodle-credentials.txt   # Данные доступа
-/etc/nginx/sites-available/    # Конфигурация Nginx
-/etc/php/8.2/                 # Конфигурация PHP
-```
-
-## 🔑 Данные доступа
-
-После установки данные сохранятся в:
-- `/root/moodle-admin-credentials.txt` - Администратор
-- `/root/moodle-db-credentials.txt` - База данных
-
-**По умолчанию:**
-- URL: https://lms.rtti.tj
-- Пользователь: admin
-- Пароль: RTTIAdmin2024!
-
-## ✅ Проверка установки
-
+### 🔍 Диагностика системы
 ```bash
-# Проверка служб
-systemctl status nginx
-systemctl status postgresql
-systemctl status redis-server
-systemctl status php8.2-fpm
-
-# Проверка сайта
-curl -I https://lms.rtti.tj
-
-# Проверка логов
-tail -f /var/log/nginx/error.log
+sudo ./diagnose-moodle.sh  # Полная проверка всех компонентов
+systemctl status nginx postgresql php8.3-fpm  # Статус сервисов
 ```
 
-## 🔧 Управление
-
-### Moodle CLI
+### � Резервное копирование
 ```bash
-cd /var/www/html/moodle
-sudo -u www-data php admin/cli/maintenance.php --enable
-sudo -u www-data php admin/cli/cron.php
-sudo -u www-data php admin/cli/upgrade.php
+sudo ./backup-moodle.sh    # Создание полного бэкапа
+# Бэкапы сохраняются в /var/backups/moodle/
 ```
 
-### Обновления
+### 🔄 Обновление системы
 ```bash
-./update-moodle.sh          # Обновление Moodle
-./update-system.sh          # Обновление системы
+sudo ./update-moodle.sh    # Обновление до новой версии Moodle
 ```
 
-### Резервное копирование
+### 🔧 Восстановление
 ```bash
-./backup-moodle.sh          # Создание бэкапа
-./restore-moodle.sh         # Восстановление
+sudo ./restore-moodle.sh /path/to/backup.tar.gz  # Восстановление из бэкапа
 ```
 
-## 🆘 Устранение проблем
+## Системные требования
+- ✅ **ОС:** Ubuntu 24.04 LTS
+- ✅ **RAM:** Минимум 4GB (рекомендуется 8GB)
+- ✅ **Диск:** 20GB свободного места (рекомендуется 50GB)
+- ✅ **Сеть:** Доступ к интернету для загрузки пакетов
+- ✅ **Права:** root или sudo доступ
 
-### Частые проблемы
-1. **Ошибка подключения к БД** - проверьте `/root/moodle-db-credentials.txt`
-2. **403 Forbidden** - проверьте права доступа к файлам
-3. **500 Error** - проверьте логи PHP и Nginx
-4. **SSL проблемы** - перезапустите certbot
+## Сетевые порты
+- **80** - HTTP (веб-сервер)
+- **443** - HTTPS (защищенный веб-сервер)
+- **5432** - PostgreSQL (база данных)
+- **9000** - PHP-FPM (внутренний)
 
-### Диагностика
+## Доступ к системе
+
+### 🌐 Веб-интерфейс Moodle:
+- **HTTP:** http://ваш-ip-адрес
+- **HTTPS:** https://ваш-домен (после настройки SSL)
+
+### � Учетные данные:
+- Данные администратора выводятся в конце установки
+- Сохраняются в файле `/var/log/moodle-install.log`
+
+### � Важные директории:
+- **Код Moodle:** `/var/www/html/moodle`
+- **Данные:** `/var/moodledata`
+- **Конфигурация:** `/var/www/html/moodle/config.php`
+- **Логи Nginx:** `/var/log/nginx/`
+- **Логи PHP:** `/var/log/php8.3-fpm.log`
+
+## Поддержка и troubleshooting
 ```bash
-./diagnose-moodle.sh         # Полная диагностика
-./fix-permissions.sh         # Исправление прав
-./reset-moodle.sh           # Сброс к начальным настройкам
+# Проверка логов при проблемах
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/php8.3-fpm.log
+sudo journalctl -u nginx -f
+
+# Перезапуск сервисов
+sudo systemctl restart nginx
+sudo systemctl restart php8.3-fpm
+sudo systemctl restart postgresql
 ```
-
-## 📊 Мониторинг
-
-После установки настройте мониторинг:
-```bash
-cd ../monitoring-installation
-sudo ./install-monitoring.sh
-```
-
-## 📞 Поддержка
-
-- **GitHub**: https://github.com/cheptura/LMS_Drupal/issues
-- **Email**: admin@rtti.tj
-- **Документация**: [RTTI LMS Wiki](https://github.com/cheptura/LMS_Drupal/wiki)
-
----
-
-**Версия**: 1.0  
-**Дата**: Сентябрь 2025  
-**Автор**: RTTI Development Team

@@ -98,6 +98,62 @@ execute_step() {
     fi
 }
 
+# Загрузка всех необходимых скриптов
+echo "📥 Загрузка скриптов установки..."
+echo
+
+GITHUB_RAW_URL="https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/moodle-installation"
+SCRIPTS_TO_DOWNLOAD=(
+    "01-prepare-system.sh"
+    "02-install-webserver.sh"
+    "03-install-database.sh"
+    "04-install-cache.sh"
+    "05-configure-domain.sh"
+    "06-install-ssl.sh"
+    "07-download-moodle.sh"
+    "08-configure-moodle.sh"
+    "09-optimize-moodle.sh"
+    "10-backup-setup.sh"
+)
+
+# Функция загрузки скрипта
+download_script() {
+    local script_name=$1
+    echo "📥 Загружается: $script_name..."
+    
+    if wget -q --timeout=10 "$GITHUB_RAW_URL/$script_name" -O "$script_name"; then
+        chmod +x "$script_name"
+        echo "✅ Загружен: $script_name"
+        return 0
+    else
+        echo "❌ Ошибка загрузки: $script_name"
+        return 1
+    fi
+}
+
+# Загрузка всех скриптов
+DOWNLOAD_FAILED=0
+for script in "${SCRIPTS_TO_DOWNLOAD[@]}"; do
+    if ! download_script "$script"; then
+        DOWNLOAD_FAILED=1
+    fi
+done
+
+if [ $DOWNLOAD_FAILED -eq 1 ]; then
+    echo
+    echo "❌ Ошибка загрузки скриптов из GitHub"
+    echo "🔧 Проверьте:"
+    echo "   1. Подключение к интернету"
+    echo "   2. Доступность GitHub репозитория"
+    echo "   3. Правильность URL в скрипте"
+    echo
+    echo "📁 URL репозитория: $GITHUB_RAW_URL"
+    exit 1
+fi
+
+echo "✅ Все скрипты загружены успешно"
+echo
+
 # Предварительные проверки
 echo "🔍 Предварительные проверки..."
 echo

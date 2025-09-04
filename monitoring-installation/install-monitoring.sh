@@ -41,13 +41,69 @@ exec 2> >(tee -a "$INSTALL_LOG" >&2)
 echo "📋 Лог установки: $INSTALL_LOG"
 echo
 
+# Загрузка всех необходимых скриптов
+echo "📥 Загрузка скриптов установки..."
+echo
+
+GITHUB_RAW_URL="https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-installation"
+SCRIPTS_TO_DOWNLOAD=(
+    "01-prepare-system.sh"
+    "02-install-prometheus.sh"
+    "03-install-grafana.sh"
+    "04-install-alertmanager.sh"
+    "05-configure-exporters.sh"
+    "06-setup-dashboards.sh"
+    "07-configure-alerts.sh"
+    "08-setup-notifications.sh"
+    "09-configure-backup.sh"
+    "10-final-check.sh"
+)
+
+# Функция загрузки скрипта
+download_script() {
+    local script_name=$1
+    echo "📥 Загружается: $script_name..."
+    
+    if wget -q --timeout=10 "$GITHUB_RAW_URL/$script_name" -O "$script_name"; then
+        chmod +x "$script_name"
+        echo "✅ Загружен: $script_name"
+        return 0
+    else
+        echo "❌ Ошибка загрузки: $script_name"
+        return 1
+    fi
+}
+
+# Загрузка всех скриптов
+DOWNLOAD_FAILED=0
+for script in "${SCRIPTS_TO_DOWNLOAD[@]}"; do
+    if ! download_script "$script"; then
+        DOWNLOAD_FAILED=1
+    fi
+done
+
+if [ $DOWNLOAD_FAILED -eq 1 ]; then
+    echo
+    echo "❌ Ошибка загрузки скриптов из GitHub"
+    echo "🔧 Проверьте:"
+    echo "   1. Подключение к интернету"
+    echo "   2. Доступность GitHub репозитория"
+    echo "   3. Правильность URL в скрипте"
+    echo
+    echo "📁 URL репозитория: $GITHUB_RAW_URL"
+    exit 1
+fi
+
+echo "✅ Все скрипты загружены успешно"
+echo
+
 # Массив шагов установки
 STEPS=(
-    "01-prepare-monitoring.sh:Подготовка системы для мониторинга"
+    "01-prepare-system.sh:Подготовка системы для мониторинга"
     "02-install-prometheus.sh:Установка Prometheus сервера"
     "03-install-grafana.sh:Установка Grafana"
     "04-install-alertmanager.sh:Установка Alertmanager"
-    "05-install-exporters.sh:Установка exporters (Node/Nginx/Postgres)"
+    "05-configure-exporters.sh:Установка exporters (Node/Nginx/Postgres)"
     "06-configure-alerts.sh:Настройка правил алертов"
     "07-setup-dashboards.sh:Импорт дашбордов Grafana"
     "08-configure-remote.sh:Настройка мониторинга удаленных серверов"
