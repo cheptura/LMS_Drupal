@@ -6,10 +6,12 @@
 # Автор: cheptura (GitHub: https://github.com/cheptura/LMS_Drupal)
 # Дата: $(date)
 #
-# ✅ ИНТЕГРИРОВАННЫЕ ИСПРАВЛЕНИЯ (2025-01-02):
+# ✅ ИНТЕГРИРОВАННЫЕ ИСПРАВЛЕНИЯ (2025-09-05):
 # - Content Security Policy с 'unsafe-eval' для YUI framework
 # - Обработчики font.php и image.php с PATH_INFO поддержкой
 # - Все необходимые JavaScript/CSS handlers
+# - Расширенная конфигурация PHP с OPcache оптимизацией
+# - Автоматическая очистка старых версий PHP
 
 set -e
 
@@ -84,58 +86,74 @@ echo "7. Закрепление PHP 8.3 от автоматических обн
 # Закрепляем пакеты PHP 8.3, чтобы они не обновлялись автоматически до PHP 8.4
 apt-mark hold php8.3-*
 
-echo "8. Оптимизация настроек PHP для Moodle..."
+echo "8. Расширенная настройка PHP для Moodle..."
 PHP_INI="/etc/php/8.3/fpm/php.ini"
 PHP_CLI_INI="/etc/php/8.3/cli/php.ini"
 
-# Создаем резервные копии
-cp $PHP_INI ${PHP_INI}.backup
-cp $PHP_CLI_INI ${PHP_CLI_INI}.backup
+# Создаем резервные копии с временной меткой
+cp "$PHP_INI" "${PHP_INI}.backup-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+cp "$PHP_CLI_INI" "${PHP_CLI_INI}.backup-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
 
 # Функция для настройки PHP INI файла
 configure_php_ini() {
     local ini_file=$1
-    echo "Настройка $ini_file..."
+    local file_type=$2
+    echo "   🔧 Настройка $file_type: $ini_file"
     
-    # Настройки производительности для Moodle
-    sed -i 's/^max_execution_time = .*/max_execution_time = 300/' $ini_file
-    sed -i 's/^max_input_time = .*/max_input_time = 300/' $ini_file
-    sed -i 's/^memory_limit = .*/memory_limit = 512M/' $ini_file
-    sed -i 's/^post_max_size = .*/post_max_size = 100M/' $ini_file
-    sed -i 's/^upload_max_filesize = .*/upload_max_filesize = 100M/' $ini_file
+    # Функция для установки или обновления параметра
+    set_php_setting() {
+        local setting=$1
+        local value=$2
+        local file=$3
+        
+        # Удаляем существующие настройки (закомментированные и активные)
+        sed -i "/^;*\s*$setting\s*=/d" "$file"
+        # Добавляем новую настройку
+        echo "$setting = $value" >> "$file"
+    }
     
-    # Обрабатываем max_input_vars (может быть закомментирован или уже установлен)
-    if grep -q "^max_input_vars" $ini_file; then
-        sed -i 's/^max_input_vars = .*/max_input_vars = 5000/' $ini_file
-    elif grep -q "^;max_input_vars" $ini_file; then
-        sed -i 's/^;max_input_vars = .*/max_input_vars = 5000/' $ini_file
-    else
-        echo "max_input_vars = 5000" >> $ini_file
-    fi
+    # Критические настройки для Moodle
+    set_php_setting "max_execution_time" "300" "$ini_file"
+    set_php_setting "max_input_time" "300" "$ini_file"
+    set_php_setting "memory_limit" "512M" "$ini_file"
+    set_php_setting "post_max_size" "100M" "$ini_file"
+    set_php_setting "upload_max_filesize" "100M" "$ini_file"
+    set_php_setting "max_input_vars" "5000" "$ini_file"
     
-    # Настройки OPcache
-    if grep -q "^opcache.enable" $ini_file; then
-        sed -i 's/^opcache.enable=.*/opcache.enable=1/' $ini_file
-    elif grep -q "^;opcache.enable" $ini_file; then
-        sed -i 's/^;opcache.enable=.*/opcache.enable=1/' $ini_file
-    else
-        echo "opcache.enable=1" >> $ini_file
-    fi
+    # Настройки OPcache для производительности
+    set_php_setting "opcache.enable" "1" "$ini_file"
+    set_php_setting "opcache.memory_consumption" "256" "$ini_file"
+    set_php_setting "opcache.max_accelerated_files" "10000" "$ini_file"
+    set_php_setting "opcache.revalidate_freq" "2" "$ini_file"
+    set_php_setting "opcache.save_comments" "1" "$ini_file"
+    set_php_setting "opcache.enable_file_override" "1" "$ini_file"
     
-    if grep -q "^opcache.memory_consumption" $ini_file; then
-        sed -i 's/^opcache.memory_consumption=.*/opcache.memory_consumption=256/' $ini_file
-    elif grep -q "^;opcache.memory_consumption" $ini_file; then
-        sed -i 's/^;opcache.memory_consumption=.*/opcache.memory_consumption=256/' $ini_file
-    else
-        echo "opcache.memory_consumption=256" >> $ini_file
-    fi
+    echo "   ✅ $file_type настроен"
 }
 
 # Настраиваем оба INI файла
-configure_php_ini $PHP_INI
-configure_php_ini $PHP_CLI_INI
+configure_php_ini "$PHP_INI" "PHP-FPM"
+configure_php_ini "$PHP_CLI_INI" "PHP CLI"
 
-echo "✅ Настройки PHP применены для FPM и CLI"
+# Дополнительная настройка через отдельный конфиг файл для гарантии
+cat > /etc/php/8.3/conf.d/99-moodle-settings.ini << 'EOF'
+; Moodle specific PHP settings
+max_input_vars = 5000
+max_execution_time = 300
+memory_limit = 512M
+post_max_size = 100M
+upload_max_filesize = 100M
+
+; OPcache settings for Moodle
+opcache.enable = 1
+opcache.memory_consumption = 256
+opcache.max_accelerated_files = 10000
+opcache.revalidate_freq = 2
+opcache.save_comments = 1
+opcache.enable_file_override = 1
+EOF
+
+echo "✅ Расширенные настройки PHP применены для FPM и CLI"
 
 echo "9. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
 cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
@@ -337,7 +355,26 @@ echo
 echo "📋 Проверка на наличие других версий PHP:"
 dpkg -l | grep -E "php[0-9]" | grep -v php8.3 || echo "✅ Других версий PHP не найдено"
 
-echo "19. Сохранение информации о PHP версии..."
+echo "19. Проверка критических настроек PHP для Moodle..."
+echo "📊 Текущие настройки PHP:"
+php -r "
+echo 'max_execution_time = ' . ini_get('max_execution_time') . ' (требуется >= 300)' . PHP_EOL;
+echo 'memory_limit = ' . ini_get('memory_limit') . ' (требуется >= 512M)' . PHP_EOL;
+echo 'max_input_vars = ' . ini_get('max_input_vars') . ' (требуется >= 5000)' . PHP_EOL;
+echo 'post_max_size = ' . ini_get('post_max_size') . ' (требуется >= 100M)' . PHP_EOL;
+echo 'upload_max_filesize = ' . ini_get('upload_max_filesize') . ' (требуется >= 100M)' . PHP_EOL;
+echo 'opcache.enable = ' . (ini_get('opcache.enable') ? 'Включен' : 'Отключен') . PHP_EOL;
+"
+
+# Проверяем конкретно max_input_vars
+MAX_INPUT_VARS=$(php -r "echo ini_get('max_input_vars');")
+if [ "$MAX_INPUT_VARS" -ge 5000 ]; then
+    echo "✅ max_input_vars = $MAX_INPUT_VARS (соответствует требованиям Moodle)"
+else
+    echo "❌ max_input_vars = $MAX_INPUT_VARS (недостаточно для Moodle, требуется >= 5000)"
+fi
+
+echo "20. Сохранение информации о PHP версии..."
 cat > /root/moodle-php-info.txt << EOF
 # Информация о PHP для Moodle
 # Дата установки: $(date)
@@ -352,7 +389,7 @@ echo "✅ Информация о PHP сохранена в /root/moodle-php-inf
 echo
 echo "✅ Шаг 2 завершен успешно!"
 echo "📌 Nginx и PHP 8.3 установлены и настроены"
-echo "📌 Включены: CSP для YUI, обработчики font.php/image.php"
+echo "📌 Включены: CSP для YUI, обработчики font.php/image.php, расширенная PHP конфигурация"
 echo "📌 Проверьте: http://lms.rtti.tj/info.php"
 echo "📌 Следующий шаг: ./03-install-database.sh"
 echo

@@ -3,6 +3,10 @@
 # RTTI Moodle - Шаг 8: Умная установка Moodle
 # Сервер: lms.rtti.tj (92.242.60.172)
 # Автоматически обрабатывает все возможные ситуации и проблемы
+#
+# ✅ ОБНОВЛЕНО (2025-09-05): Упрощена логика PHP конфигурации
+# - Расширенная настройка PHP теперь в 02-install-webserver.sh
+# - Этот скрипт только проверяет готовность PHP конфигурации
 
 echo "=== RTTI Moodle - Шаг 8: Умная установка Moodle ==="
 echo "🚀 Анализ ситуации и выбор стратегии установки"
@@ -27,69 +31,33 @@ fi
 
 echo "🔍 Анализ текущего состояния системы..."
 
-# Функция проверки и исправления PHP конфигурации
-check_and_fix_php() {
+# Функция проверки PHP конфигурации (настройка уже выполнена в 02-install-webserver.sh)
+check_php_config() {
     echo "🔧 Проверка конфигурации PHP..."
     
     # Проверяем max_input_vars
     MAX_INPUT_VARS=$(php -r "echo ini_get('max_input_vars');")
     if [ "$MAX_INPUT_VARS" -lt 5000 ]; then
-        echo "⚠️  max_input_vars = $MAX_INPUT_VARS (требуется >= 5000)"
-        echo "🔧 Исправление конфигурации PHP..."
-        
-        # Определяем версию PHP
-        PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
-        PHP_FPM_INI="/etc/php/$PHP_VERSION/fpm/php.ini"
-        PHP_CLI_INI="/etc/php/$PHP_VERSION/cli/php.ini"
-        
-        # Функция для установки PHP параметра
-        set_php_setting() {
-            local setting=$1
-            local value=$2
-            local file=$3
-            
-            if [ -f "$file" ]; then
-                # Удаляем существующие настройки
-                sed -i "/^;*\s*$setting\s*=/d" "$file"
-                # Добавляем новую настройку
-                echo "$setting = $value" >> "$file"
-            fi
-        }
-        
-        # Исправляем оба INI файла
-        for ini_file in "$PHP_FPM_INI" "$PHP_CLI_INI"; do
-            if [ -f "$ini_file" ]; then
-                echo "   Настройка $ini_file..."
-                set_php_setting "max_input_vars" "5000" "$ini_file"
-                set_php_setting "max_execution_time" "300" "$ini_file"
-                set_php_setting "memory_limit" "512M" "$ini_file"
-                set_php_setting "post_max_size" "100M" "$ini_file"
-                set_php_setting "upload_max_filesize" "100M" "$ini_file"
-            fi
-        done
-        
-        # Перезапускаем PHP-FPM
-        systemctl restart php$PHP_VERSION-fpm
-        
-        # Проверяем результат
-        MAX_INPUT_VARS_NEW=$(php -r "echo ini_get('max_input_vars');")
-        if [ "$MAX_INPUT_VARS_NEW" -ge 5000 ]; then
-            echo "✅ max_input_vars исправлен: $MAX_INPUT_VARS_NEW"
-        else
-            echo "❌ Не удалось исправить max_input_vars автоматически"
-            echo "🔧 Ручное исправление:"
-            echo "   sudo nano /etc/php/$PHP_VERSION/fpm/php.ini"
-            echo "   Найдите и установите: max_input_vars = 5000"
-            echo "   sudo systemctl restart php$PHP_VERSION-fpm"
-            exit 1
-        fi
+        echo "❌ max_input_vars = $MAX_INPUT_VARS (требуется >= 5000)"
+        echo "🔧 Запустите сначала: ./02-install-webserver.sh (конфигурация PHP должна быть настроена там)"
+        exit 1
     else
         echo "✅ max_input_vars = $MAX_INPUT_VARS (соответствует требованиям)"
     fi
+    
+    # Проверяем другие критические настройки
+    MEMORY_LIMIT=$(php -r "echo ini_get('memory_limit');")
+    echo "✅ memory_limit = $MEMORY_LIMIT"
+    
+    POST_MAX_SIZE=$(php -r "echo ini_get('post_max_size');")
+    echo "✅ post_max_size = $POST_MAX_SIZE"
+    
+    UPLOAD_MAX_FILESIZE=$(php -r "echo ini_get('upload_max_filesize');")
+    echo "✅ upload_max_filesize = $UPLOAD_MAX_FILESIZE"
 }
 
 # Проверяем и исправляем PHP
-check_and_fix_php
+check_php_config
 
 echo
 echo "1. Проверка состояния всех сервисов..."
