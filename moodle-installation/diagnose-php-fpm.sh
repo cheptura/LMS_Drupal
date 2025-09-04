@@ -39,19 +39,25 @@ else
     echo "❌ PHP $PHP_VERSION FPM не активен"
     
     echo
-    echo "6. Попытка установки и запуска PHP $PHP_VERSION FPM..."
-    apt update
-    apt install -y php$PHP_VERSION-fpm
+    echo "6. Автоматическое исправление проблем с PHP-FPM..."
+if ! systemctl is-active --quiet php$PHP_VERSION-fpm; then
+    echo "Попытка автоматического исправления..."
     
-    echo "7. Включение и запуск PHP $PHP_VERSION FPM..."
+    # Обновление пакетов
+    apt update
+    
+    # Установка PHP-FPM
+    echo "Установка php$PHP_VERSION-fpm..."
+    apt install -y php$PHP_VERSION-fpm php$PHP_VERSION-cli php$PHP_VERSION-common
+    
+    # Включение и запуск
     systemctl enable php$PHP_VERSION-fpm
     systemctl start php$PHP_VERSION-fpm
     
     if systemctl is-active --quiet php$PHP_VERSION-fpm; then
-        echo "✅ PHP $PHP_VERSION FPM успешно запущен"
+        echo "✅ PHP $PHP_VERSION FPM успешно установлен и запущен"
     else
-        echo "❌ Не удалось запустить PHP $PHP_VERSION FPM"
-        echo "Проверьте логи: journalctl -u php$PHP_VERSION-fpm"
+        echo "❌ Не удалось автоматически исправить проблему"
     fi
 fi
 
