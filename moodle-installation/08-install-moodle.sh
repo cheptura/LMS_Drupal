@@ -271,14 +271,16 @@ global \$CFG;
     'dbpersist' => 0,
     'dbport' => 5432,
     'dbsocket' => '',
-    'dbcollation' => 'utf8_unicode_ci',
 );
 
 \$CFG->wwwroot   = 'https://lms.rtti.tj';
 \$CFG->dataroot  = '/var/moodledata';
 \$CFG->admin     = 'admin';
 
-\$CFG->directorypermissions = 0777;
+\$CFG->directorypermissions = 02777;
+
+// Whether the Moodle router is fully configured (required for Moodle 4.5+)
+\$CFG->routerconfigured = false;
 
 // Redis session configuration
 \$CFG->session_handler_class = '\core\session\redis';

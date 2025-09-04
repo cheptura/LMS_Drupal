@@ -7,6 +7,10 @@ echo "=== RTTI Moodle - Шаг 9: Пост-установочная настро
 echo "🔧 Оптимизация и дополнительные настройки"
 echo "📅 Дата: $(date)"
 echo
+echo "ℹ️  ВАЖНО: Сообщения 'hard-set in config.php, unable to change' это НОРМАЛЬНО!"
+echo "   Эти настройки уже правильно заданы в config.php и имеют приоритет."
+echo "   Установка продолжается корректно."
+echo
 
 # Проверка прав root
 if [ "$EUID" -ne 0 ]; then
@@ -103,6 +107,7 @@ foreach ($categories as $name) {
         $category->path = '';
         
         $id = $DB->insert_record('course_categories', $category);
+        $category->id = $id;
         $category->path = '/' . $id;
         $DB->update_record('course_categories', $category);
         
@@ -128,8 +133,8 @@ echo "7. Настройка темы оформления..."
 sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=theme --set=boost
 
 echo "8. Создание стандартных ролей и разрешений..."
-# Очистка кэша ролей
-sudo -u www-data php $MOODLE_DIR/admin/cli/reset_roles.php
+# Очистка кэша ролей через purge_caches
+sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
 
 echo "9. Настройка уведомлений по email..."
 sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=noreplyaddress --set="noreply@rtti.tj"

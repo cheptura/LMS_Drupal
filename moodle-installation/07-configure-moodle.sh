@@ -75,9 +75,8 @@ global \$CFG;
 \$CFG->prefix    = 'mdl_';
 \$CFG->dboptions = array(
     'dbpersist' => 0,
-    'dbport' => '',
+    'dbport' => 5432,
     'dbsocket' => '',
-    'dbcollation' => 'utf8_unicode_ci',
 );
 
 //=========================================================================
@@ -96,6 +95,9 @@ global \$CFG;
 // 4. ADMIN DIRECTORY
 //=========================================================================
 \$CFG->admin     = 'admin';
+
+// Whether the Moodle router is fully configured (required for Moodle 4.5+)
+\$CFG->routerconfigured = false;
 
 //=========================================================================
 // 5. SECURITY
