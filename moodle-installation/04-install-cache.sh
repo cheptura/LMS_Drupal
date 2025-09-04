@@ -108,10 +108,27 @@ else
 fi
 
 echo "10. Настройка PHP для работы с Redis..."
-PHP_INI="/etc/php/8.2/fpm/php.ini"
 
-# Увеличиваем лимиты для сессий
-sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 3600/' $PHP_INI
+# Автоматическое определение версии PHP
+PHP_VERSION=""
+for version in 8.3 8.2 8.1 8.0; do
+    if [ -f "/etc/php/$version/fpm/php.ini" ]; then
+        PHP_VERSION=$version
+        break
+    fi
+done
+
+if [ -z "$PHP_VERSION" ]; then
+    echo "⚠️ PHP не найден. Возможно, веб-сервер еще не установлен."
+    echo "Пропускаем настройку PHP для Redis..."
+else
+    echo "📍 Найдена версия PHP: $PHP_VERSION"
+    PHP_INI="/etc/php/$PHP_VERSION/fpm/php.ini"
+    
+    # Увеличиваем лимиты для сессий
+    sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 3600/' $PHP_INI
+    echo "✅ Настройки PHP обновлены"
+fi
 
 echo "11. Сохранение данных подключения к Redis..."
 if [ ! -z "$REDIS_PASSWORD" ] && [ "$REDIS_PASSWORD" != "" ]; then
@@ -199,18 +216,39 @@ EOF
 chmod +x /root/redis-monitor.sh
 
 echo "13. Перезапуск PHP-FPM для применения настроек..."
-systemctl restart php8.2-fpm
+
+# Автоматическое определение и перезапуск PHP-FPM
+PHP_FPM_RESTARTED=false
+for version in 8.3 8.2 8.1 8.0; do
+    if systemctl list-unit-files | grep -q "php$version-fpm.service"; then
+        echo "🔄 Перезапуск php$version-fpm..."
+        systemctl restart php$version-fpm
+        PHP_FPM_RESTARTED=true
+        break
+    fi
+done
+
+if [ "$PHP_FPM_RESTARTED" = false ]; then
+    echo "⚠️ PHP-FPM сервис не найден. Возможно, веб-сервер еще не установлен."
+fi
 
 echo "14. Проверка интеграции PHP и Redis..."
 
-# Сначала проверим подключение без пароля
-echo "Проверка подключения к Redis..."
-if redis-cli ping > /dev/null 2>&1; then
+# Проверяем, настроен ли пароль для Redis
+echo "Проверка конфигурации Redis..."
+if [ ! -z "$REDIS_PASSWORD" ] && [ "$REDIS_PASSWORD" != "" ]; then
+    echo "Redis настроен с аутентификацией"
+    REDIS_AUTH_NEEDED=true
+    # Проверяем подключение с паролем
+    if redis-cli -a "$REDIS_PASSWORD" ping > /dev/null 2>&1; then
+        echo "✅ Redis аутентификация работает"
+    else
+        echo "❌ Проблема с Redis аутентификацией"
+        exit 1
+    fi
+else
     echo "Redis работает без аутентификации"
     REDIS_AUTH_NEEDED=false
-else
-    echo "Redis требует аутентификацию"
-    REDIS_AUTH_NEEDED=true
 fi
 
 # Тестирование PHP интеграции

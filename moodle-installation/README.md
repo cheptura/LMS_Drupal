@@ -1,19 +1,30 @@
 # Moodle Installation Scripts
 
 ## Описание
-Автоматизированные скрипты для установки Moodle 5.0+ на U### 📁 Важные директории:
+Автоматизированные скрипты для установки Moodle 5.0+ на Ubuntu 24.04 ### 📁 Важные директории:
 - **Код Moodle:** `/var/www/html/moodle`
 - **Данные:** `/var/moodledata`
 - **Конфигурация:** `/var/www/html/moodle/config.php`
 - **Логи Nginx:** `/var/log/nginx/`
-- **Логи PHP:** `/var/log/php8.2-fpm.log`24.04 LTS с оптимизациями для RTTI.
+- **Логи PHP:** `/var/log/php8.2-fpm.log`оптимизациями для RTTI.
 
 ## 🚀 QUICK_INSTALL
 ```bash
-# Быстрая установка (одной командой)
+# Быстрая установка с заменой файлов (одной командой)
+rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
 sudo chmod +x install-moodle.sh && sudo ./install-moodle.sh
+```
+
+### 🔄 Обновление существующего репозитория:
+```bash
+# Если репозиторий уже склонирован
+cd LMS_Drupal
+git reset --hard HEAD
+git pull --force origin main
+cd moodle-installation
+sudo chmod +x *.sh
 ```
 
 ## Состав скриптов
@@ -41,7 +52,7 @@ sudo chmod +x install-moodle.sh && sudo ./install-moodle.sh
 
 ## Поэтапная установка
 ```bash
-# Подготовка
+# Подготовка с заменой файлов
 rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
@@ -49,7 +60,7 @@ sudo chmod +x *.sh
 
 # Поэтапное выполнение
 sudo ./01-prepare-system.sh      # Подготовка системы Ubuntu
-sudo ./02-install-webserver.sh   # Установка Nginx и PHP 8.2
+sudo ./02-install-webserver.sh   # Установка Nginx и PHP
 sudo ./03-install-database.sh    # Установка PostgreSQL 16
 sudo ./04-install-cache.sh       # Установка и настройка Redis
 sudo ./05-configure-ssl.sh       # Настройка SSL сертификатов
