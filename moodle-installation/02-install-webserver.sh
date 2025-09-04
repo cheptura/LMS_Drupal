@@ -137,7 +137,7 @@ cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
 server {
     listen 80;
     server_name lms.rtti.tj;
-    root /var/www/html/moodle;
+    root /var/www/moodle;
     index index.php index.html index.htm;
 
     client_max_body_size 100M;
@@ -148,11 +148,14 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
+    # Main location
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
+    # PHP processing
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
@@ -162,6 +165,49 @@ server {
         fastcgi_buffer_size 128k;
         fastcgi_buffers 4 256k;
         fastcgi_busy_buffers_size 256k;
+        fastcgi_temp_file_write_size 256k;
+    }
+
+    # Moodle JavaScript and CSS combo handler
+    location ~ ^/theme/yui_combo\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Moodle JavaScript handler
+    location ~ ^/lib/javascript\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Moodle CSS handler
+    location ~ ^/theme/styles\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Moodle pluginfile handler
+    location ~ ^/pluginfile\.php {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
     }
 
     # Deny access to hidden files
@@ -169,17 +215,18 @@ server {
         deny all;
     }
 
-    # Moodle specific locations
+    # Moodle dataroot protection
     location ^~ /dataroot/ {
         internal;
         alias /var/moodledata/;
     }
 
-    # Static files caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    # Static files caching (real static files)
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
         add_header Vary Accept-Encoding;
+        try_files $uri =404;
     }
 
     # Block access to config files
@@ -187,8 +234,18 @@ server {
         deny all;
     }
 
-    # Block access to upgrade script
+    # Block access to upgrade script during normal operation
     location ~ /admin/tool/installaddon/ {
+        deny all;
+    }
+
+    # Block access to various Moodle internal paths
+    location ~ ^/(backup|local/temp|local/cache)/ {
+        deny all;
+    }
+
+    # Allow .htaccess for Apache compatibility (though we're using Nginx)
+    location ~ /\.htaccess {
         deny all;
     }
 }
@@ -213,11 +270,11 @@ echo "13. Настройка firewall..."
 ufw allow 'Nginx Full'
 
 echo "14. Создание директории для сайта..."
-mkdir -p /var/www/html/moodle
-chown -R www-data:www-data /var/www/html/moodle
+mkdir -p /var/www/moodle
+chown -R www-data:www-data /var/www/moodle
 
 echo "15. Создание тестовой страницы..."
-cat > /var/www/html/moodle/info.php << 'EOF'
+cat > /var/www/moodle/info.php << 'EOF'
 <?php
 echo "<h1>Moodle Server Status</h1>";
 echo "<p><strong>Server:</strong> lms.rtti.tj</p>";
