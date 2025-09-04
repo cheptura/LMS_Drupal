@@ -412,6 +412,81 @@ sudo chmod -R 777 /var/www/html/drupal/sites/default/files
 ```
 
 #### Проблемы с базой данных PostgreSQL
+
+**Проблема**: "FATAL: password authentication failed for user 'moodleuser'"
+
+**Причина**: Пользователь PostgreSQL существует, но пароль неправильный или не установлен
+
+**Автоматическое решение (рекомендуется):**
+```bash
+# Перезапустить установку с очисткой
+sudo ./install-moodle-cloud.sh cleanup
+```
+
+**Ручное решение:**
+```bash
+# 1. Проверить существующих пользователей
+sudo -u postgres psql -c '\du'
+
+# 2. Пересоздать пользователя с правильным паролем
+sudo -u postgres psql -c "DROP USER IF EXISTS moodleuser;"
+
+# 3. Создать нового пользователя (пароль будет сгенерирован автоматически)
+DB_PASSWORD=$(openssl rand -base64 32)
+sudo -u postgres psql -c "CREATE USER moodleuser WITH PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -c "ALTER USER moodleuser CREATEDB;"
+
+# 4. Создать базу данных
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS moodle;"
+sudo -u postgres psql -c "CREATE DATABASE moodle OWNER moodleuser;"
+
+# 5. Обновить config.php с новым паролем
+sudo sed -i "s/\$CFG->dbpass = .*/\$CFG->dbpass = '$DB_PASSWORD';/" /var/www/html/moodle/config.php
+
+# 6. Сохранить пароль для справки
+echo "DB_PASSWORD=$DB_PASSWORD" >> /root/moodle-credentials.txt
+
+# 7. Перезапустить PostgreSQL
+sudo systemctl restart postgresql
+
+# 8. Тест подключения
+sudo -u postgres psql -d moodle -c "SELECT version();"
+```
+
+**Проверка аутентификации:**
+```bash
+# Проверить что пользователь может подключиться
+sudo -u postgres psql -c "SELECT usename, passwd FROM pg_shadow WHERE usename = 'moodleuser';"
+
+# Проверить настройки аутентификации PostgreSQL
+sudo cat /etc/postgresql/16/main/pg_hba.conf | grep -v "^#" | grep -v "^$"
+
+# Тест подключения с помощью PHP
+php -r "
+\$conn = pg_connect('host=localhost dbname=moodle user=moodleuser password=' . trim(file_get_contents('/root/moodle-credentials.txt')));
+if (\$conn) {
+    echo 'Подключение успешно!\n';
+    pg_close(\$conn);
+} else {
+    echo 'Ошибка подключения: ' . pg_last_error() . '\n';
+}
+"
+```
+
+**Альтернативное решение - использование trust аутентификации (временно):**
+```bash
+# ТОЛЬКО для отладки! НЕ использовать в продакшн!
+sudo sed -i 's/local.*all.*all.*peer/local all all trust/' /etc/postgresql/16/main/pg_hba.conf
+sudo sed -i 's/host.*all.*all.*127.0.0.1\/32.*md5/host all all 127.0.0.1\/32 trust/' /etc/postgresql/16/main/pg_hba.conf
+sudo systemctl restart postgresql
+
+# После успешной установки Moodle вернуть обратно:
+sudo sed -i 's/local all all trust/local all all peer/' /etc/postgresql/16/main/pg_hba.conf
+sudo sed -i 's/host all all 127.0.0.1\/32 trust/host all all 127.0.0.1\/32 md5/' /etc/postgresql/16/main/pg_hba.conf
+sudo systemctl restart postgresql
+```
+
+**Общие команды диагностики PostgreSQL:**
 ```bash
 # Проверить статус
 sudo systemctl status postgresql
@@ -427,6 +502,9 @@ sudo -u postgres psql -l
 
 # Проверить пользователей
 sudo -u postgres psql -c "\du"
+
+# Проверить права доступа к базе moodle
+sudo -u postgres psql -c "\l moodle"
 ```
 
 ### Мониторинг и диагностика
