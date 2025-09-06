@@ -47,6 +47,10 @@ sudo -u www-data vendor/bin/drush language:add ru
 sudo -u www-data vendor/bin/drush config:set language.negotiation selected_langcode ru -y
 sudo -u www-data vendor/bin/drush config:set system.site default_langcode ru -y
 
+echo "3.1. Настройка часового пояса..."
+sudo -u www-data vendor/bin/drush config:set system.date timezone.default 'Asia/Dushanbe' -y
+sudo -u www-data vendor/bin/drush config:set system.date timezone.user.configurable 1 -y
+
 echo "4. Загрузка переводов..."
 sudo -u www-data vendor/bin/drush locale:update
 

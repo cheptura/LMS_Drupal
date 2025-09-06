@@ -520,6 +520,8 @@ cat >> $DOCKER_COMPOSE_DIR/docker-compose.yml << EOF
       - GF_ANALYTICS_CHECK_FOR_UPDATES=false
       - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_SNAPSHOTS_EXTERNAL_ENABLED=false
+      - GF_DATE_FORMATS_DEFAULT_TIMEZONE=Asia/Dushanbe
+      - TZ=Asia/Dushanbe
     networks:
       - monitoring
     depends_on:

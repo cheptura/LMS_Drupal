@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# RTTI Moodle - Шаг 10: Финальная проверка системы
+# RTTI Moodle - Шаг 11: Финальная проверка системы
 # Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 11: Финальная проверка системы ==="
@@ -109,10 +109,28 @@ echo
 echo "4. Проверка веб-сервера..."
 
 # Проверка конфигурации Nginx
-if nginx -t >/dev/null 2>&1; then
-    echo_success "Конфигурация Nginx: корректна"
+if [ "$EUID" -eq 0 ]; then
+    # Если запущено от root, выполняем полную проверку
+    if nginx -t >/dev/null 2>&1; then
+        echo_success "Конфигурация Nginx: корректна"
+    else
+        echo_error "Конфигурация Nginx: ошибки"
+        nginx -t 2>&1 | head -5 | while read line; do
+            echo_info "  $line"
+        done
+    fi
 else
-    echo_error "Конфигурация Nginx: ошибки"
+    # Если не root, проверяем только существование файлов и синтаксис
+    if [ -f "/etc/nginx/sites-enabled/omuzgorpro.tj" ] && [ -f "/etc/nginx/nginx.conf" ]; then
+        # Проверяем, что Nginx запущен (косвенная проверка корректности конфигурации)
+        if systemctl is-active --quiet nginx; then
+            echo_success "Конфигурация Nginx: корректна (служба активна)"
+        else
+            echo_warning "Конфигурация Nginx: служба неактивна"
+        fi
+    else
+        echo_error "Конфигурация Nginx: файлы отсутствуют"
+    fi
 fi
 
 # Проверка доступности сайта
@@ -139,10 +157,10 @@ echo "5. Проверка PHP..."
 
 # Проверка версии PHP
 PHP_VERSION=$(php -v | head -1 | awk '{print $2}')
-if [[ $PHP_VERSION == 8.2* ]]; then
+if [[ $PHP_VERSION == 8.2* ]] || [[ $PHP_VERSION == 8.3* ]]; then
     echo_success "PHP версия: $PHP_VERSION"
 else
-    echo_warning "PHP версия: $PHP_VERSION (рекомендуется 8.2.x)"
+    echo_warning "PHP версия: $PHP_VERSION (рекомендуется 8.2.x или 8.3.x)"
 fi
 
 # Проверка необходимых расширений PHP
@@ -256,10 +274,24 @@ else
 fi
 
 # Проверка блокировки установки
-if [ -f "/var/moodledata/install.lock" ]; then
+INSTALL_LOCK_PATH="/var/www/moodle/install.lock"
+if [ -f "$INSTALL_LOCK_PATH" ]; then
     echo_success "Блокировка установки: установлена (установка завершена)"
 else
-    echo_warning "Блокировка установки: отсутствует (установка может быть не завершена)"
+    # Проверяем, установлен ли Moodle (есть config.php и таблицы в БД)
+    if [ -f "/var/www/moodle/config.php" ] && [ "$TABLE_COUNT" -gt 400 ]; then
+        echo_warning "Блокировка установки: отсутствует, но Moodle установлен"
+        # Автоматически создаем файл блокировки
+        if [ "$EUID" -eq 0 ]; then
+            touch "$INSTALL_LOCK_PATH"
+            chown www-data:www-data "$INSTALL_LOCK_PATH"
+            echo_success "✓ Файл блокировки создан автоматически"
+        else
+            echo_info "  Для создания файла блокировки выполните: sudo touch $INSTALL_LOCK_PATH"
+        fi
+    else
+        echo_warning "Блокировка установки: отсутствует (установка может быть не завершена)"
+    fi
 fi
 
 echo

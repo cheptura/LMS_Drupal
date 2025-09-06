@@ -89,12 +89,17 @@ sudo -u postgres psql << EOF
 CREATE DATABASE moodle 
     WITH OWNER = moodleuser
     ENCODING = 'UTF8'
-    LC_COLLATE = 'en_US.UTF-8'
-    LC_CTYPE = 'en_US.UTF-8'
+    LC_COLLATE = 'ru_RU.UTF-8'
+    LC_CTYPE = 'ru_RU.UTF-8'
     TEMPLATE = template0;
 
 -- Предоставление всех прав пользователю
 GRANT ALL PRIVILEGES ON DATABASE moodle TO moodleuser;
+
+-- Настройка часового пояса для базы данных
+\c moodle
+SET timezone = 'Asia/Dushanbe';
+ALTER DATABASE moodle SET timezone = 'Asia/Dushanbe';
 
 -- Проверка создания базы данных
 \l moodle

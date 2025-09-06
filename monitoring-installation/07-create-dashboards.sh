@@ -44,7 +44,7 @@ cat > $DASHBOARDS_DIR/overview/rtti-overview.json << 'EOF'
     "title": "RTTI Infrastructure Overview",
     "tags": ["rtti", "overview", "infrastructure"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "30s",
     "time": {
       "from": "now-1h",
@@ -172,7 +172,7 @@ cat > $DASHBOARDS_DIR/web/nginx-dashboard.json << 'EOF'
     "title": "RTTI Web Server (Nginx)",
     "tags": ["rtti", "nginx", "web"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "15s",
     "time": {
       "from": "now-1h",
@@ -302,7 +302,7 @@ cat > $DASHBOARDS_DIR/database/postgresql-dashboard.json << 'EOF'
     "title": "RTTI Database (PostgreSQL)",
     "tags": ["rtti", "postgresql", "database"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "30s",
     "time": {
       "from": "now-1h",
@@ -439,7 +439,7 @@ cat > $DASHBOARDS_DIR/system/processes-dashboard.json << 'EOF'
     "title": "RTTI System Processes",
     "tags": ["rtti", "processes", "system"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "30s",
     "time": {
       "from": "now-1h",
@@ -528,7 +528,7 @@ cat > $DASHBOARDS_DIR/security/security-dashboard.json << 'EOF'
     "title": "RTTI Security Monitoring",
     "tags": ["rtti", "security", "fail2ban"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "1m",
     "time": {
       "from": "now-6h",
@@ -658,7 +658,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
     "title": "RTTI Moodle LMS",
     "tags": ["rtti", "moodle", "lms"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "1m",
     "time": {
       "from": "now-1h",
@@ -779,7 +779,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
     "title": "RTTI Drupal Library",
     "tags": ["rtti", "drupal", "library"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "1m",
     "time": {
       "from": "now-1h",
@@ -900,7 +900,7 @@ cat > $DASHBOARDS_DIR/system/containers-dashboard.json << 'EOF'
     "title": "RTTI Docker Containers",
     "tags": ["rtti", "docker", "containers"],
     "style": "dark",
-    "timezone": "browser",
+    "timezone": "Asia/Dushanbe",
     "refresh": "30s",
     "time": {
       "from": "now-1h",

@@ -144,6 +144,10 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS btree_gin;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+-- Настройка часового пояса для базы данных
+SET timezone = 'Asia/Dushanbe';
+ALTER DATABASE drupal_library SET timezone = 'Asia/Dushanbe';
+
 -- Проверка установленных расширений
 \dx
 EOF

@@ -45,7 +45,8 @@ timedatectl set-timezone Asia/Dushanbe
 
 echo "5. Настройка локали..."
 locale-gen en_US.UTF-8
-update-locale LANG=en_US.UTF-8
+locale-gen ru_RU.UTF-8
+update-locale LANG=ru_RU.UTF-8
 
 echo "6. Очистка кэша пакетов..."
 apt autoremove -y
