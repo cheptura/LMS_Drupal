@@ -52,7 +52,8 @@ STEPS=(
     "07-configure-moodle.sh:Конфигурация Moodle"
     "08-install-moodle.sh:Установка Moodle"
     "09-post-install.sh:Пост-установочная настройка"
-    "10-final-check.sh:Финальная проверка системы"
+    "10-security.sh:Настройка безопасности"
+    "11-final-check.sh:Финальная проверка системы"
 )
 
 TOTAL_STEPS=${#STEPS[@]}
@@ -113,7 +114,8 @@ SCRIPTS_TO_DOWNLOAD=(
     "07-configure-moodle.sh"
     "08-install-moodle.sh"
     "09-post-install.sh"
-    "10-final-check.sh"
+    "10-security.sh"
+    "11-final-check.sh"
 )
 
 # Функция загрузки скрипта

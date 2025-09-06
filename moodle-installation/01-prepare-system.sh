@@ -64,6 +64,32 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 echo "y" | ufw enable
 
+echo "9. Настройка автоматических обновлений безопасности..."
+apt install -y unattended-upgrades
+
+# Конфигурация автоматических обновлений
+cat > /etc/apt/apt.conf.d/50unattended-upgrades << 'EOF'
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}ESMApps:${distro_codename}-apps-security";
+    "${distro_id}ESM:${distro_codename}-infra-security";
+};
+
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Mail "admin@omuzgorpro.tj";
+EOF
+
+# Включение автоматических обновлений
+cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Download-Upgradeable-Packages "1";
+EOF
+
 echo
 echo "✅ Шаг 1 завершен успешно!"
 echo "📌 Система подготовлена для установки Moodle"

@@ -11,18 +11,21 @@
 - **Назначение:** Система управления обучением
 - **Домен:** omuzgorpro.tj
 - **Папка:** `moodle-installation/`
+- **🛡️ Безопасность:** Fail2Ban, Rate Limiting, CSP, HSTS
 
 ### 📖 **Digital Library System**
 - **Платформа:** Drupal 11 LTS
 - **Назначение:** Цифровая библиотека и каталог ресурсов
 - **Домен:** storage.omuzgorpro.tj
 - **Папка:** `drupal-installation/`
+- **🛡️ Безопасность:** Fail2Ban, Rate Limiting, CSP, HSTS
 
 ### 📊 **Monitoring System**
 - **Платформа:** Prometheus + Grafana + Alertmanager
 - **Назначение:** Мониторинг всей инфраструктуры
 - **Домен:** monitoring.omuzgorpro.tj
 - **Папка:** `monitoring-installation/`
+- **🛡️ Безопасность:** Встроенная аутентификация, мониторинг безопасности
 
 ## 🚀 QUICK_INSTALL (Полная инфраструктура)
 
@@ -288,6 +291,7 @@ cd drupal-installation && sudo ./restore-drupal.sh /path/to/backup.tar.gz
 - **Moodle:** [moodle-installation/README.md](moodle-installation/README.md)
 - **Drupal:** [drupal-installation/README.md](drupal-installation/README.md)
 - **Monitoring:** [monitoring-installation/README.md](monitoring-installation/README.md)
+- **🛡️ Безопасность:** [SECURITY.md](SECURITY.md) - **Подробное руководство по безопасности**
 
 ### Полезные ссылки:
 - **Moodle Documentation:** https://docs.moodle.org/
