@@ -173,47 +173,66 @@ EOF
 
 echo "4. Настройка защиты от DDoS..."
 
-# Создание конфигурации защиты от DDoS
-cat > "$NGINX_DIR/conf.d/ddos-protection.conf" << EOF
-# Защита от DDoS атак для Moodle
-# Дата: $(date)
+# Добавление rate limiting зон в nginx.conf (если их еще нет)
+if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+    echo "   Добавляем rate limiting зоны в nginx.conf..."
+    
+    # Создаем резервную копию
+    cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup-$(date +%Y%m%d_%H%M%S)
+    
+    # Добавляем rate limiting зоны в http блок
+    sed -i '/http {/a\\n\t# Rate limiting zones for DDoS protection\n\tlimit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;\n\tlimit_req_zone $binary_remote_addr zone=api:10m rate=30r/m;\n\tlimit_req_zone $binary_remote_addr zone=uploads:10m rate=10r/m;\n\tlimit_conn_zone $binary_remote_addr zone=perip:10m;\n' /etc/nginx/nginx.conf
+    
+    echo "   ✅ Rate limiting зоны добавлены в nginx.conf"
+else
+    echo "   ℹ️  Rate limiting зоны уже настроены"
+fi
 
-# Ограничение количества запросов на страницу логина
-location = /login/index.php {
-    limit_req zone=login burst=3 nodelay;
-    limit_req_status 429;
-    include snippets/fastcgi-php.conf;
-    fastcgi_pass unix:/var/run/php/php$PHP_VERSION-fpm.sock;
-}
+# Определяем файл конфигурации сайта для добавления location блоков
+SITE_CONFIG=""
+if [ -f /etc/nginx/sites-available/omuzgorpro.tj ]; then
+    SITE_CONFIG="/etc/nginx/sites-available/omuzgorpro.tj"
+elif [ -f /etc/nginx/sites-available/default ]; then
+    SITE_CONFIG="/etc/nginx/sites-available/default"
+fi
 
-# Ограничение для административных страниц
-location ~ ^/admin/ {
-    limit_req zone=api burst=5 nodelay;
-    limit_req_status 429;
-    include snippets/fastcgi-php.conf;
-    fastcgi_pass unix:/var/run/php/php$PHP_VERSION-fpm.sock;
-}
-
-# Ограничение для загрузки файлов
-location ~ ^/repository/ {
-    limit_req zone=uploads burst=5 nodelay;
-    limit_req_status 429;
-    include snippets/fastcgi-php.conf;
-    fastcgi_pass unix:/var/run/php/php$PHP_VERSION-fpm.sock;
-}
-
-# Блокировка подозрительных User-Agent
-if (\$http_user_agent ~* (bot|crawler|spider|scraper)) {
-    return 403;
-}
-
-# Блокировка пустых referer для административных страниц
-location ~ ^/(admin|user/edit) {
-    if (\$http_referer = "") {
-        return 403;
-    }
-}
-EOF
+# Добавляем DDoS защиту в server блок, если её еще нет и файл найден
+if [ -n "$SITE_CONFIG" ] && ! grep -q "limit_req zone=login" "$SITE_CONFIG"; then
+    echo "   Добавляем DDoS защиту в конфигурацию сайта: $SITE_CONFIG"
+    
+    # Создаем резервную копию
+    cp "$SITE_CONFIG" "${SITE_CONFIG}.backup-$(date +%Y%m%d_%H%M%S)"
+    
+    # Добавляем location блоки перед закрывающей скобкой server блока
+    sed -i '/^}$/i\    # DDoS Protection - Rate Limiting\
+    location = /login/index.php {\
+        limit_req zone=login burst=3 nodelay;\
+        limit_req_status 429;\
+        include snippets/fastcgi-php.conf;\
+        fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+    }\
+\
+    location ~ ^/admin/ {\
+        limit_req zone=api burst=5 nodelay;\
+        limit_req_status 429;\
+        include snippets/fastcgi-php.conf;\
+        fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+    }\
+\
+    location ~ ^/repository/ {\
+        limit_req zone=uploads burst=5 nodelay;\
+        limit_req_status 429;\
+        include snippets/fastcgi-php.conf;\
+        fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+    }\
+\
+    # Connection limiting\
+    limit_conn perip 25;' "$SITE_CONFIG"
+    
+    echo "   ✅ DDoS защита добавлена в конфигурацию сайта"
+else
+    echo "   ℹ️  DDoS защита уже настроена или файл конфигурации не найден"
+fi
 
 echo "5. Настройка защищенности PHP..."
 

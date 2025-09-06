@@ -100,23 +100,17 @@ global \$CFG;
 \$CFG->routerconfigured = false;
 
 //=========================================================================
-// 5. SECURITY
+// 5. SECURITY (критически важные настройки)
 //=========================================================================
 \$CFG->directorypermissions = 0755;
-\$CFG->forcelogin = false;
-\$CFG->forceloginforprofiles = true;
-\$CFG->opentogoogle = false;
-\$CFG->protectusernames = true;
 
-// SSL/HTTPS принудительно
+// SSL/HTTPS принудительно (критично для безопасности)
 \$CFG->forcessl = true;
-
-// Защита от CSRF
 \$CFG->cookiesecure = true;
 \$CFG->cookiehttponly = true;
 
 //=========================================================================
-// 6. PERFORMANCE - CACHING
+// 6. PERFORMANCE - CACHING (системные настройки)
 //=========================================================================
 // Redis для сессий
 \$CFG->session_handler_class = '\core\session\redis';
@@ -143,96 +137,40 @@ global \$CFG;
 );
 
 //=========================================================================
-// 7. PERFORMANCE - GENERAL
+// 7. ОСНОВНЫЕ НАСТРОЙКИ (настраиваемые через админку)
 //=========================================================================
-\$CFG->enablecompletion = true;
-\$CFG->completiondefault = true;
-
-// Сжатие
-\$CFG->enablegzip = true;
-\$CFG->jsrev = 1;
-\$CFG->cssrev = 1;
-
-// Производительность
-\$CFG->cachetemplates = true;
-\$CFG->cachejs = true;
-
-//=========================================================================
-// 8. FILE UPLOADS
-//=========================================================================
-\$CFG->maxbytes = 104857600; // 100MB
-
-//=========================================================================
-// 9. EMAIL SETTINGS
-//=========================================================================
-\$CFG->smtphosts = 'localhost';
-\$CFG->smtpuser = '';
-\$CFG->smtppass = '';
-\$CFG->smtpsecure = '';
-\$CFG->smtpautotls = false;
-\$CFG->noreplyaddress = 'noreply@omuzgorpro.tj';
-\$CFG->supportemail = 'support@omuzgorpro.tj';
+// Следующие настройки УДАЛЕНЫ из config.php для возможности 
+// настройки через веб-интерфейс администратора:
+//
+// - \$CFG->forcelogin (Принудительный вход)
+// - \$CFG->forceloginforprofiles (Вход для просмотра профилей)  
+// - \$CFG->opentogoogle (Индексация Google)
+// - \$CFG->protectusernames (Защита имен пользователей)
+// - \$CFG->enablecompletion (Отслеживание выполнения)
+// - \$CFG->completiondefault (Выполнение по умолчанию)
+// - \$CFG->enablegzip (Сжатие)
+// - \$CFG->jsrev, \$CFG->cssrev (Версии JS/CSS)
+// - \$CFG->cachetemplates, \$CFG->cachejs (Кэширование)
+// - \$CFG->maxbytes (Максимальный размер файла)
+// - \$CFG->smtphosts, \$CFG->smtpuser, etc. (Настройки email)
+// - \$CFG->backup_auto_* (Настройки резервного копирования)
+// - \$CFG->lang (Язык по умолчанию) 
+// - \$CFG->timezone (Часовой пояс)
+// - \$CFG->country (Страна)
+// - \$CFG->theme (Тема оформления)
+// - \$CFG->enableblogs, \$CFG->enablerssfeeds (Блоги, RSS)
+// - \$CFG->enablewebservices (Веб-сервисы)
+// - \$CFG->passwordpolicy, \$CFG->minpassword* (Политика паролей)
+//
+// Эти настройки можно изменять через:
+// Администрирование сайта → Настройки → [соответствующий раздел]
 
 //=========================================================================
-// 10. LOGGING
-//=========================================================================
-\$CFG->log_manager = '\core\log\manager';
-\$CFG->log_stores = array(
-    '\core\log\sql_reader' => array(
-        'logformat' => 'standard',
-        'buffersize' => 50,
-        'logguests' => 1,
-        'jsonformat' => 0,
-    )
-);
-
-//=========================================================================
-// 11. BACKUP SETTINGS
-//=========================================================================
-\$CFG->backup_auto_active = true;
-\$CFG->backup_auto_weekdays = '0111110'; // Monday to Friday
-\$CFG->backup_auto_hour = 2;
-\$CFG->backup_auto_minute = 0;
-\$CFG->backup_auto_storage = 0; // Course backup area
-\$CFG->backup_auto_destination = '/var/moodledata/backup';
-\$CFG->backup_auto_keep = 2;
-
-//=========================================================================
-// 12. LOCALIZATION
-//=========================================================================
-\$CFG->lang = 'ru';
-\$CFG->timezone = 'Asia/Dushanbe';
-\$CFG->country = 'TJ';
-
-//=========================================================================
-// 13. DEBUGGING (for production set to 0)
+// 8. DEBUGGING (for production set to 0)
 //=========================================================================
 \$CFG->debug = 0;
 \$CFG->debugdisplay = 0;
 \$CFG->debugdeveloper = false;
-
-//=========================================================================
-// 14. MAINTENANCE
-//=========================================================================
-// \$CFG->maintenance_enabled = true;
-// \$CFG->maintenance_message = 'Система находится на техническом обслуживании.';
-
-//=========================================================================
-// 15. CUSTOM SETTINGS
-//=========================================================================
-// Настройки для RTTI
-\$CFG->theme = 'boost';
-\$CFG->enableblogs = false;
-\$CFG->enablerssfeeds = false;
-\$CFG->enablewebservices = true;
-
-// Ограничения безопасности
-\$CFG->passwordpolicy = true;
-\$CFG->minpasswordlength = 8;
-\$CFG->minpassworddigits = 1;
-\$CFG->minpasswordlower = 1;
-\$CFG->minpasswordupper = 1;
-\$CFG->minpasswordnonalphanum = 1;
 
 //=========================================================================
 // LOAD MOODLE
@@ -248,6 +186,89 @@ chown www-data:www-data $CONFIG_FILE
 chmod 644 $CONFIG_FILE
 
 echo "6. Создание каталога для резервных копий..."
+mkdir -p /var/moodledata/backup
+chown -R www-data:www-data /var/moodledata/backup
+chmod -R 755 /var/moodledata/backup
+
+echo "7. Создание скрипта первичной настройки (выполняется после установки)..."
+cat > /root/moodle-initial-settings.sh << 'EOF'
+#!/bin/bash
+
+# Скрипт первичной настройки Moodle через CLI
+# Выполняется после установки для настройки параметров,
+# которые НЕ жестко заданы в config.php
+
+echo "🔧 Применение первичных настроек Moodle..."
+
+cd /var/www/moodle
+
+# Функция для установки настройки
+set_config() {
+    local name="$1"
+    local value="$2"
+    local plugin="${3:-none}"
+    
+    if [ "$plugin" = "none" ]; then
+        sudo -u www-data php admin/cli/cfg.php --name="$name" --set="$value"
+    else
+        sudo -u www-data php admin/cli/cfg.php --name="$name" --set="$value" --plugin="$plugin"
+    fi
+}
+
+echo "1. Настройки безопасности..."
+set_config "forcelogin" "0"                    # Разрешить просмотр без входа
+set_config "forceloginforprofiles" "1"         # Требовать вход для профилей
+set_config "opentogoogle" "0"                  # Запретить индексацию Google
+set_config "protectusernames" "1"              # Защитить имена пользователей
+
+echo "2. Настройки производительности..."
+set_config "enablecompletion" "1"              # Включить отслеживание выполнения
+set_config "completiondefault" "1"             # Выполнение по умолчанию
+set_config "enablegzip" "1"                    # Включить сжатие
+set_config "cachetemplates" "1"                # Кэшировать шаблоны
+set_config "cachejs" "1"                       # Кэшировать JavaScript
+
+echo "3. Загрузка файлов..."
+set_config "maxbytes" "104857600"              # 100MB максимальный размер
+
+echo "4. Настройки email..."
+set_config "smtphosts" "localhost"
+set_config "noreplyaddress" "noreply@omuzgorpro.tj"
+set_config "supportemail" "support@omuzgorpro.tj"
+
+echo "5. Локализация..."
+set_config "lang" "ru"                         # Русский язык по умолчанию
+set_config "timezone" "Asia/Dushanbe"          # Часовой пояс Таджикистана
+set_config "country" "TJ"                      # Страна - Таджикистан
+
+echo "6. Настройки интерфейса..."
+set_config "theme" "boost"                     # Тема оформления
+set_config "enableblogs" "0"                   # Отключить блоги
+set_config "enablerssfeeds" "0"                # Отключить RSS
+set_config "enablewebservices" "1"             # Включить веб-сервисы
+
+echo "7. Политика паролей..."
+set_config "passwordpolicy" "1"                # Включить политику паролей
+set_config "minpasswordlength" "8"             # Минимум 8 символов
+set_config "minpassworddigits" "1"             # Минимум 1 цифра
+set_config "minpasswordlower" "1"              # Минимум 1 строчная буква
+set_config "minpasswordupper" "1"              # Минимум 1 заглавная буква
+set_config "minpasswordnonalphanum" "1"        # Минимум 1 специальный символ
+
+echo "8. Автоматическое резервное копирование..."
+set_config "backup_auto_active" "1"            # Включить автобэкап
+set_config "backup_auto_weekdays" "0111110"    # Пн-Пт
+set_config "backup_auto_hour" "2"              # В 2:00
+set_config "backup_auto_minute" "0"            # В начале часа
+set_config "backup_auto_keep" "2"              # Хранить 2 копии
+set_config "backup_auto_destination" "/var/moodledata/backup"
+
+echo "✅ Первичные настройки применены!"
+echo "ℹ️  Теперь все эти параметры можно изменять через веб-интерфейс администратора"
+echo "ℹ️  Администрирование сайта → Настройки → [соответствующий раздел]"
+EOF
+
+chmod +x /root/moodle-initial-settings.sh
 mkdir -p /var/moodledata/backup
 chown -R www-data:www-data /var/moodledata/backup
 chmod -R 755 /var/moodledata/backup

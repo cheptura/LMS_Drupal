@@ -51,32 +51,34 @@ if (file_exists(\$CFG->dataroot . '/install.lock')) {
     fi
 fi
 
-echo "2. Установка дополнительных языковых пакетов..."
+echo "2. Применение первичных настроек Moodle..."
+# Запускаем скрипт первичных настроек, который НЕ жестко прописаны в config.php
+if [ -f /root/moodle-initial-settings.sh ]; then
+    echo "   Выполняем первичную настройку через CLI..."
+    bash /root/moodle-initial-settings.sh
+    echo "✅ Первичные настройки применены"
+else
+    echo "⚠️  Скрипт первичных настроек не найден, применяем настройки напрямую..."
+    
+    # Резервные настройки, если скрипт не создан
+    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=lang --set=ru
+    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=timezone --set="Asia/Dushanbe"
+    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=theme --set=boost
+fi
+
+echo "3. Установка дополнительных языковых пакетов..."
 # Установка русского языка
 sudo -u www-data php $MOODLE_DIR/admin/cli/install_language.php --lang=ru
 
 # Установка английского языка (если не установлен)
 sudo -u www-data php $MOODLE_DIR/admin/cli/install_language.php --lang=en
 
-echo "3. Настройка оптимизации производительности..."
-# Настройки кэширования через CLI
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=cachejs --set=1
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=cachetemplates --set=1
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=enablegzip --set=1
-
-# Настройки сессий
+echo "4. Настройка дополнительных параметров..."
+# Эти настройки НЕ дублируют config.php, а дополняют их
 sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=sessiontimeout --set=7200
+sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=enablemobilewebservice --set=1
 
-echo "4. Настройка параметров безопасности..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=forcelogin --set=0
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=forceloginforprofiles --set=1
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=opentogoogle --set=0
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=protectusernames --set=1
-
-echo "5. Настройка параметров файлов..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=maxbytes --set=104857600  # 100MB
-
-echo "6. Создание стандартных категорий курсов..."
+echo "5. Создание стандартных категорий курсов..."
 
 # Создаем временный PHP скрипт для создания категорий
 cat > /tmp/create_categories.php << 'PHPEOF'
@@ -129,25 +131,14 @@ fi
 # Удаляем временный файл
 rm -f /tmp/create_categories.php
 
-echo "7. Настройка темы оформления..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=theme --set=boost
-
-echo "8. Создание стандартных ролей и разрешений..."
-# Очистка кэша ролей через purge_caches
+echo "6. Дополнительные настройки оформления..."
+# Очистка кэша после всех изменений
 sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
 
-echo "9. Настройка уведомлений по email..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=noreplyaddress --set="noreply@omuzgorpro.tj"
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=supportemail --set="support@omuzgorpro.tj"
+echo "7. Установка и настройка плагинов..."
+# Все настройки веб-сервисов уже применены в первичных настройках
 
-echo "10. Установка и настройка плагинов..."
-# Включение веб-сервисов
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=enablewebservices --set=1
-
-# Настройка мобильного приложения
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=enablemobilewebservice --set=1
-
-echo "11. Создание расписания обслуживания..."
+echo "8. Создание расписания обслуживания..."
 cat > /etc/cron.d/moodle-maintenance << 'EOF'
 # Moodle maintenance tasks
 
