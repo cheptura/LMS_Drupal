@@ -222,6 +222,9 @@ EOF
 echo "12. Установка Drupal через CLI..."
 echo "Запуск установки Drupal..."
 
+# Используем фиксированный пароль администратора
+ADMIN_PASSWORD="RTTIDrupal2024!"
+
 cd $DRUPAL_DIR
 
 # Установка Drupal
@@ -236,7 +239,7 @@ sudo -u www-data php web/core/scripts/drupal install \
     --site-name="RTTI Digital Library" \
     --site-mail=library@omuzgorpro.tj \
     --account-name=admin \
-    --account-pass=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-12) \
+    --account-pass=$ADMIN_PASSWORD \
     --account-mail=admin@omuzgorpro.tj
 
 INSTALL_RESULT=$?
@@ -327,7 +330,6 @@ EOF
 chmod +x /root/drupal-management.sh
 
 echo "16. Сохранение данных администратора..."
-ADMIN_PASSWORD=$(grep "account-pass" /var/log/drupal-install.log 2>/dev/null | awk -F'=' '{print $2}' || echo "Проверьте в логах")
 
 cat > /root/drupal-admin-credentials.txt << EOF
 # Данные администратора Drupal

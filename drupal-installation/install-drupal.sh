@@ -230,7 +230,7 @@ echo
 echo "📚 Drupal Library готова к использованию:"
 echo "   🌐 URL: https://storage.omuzgorpro.tj"
 echo "   👤 Администратор: admin"
-echo "   🔑 Пароль: RTTIAdmin2024!"
+echo "   🔑 Пароль: RTTIDrupal2024!"
 echo "   📧 Email: admin@omuzgorpro.tj"
 echo
 echo "📁 Важные файлы:"

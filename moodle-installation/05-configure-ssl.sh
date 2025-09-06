@@ -82,78 +82,28 @@ server {
     
     # Размеры загрузки файлов
     client_max_body_size 100M;
+    client_body_timeout 300s;
+    fastcgi_read_timeout 300s;
     
-    # PHP обработка
-    location ~ \.php$ {
-        try_files \$uri =404;
+    # Основной location для всех файлов
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+    
+    # PHP обработка - ЕДИНЫЙ обработчик для всех PHP файлов включая Moodle handlers
+    location ~ [^/]\.php(/|$) {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         include fastcgi_params;
-        
-        # Moodle специфичные настройки
         fastcgi_param PATH_INFO \$fastcgi_path_info;
-        fastcgi_param PATH_TRANSLATED \$document_root\$fastcgi_path_info;
-        fastcgi_read_timeout 300;
-        fastcgi_buffers 16 16k;
-        fastcgi_buffer_size 32k;
-    }
-
-    # Moodle JavaScript handler
-    location ~ ^/lib/javascript\.php {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_param PATH_INFO \$2;
-        include fastcgi_params;
         fastcgi_read_timeout 300;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Moodle CSS/theme handler
-    location ~ ^/theme/styles\.php {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_param PATH_INFO \$2;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Moodle pluginfile handler
-    location ~ ^/pluginfile\.php {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-
-    # Moodle font.php handler
-    location ~ ^/font\.php/(.+)$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root/font.php;
-        fastcgi_param PATH_INFO \$1;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-
-    # Moodle image.php handler  
-    location ~ ^/image\.php/(.+)$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root/image.php;
-        fastcgi_param PATH_INFO \$1;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-    
-    # Статические файлы
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 4 256k;
+        fastcgi_busy_buffers_size 256k;
+        fastcgi_temp_file_write_size 256k;
+    }    # Статические файлы
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -167,9 +117,13 @@ server {
         try_files \$uri =404;
     }
     
-    # Moodle специфичные настройки
-    location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+    
+    # Статические файлы с кэшированием
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Vary Accept-Encoding;
+        try_files \$uri =404;
     }
 
     # Moodle dataroot protection
@@ -178,13 +132,8 @@ server {
         alias /var/moodledata/;
     }
 
-    # Block access to various Moodle internal paths
-    location ~ ^/(backup|local/temp|local/cache)/ {
-        deny all;
-    }
-    
-    # Запрет доступа к конфигурационным файлам
-    location ~ /\.ht {
+    # Безопасность - блокировка доступа
+    location ~ /\. {
         deny all;
     }
     
@@ -192,8 +141,7 @@ server {
         deny all;
     }
     
-    # Блокировка доступа к скрытым файлам
-    location ~ /\. {
+    location ~ ^/(backup|local/temp|local/cache)/ {
         deny all;
     }
 }

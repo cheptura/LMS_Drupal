@@ -236,7 +236,7 @@ echo
 echo "📁 Важные файлы:"
 echo "   📋 Данные админа: /root/moodle-admin-credentials.txt"
 echo "   🗄️ Данные БД: /root/moodle-db-credentials.txt"
-echo "   ⚙️ Конфигурация: /var/www/html/moodle/config.php"
+echo "   ⚙️ Конфигурация: /var/www/moodle/config.php"
 echo "   📂 Данные: /var/moodledata/"
 echo
 echo "🔧 Следующие шаги:"

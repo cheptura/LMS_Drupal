@@ -245,22 +245,14 @@ server {
         rewrite ^/(.*)$ /index.php?q=$1;
     }
     
-    # PHP processing
-    location ~ \.php$ {
-        try_files $uri =404;
+    # PHP processing - упрощенный обработчик для всех PHP файлов
+    location ~ [^/]\.php(/|$) {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
         fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
         include fastcgi_params;
-        
-        # Drupal specific parameters
         fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
-        fastcgi_param QUERY_STRING $query_string;
-        fastcgi_param REQUEST_METHOD $request_method;
-        fastcgi_param CONTENT_TYPE $content_type;
-        fastcgi_param CONTENT_LENGTH $content_length;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         
         fastcgi_intercept_errors on;
         fastcgi_ignore_client_abort off;

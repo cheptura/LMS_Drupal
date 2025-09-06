@@ -124,7 +124,7 @@ else
 fi
 
 echo "4. Анализ ситуации и выбор стратегии установки..."
-ADMIN_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-16)
+ADMIN_PASSWORD="RTTIAdmin2024!"
 ADMIN_EMAIL="admin@omuzgorpro.tj"
 
 cd $MOODLE_DIR

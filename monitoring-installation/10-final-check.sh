@@ -3,7 +3,9 @@
 # RTTI Monitoring - Шаг 10: Финальная проверка и запуск
 # Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
-echo "=== RTTI Monitoring - Шаг 10: Финальная проверка и запуск ==="
+echo "=== RTTI Monitoif curl -if curl -s -u admin:admin123!@# "http://localhost:3000/api/datasources" | jq -r '.[].name' | grep -q "Prometheus"; then
+    datasource_count=$(curl -s -u admin:admin123!@# "http://localhost:3000/api/datasources" | jq '. | length')-u admin:admin123!@# "http://localhost:3000/api/search" | jq -r '.[].title' | wc -l | grep -q "[1-9]"; then
+    dashboard_count=$(curl -s -u admin:admin123!@# "http://localhost:3000/api/search" | jq '. | length')ng - Шаг 10: Финальная проверка и запуск ==="
 echo "🎯 Комплексная проверка системы мониторинга и запуск в продакшн"
 echo "📅 Дата: $(date)"
 echo
@@ -311,7 +313,7 @@ cat > $FINAL_CHECK_DIR/reports/installation-report.txt << EOF
 Открытые порты: $open_ports/${#local_ports[@]}
 Активные метрики: $(curl -s "http://localhost:9090/api/v1/query?query=up" | jq '.data.result | length' 2>/dev/null || echo "N/A")
 Правила алертов: $(curl -s "http://localhost:9090/api/v1/rules" | jq '.data.groups[].rules | length' 2>/dev/null | paste -sd+ | bc || echo "N/A")
-Дашборды Grafana: $(curl -s -u admin:admin "http://localhost:3000/api/search" 2>/dev/null | jq '. | length' || echo "N/A")
+Дашборды Grafana: $(curl -s -u admin:admin123!@# "http://localhost:3000/api/search" 2>/dev/null | jq '. | length' || echo "N/A")
 
 === ИСПОЛЬЗОВАНИЕ РЕСУРСОВ ===
 
@@ -351,7 +353,7 @@ cat >> $FINAL_CHECK_DIR/reports/installation-report.txt << EOF
 === ДОСТУП К ИНТЕРФЕЙСАМ ===
 
 Prometheus: http://$SERVER_NAME:9090
-Grafana: http://$SERVER_NAME:3000 (admin/admin)
+Grafana: http://$SERVER_NAME:3000 (admin/admin123!@#)
 Alertmanager: http://$SERVER_NAME:9093
 cAdvisor: http://$SERVER_NAME:8080
 

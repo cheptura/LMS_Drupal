@@ -205,12 +205,14 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    # PHP processing
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
+    # PHP processing - ЕДИНЫЙ обработчик для всех PHP файлов включая Moodle handlers
+    location ~ [^/]\.php(/|$) {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_index index.php;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_read_timeout 300;
         fastcgi_buffer_size 128k;
         fastcgi_buffers 4 256k;
@@ -218,74 +220,12 @@ server {
         fastcgi_temp_file_write_size 256k;
     }
 
-        # Moodle JavaScript handler with path info
-    location ~ ^(/lib/javascript\.php)(/.*)?$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
-        fastcgi_param PATH_INFO \$2;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
+    # Static files caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
-    }
-
-    # Moodle CSS handler with path info
-    location ~ ^(/theme/styles\.php)(/.*)?$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
-        fastcgi_param PATH_INFO \$2;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Moodle YUI combo handler with path info  
-    location ~ ^(/theme/yui_combo\.php)(/.*)?$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$1;
-        fastcgi_param PATH_INFO \$2;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Moodle pluginfile handler
-    location ~ ^/pluginfile\.php {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-
-    # Moodle font.php handler
-    location ~ ^/font\.php/(.+)$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root/font.php;
-        fastcgi_param PATH_INFO $1;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-
-    # Moodle image.php handler  
-    location ~ ^/image\.php/(.+)$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root/image.php;
-        fastcgi_param PATH_INFO $1;
-        include fastcgi_params;
-        fastcgi_read_timeout 300;
-    }
-
-    # Deny access to hidden files
-    location ~ /\. {
-        deny all;
+        add_header Vary Accept-Encoding;
+        try_files $uri =404;
     }
 
     # Moodle dataroot protection
@@ -294,33 +234,19 @@ server {
         alias /var/moodledata/;
     }
 
-    # Static files caching (real static files)
-    location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        add_header Vary Accept-Encoding;
-        try_files $uri =404;
+    # Security - deny access
+    location ~ /\. {
+        deny all;
     }
 
-    # Block access to config files
     location ~ /config\.php {
         deny all;
     }
 
-    # Block access to upgrade script during normal operation
-    location ~ /admin/tool/installaddon/ {
-        deny all;
-    }
-
-    # Block access to various Moodle internal paths
     location ~ ^/(backup|local/temp|local/cache)/ {
         deny all;
     }
-
-    # Allow .htaccess for Apache compatibility (though we're using Nginx)
-    location ~ /\.htaccess {
-        deny all;
-    }
+}
 }
 EOF
 
