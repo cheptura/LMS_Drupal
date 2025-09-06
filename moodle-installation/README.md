@@ -8,11 +8,15 @@
 ## 🚀 QUICK_INSTALL
 ```bash
 # Быстрая установка с заменой файлов (одной командой)
+cd /tmp
 rm -rf LMS_Drupal 2>/dev/null || true
+
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/moodle-installation
 sudo chmod +x install-moodle.sh && sudo ./install-moodle.sh
 ```
+
+⚠️ **ВАЖНО для SSL:** Если получите ошибку лимита сертификатов Let's Encrypt ("too many certificates"), см. раздел troubleshooting → "Ошибка лимита сертификатов Let's Encrypt"
 
 ### 🔄 Обновление существующего репозитория:
 ```bash
@@ -217,6 +221,126 @@ sudo fail2ban-client status moodle-auth
 ## Поддержка и troubleshooting
 
 ### 🚨 Распространенные проблемы и решения:
+
+#### Ошибка лимита сертификатов Let's Encrypt
+```bash
+# ❌ Проблема: "too many certificates (5) already issued for this exact set of identifiers in the last 168h0m0s"
+# Проявления: Ошибка при выполнении скрипта 05-configure-ssl.sh
+# Причина: Let's Encrypt имеет лимит 5 сертификатов на домен в неделю
+
+# 🎯 РЕШЕНИЯ:
+
+# Решение 1: ПОДОЖДАТЬ (рекомендуется)
+# Дождитесь истечения лимита согласно сообщению об ошибке
+# Пример: "retry after 2025-09-07 18:25:24 UTC"
+# После этого времени повторно запустите:
+sudo ./05-configure-ssl.sh
+
+# Решение 2: ИСПОЛЬЗОВАТЬ STAGING СЕРТИФИКАТЫ (для тестирования)
+# Отредактируйте скрипт 05-configure-ssl.sh:
+sudo nano 05-configure-ssl.sh
+# Найдите строку с certbot и добавьте --staging:
+# certbot --nginx --staging --agree-tos --no-eff-email -m admin@omuzgorpro.tj -d omuzgorpro.tj
+
+# Решение 3: ПРОДОЛЖИТЬ БЕЗ SSL (временно)
+# Пропустите скрипт 05-configure-ssl.sh и продолжите установку:
+sudo ./06-download-moodle.sh     # Продолжить установку
+sudo ./07-configure-moodle.sh    # Настроить без SSL
+sudo ./08-install-moodle.sh      # Установить Moodle
+# Настроить SSL позже, когда лимит снимется
+
+# Решение 4: САМОПОДПИСАННЫЙ СЕРТИФИКАТ (для локального тестирования)
+# Создать самоподписанный сертификат:
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/omuzgorpro.tj.key \
+    -out /etc/ssl/certs/omuzgorpro.tj.crt \
+    -subj "/C=TJ/ST=Dushanbe/L=Dushanbe/O=RTTI/CN=omuzgorpro.tj"
+
+# Настроить Nginx для самоподписанного сертификата:
+sudo nano /etc/nginx/sites-available/omuzgorpro.tj
+# Добавить SSL блок с путями к созданным файлам
+
+# Решение 5: ИСПОЛЬЗОВАТЬ СУЩЕСТВУЮЩИЙ СЕРТИФИКАТ (рекомендуется)
+# Если у вас уже есть действующий сертификат Let's Encrypt:
+
+# 1. Проверить существующие сертификаты:
+sudo certbot certificates
+# Найдите сертификат для omuzgorpro.tj
+
+# 2. Если сертификат существует, скопировать его пути:
+# Certificate Path: /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem
+# Private Key Path: /etc/letsencrypt/live/omuzgorpro.tj/privkey.pem
+
+# 3. Создать конфигурацию Nginx с существующим сертификатом:
+sudo nano /etc/nginx/sites-available/omuzgorpro.tj
+
+# Добавить SSL блок:
+# server {
+#     listen 443 ssl http2;
+#     server_name omuzgorpro.tj;
+#     root /var/www/moodle;
+#     
+#     ssl_certificate /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/omuzgorpro.tj/privkey.pem;
+#     
+#     # Остальная конфигурация...
+# }
+
+# 4. Активировать конфигурацию:
+sudo ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# Решение 6: КОПИРОВАТЬ СЕРТИФИКАТ С ДРУГОГО СЕРВЕРА
+# Если сертификат находится на другом сервере:
+
+# 1. Скопировать файлы сертификата на новый сервер:
+# scp user@old-server:/etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem /tmp/
+# scp user@old-server:/etc/letsencrypt/live/omuzgorpro.tj/privkey.pem /tmp/
+
+# 2. Создать директорию и скопировать файлы:
+sudo mkdir -p /etc/letsencrypt/live/omuzgorpro.tj/
+sudo cp /tmp/fullchain.pem /etc/letsencrypt/live/omuzgorpro.tj/
+sudo cp /tmp/privkey.pem /etc/letsencrypt/live/omuzgorpro.tj/
+sudo chmod 600 /etc/letsencrypt/live/omuzgorpro.tj/privkey.pem
+sudo chmod 644 /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem
+
+# 3. Настроить автообновление (создать символические ссылки):
+sudo ln -sf /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem /etc/letsencrypt/live/omuzgorpro.tj/cert.pem
+sudo ln -sf /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem /etc/letsencrypt/live/omuzgorpro.tj/chain.pem
+
+# ℹ️ ПРОФИЛАКТИКА ЛИМИТОВ:
+# - Не запускайте 05-configure-ssl.sh многократно при ошибках
+# - Используйте --staging флаг для тестирования
+# - Проверьте DNS и доступность домена ПЕРЕД запуском certbot
+# - Один успешный запуск certbot создает рабочий сертификат
+# - ИСПОЛЬЗУЙТЕ существующий сертификат, если он есть
+
+# 🔧 ПРОПУСК SSL СКРИПТА И РУЧНАЯ НАСТРОЙКА:
+# Если хотите настроить SSL самостоятельно, пропустите шаг 05:
+
+# Вместо: sudo ./05-configure-ssl.sh
+# Выполните установку без SSL:
+sudo ./06-download-moodle.sh     # Продолжить установку
+sudo ./07-configure-moodle.sh    # Настроить без SSL  
+sudo ./08-install-moodle.sh      # Установить Moodle
+sudo ./09-post-install.sh        # Пост-установка
+sudo ./10-security.sh            # Безопасность
+sudo ./11-final-check.sh         # Финальная проверка
+
+# Затем настроить SSL вручную:
+# 1. Использовать существующий сертификат (см. Решение 5)
+# 2. Или дождаться снятия лимита и запустить: sudo ./05-configure-ssl.sh
+
+# 📊 ПРОВЕРКА СТАТУСА ЛИМИТОВ:
+# Посмотреть детали ошибки:
+sudo tail -f /var/log/letsencrypt/letsencrypt.log
+
+# Проверить текущие сертификаты:
+sudo certbot certificates
+
+# Проверить лимиты (неофициально):
+# https://crt.sh/?q=omuzgorpro.tj
+```
 
 #### Ошибки конфигурации Nginx (не запускается)
 ```bash

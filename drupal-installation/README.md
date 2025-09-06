@@ -6,16 +6,19 @@
 ## 🚀 QUICK_INSTALL
 ```bash
 # Быстрая установка с заменой файлов (одной командой)
+cd /tmp
 rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
 sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
 ```
 
+⚠️ **ВАЖНО для SSL:** Если получите ошибку лимита сертификатов Let's Encrypt ("too many certificates"), см. раздел troubleshooting → "Ошибка лимита сертификатов Let's Encrypt"
+
 ### 🔄 Обновление существующего репозитория:
 ```bash
 # Если репозиторий уже склонирован
-cd LMS_Drupal
+cd /tmp/LMS_Drupal
 git reset --hard HEAD
 git pull --force origin main
 cd drupal-installation
@@ -48,6 +51,7 @@ sudo chmod +x *.sh
 ## Поэтапная установка
 ```bash
 # Подготовка с заменой файлов
+cd /tmp
 rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
