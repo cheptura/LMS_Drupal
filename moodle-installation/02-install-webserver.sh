@@ -248,7 +248,6 @@ server {
     }
 }
 EOF
-EOF
 
 echo "11. Активация сайта..."
 ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
