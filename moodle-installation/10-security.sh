@@ -143,20 +143,13 @@ server_tokens off;
 more_clear_headers Server;
 EOF
 
-# Настройка ограничения скорости запросов
-cat > "$NGINX_DIR/conf.d/rate-limiting.conf" << EOF
-# Ограничение скорости запросов для Moodle
+# Настройка общих параметров безопасности в отдельном файле
+cat > "$NGINX_DIR/conf.d/security-general.conf" << EOF
+# Общие параметры безопасности для Moodle
 # Дата: $(date)
 
-# Зоны для ограничения по IP
-limit_req_zone \$binary_remote_addr zone=login:10m rate=5r/m;
-limit_req_zone \$binary_remote_addr zone=api:10m rate=30r/m;
-limit_req_zone \$binary_remote_addr zone=general:10m rate=200r/m;
-limit_req_zone \$binary_remote_addr zone=uploads:10m rate=10r/m;
-
-# Ограничение соединений
+# Ограничение соединений (применяется глобально)
 limit_conn_zone \$binary_remote_addr zone=conn_limit_per_ip:10m;
-limit_conn conn_limit_per_ip 25;
 
 # Размеры буферов и тела запроса
 client_max_body_size 512M;
@@ -227,7 +220,7 @@ if [ -n "$SITE_CONFIG" ] && ! grep -q "limit_req zone=login" "$SITE_CONFIG"; the
     }\
 \
     # Connection limiting\
-    limit_conn perip 25;' "$SITE_CONFIG"
+    limit_conn conn_limit_per_ip 25;' "$SITE_CONFIG"
     
     echo "   ✅ DDoS защита добавлена в конфигурацию сайта"
 else

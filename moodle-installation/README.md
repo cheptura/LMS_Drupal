@@ -504,6 +504,50 @@ sudo ./diagnose-moodle.sh
 # /root/moodle-initial-settings.sh (создается в 07-configure-moodle.sh)
 ```
 
+#### Ошибка дублирования rate limiting зон "is already bound to key"
+```bash
+# ✅ ИСПРАВЛЕНО в версии скриптов от 6 сентября 2025!
+# Теперь rate limiting зоны создаются только в nginx.conf
+
+# ❌ Проблема: limit_req_zone "login" is already bound to key "$binary_remote_addr"
+# Проявления: 
+# - nginx: configuration file /etc/nginx/nginx.conf test failed
+# - Дублирование зон в rate-limiting.conf и nginx.conf
+# - Конфликт настроек rate limiting
+
+# Причина: Rate limiting зоны определены дважды
+
+# 🎯 АВТОМАТИЧЕСКОЕ РЕШЕНИЕ:
+sudo ./fix-nginx-rate-limiting.sh
+
+# Что делает скрипт:
+# 1. Удаляет проблемный rate-limiting.conf из conf.d
+# 2. Оставляет rate limiting зоны только в nginx.conf
+# 3. Создает правильный security-general.conf
+# 4. Исправляет названия зон в конфигурации сайта
+# 5. Тестирует и перезагружает Nginx
+
+# 🔧 РУЧНОЕ ИСПРАВЛЕНИЕ:
+# 1. Удалить дублирующий файл:
+sudo rm -f /etc/nginx/conf.d/rate-limiting.conf
+
+# 2. Проверить что зоны есть в nginx.conf:
+grep "limit_req_zone" /etc/nginx/nginx.conf
+
+# 3. Если зон нет, добавить в http блок nginx.conf:
+sudo nano /etc/nginx/nginx.conf
+# Добавить после "http {":
+# limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
+# limit_req_zone $binary_remote_addr zone=api:10m rate=30r/m;
+# limit_req_zone $binary_remote_addr zone=uploads:10m rate=10r/m;
+# limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
+
+# 4. Проверить и перезагрузить:
+sudo nginx -t && sudo systemctl reload nginx
+
+# ✅ После исправления: nginx -t должен показать "syntax is ok"
+```
+
 #### Ошибка конфигурации Nginx "location directive is not allowed here"
 ```bash
 # ✅ ИСПРАВЛЕНО в версии скриптов от 6 сентября 2025!
