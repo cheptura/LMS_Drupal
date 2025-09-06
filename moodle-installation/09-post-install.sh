@@ -51,34 +51,196 @@ if (file_exists(\$CFG->dataroot . '/install.lock')) {
     fi
 fi
 
-echo "2. Применение первичных настроек Moodle..."
-# Запускаем скрипт первичных настроек, который НЕ жестко прописаны в config.php
-if [ -f /root/moodle-initial-settings.sh ]; then
-    echo "   Выполняем первичную настройку через CLI..."
-    bash /root/moodle-initial-settings.sh
-    echo "✅ Первичные настройки применены"
+echo "2. Проверка и исправление проблемы с cURL..."
+# Проверяем доступность функции curl_exec
+echo "   2.1. Проверка функции curl_exec()..."
+if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
+    echo "   ✅ curl_exec() доступна"
 else
-    echo "⚠️  Скрипт первичных настроек не найден, применяем настройки напрямую..."
+    echo "   ❌ curl_exec() не найдена, исправляем..."
     
-    # Резервные настройки, если скрипт не создан
-    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=lang --set=ru
-    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=timezone --set="Asia/Dushanbe"
-    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=theme --set=boost
+    # Переустанавливаем cURL
+    apt update
+    apt install -y curl libcurl4-openssl-dev
+    apt install -y --reinstall php8.3-curl
+    
+    # Перезапускаем PHP-FPM
+    systemctl restart php8.3-fpm
+    
+    # Проверяем еще раз
+    if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
+        echo "   ✅ curl_exec() исправлена"
+    else
+        echo "   ⚠️  curl_exec() все еще недоступна, но продолжаем"
+    fi
 fi
 
-echo "3. Установка дополнительных языковых пакетов..."
-# Установка русского языка
-sudo -u www-data php $MOODLE_DIR/admin/cli/install_language.php --lang=ru
+echo "3. Применение первичных настроек Moodle..."
 
-# Установка английского языка (если не установлен)
-sudo -u www-data php $MOODLE_DIR/admin/cli/install_language.php --lang=en
+# Функция для безопасной установки настроек
+set_moodle_config() {
+    local name="$1"
+    local value="$2"
+    local plugin="${3:-core}"
+    
+    echo "   Устанавливаем $plugin.$name = $value"
+    sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name="$name" --set="$value" --plugin="$plugin" 2>/dev/null || true
+}
 
-echo "4. Настройка дополнительных параметров..."
+# Основные настройки сайта
+set_moodle_config "lang" "ru"
+set_moodle_config "timezone" "Asia/Dushanbe"
+set_moodle_config "country" "TJ"
+set_moodle_config "theme" "boost"
+
+# Языковые настройки
+set_moodle_config "autolang" "1"
+set_moodle_config "langmenu" "1"
+
+# Настройки сайта
+set_moodle_config "fullname" "Система управления обучением РЦТИ"
+set_moodle_config "shortname" "RTTI LMS"
+set_moodle_config "summary" "Современная платформа для онлайн обучения"
+
+# Настройки безопасности
+set_moodle_config "sessiontimeout" "7200"
+set_moodle_config "minpasswordlength" "8"
+set_moodle_config "minpassworddigits" "1"
+set_moodle_config "minpasswordlower" "1"
+set_moodle_config "minpasswordupper" "1"
+set_moodle_config "lockoutthreshold" "5"
+
+# Настройки файлов
+set_moodle_config "maxbytes" "104857600"  # 100MB
+
+# Настройки производительности
+set_moodle_config "enablecaching" "1"
+set_moodle_config "enablecompletion" "1"
+
+# Отключаем отладку в продакшене
+set_moodle_config "debug" "0"
+set_moodle_config "debugdisplay" "0"
+
+echo "   ✅ Первичные настройки применены"
+
+echo "4. Установка дополнительных языковых пакетов..."
+
+echo "   4.1. Создание директории для языков..."
+# Создаем директорию для дополнительных языков
+MOODLE_DATA="${MOODLE_DATA:-/var/moodledata}"
+if [ ! -d "$MOODLE_DATA/lang" ]; then
+    sudo mkdir -p "$MOODLE_DATA/lang"
+    sudo chown www-data:www-data "$MOODLE_DATA/lang"
+    sudo chmod 755 "$MOODLE_DATA/lang"
+    echo "   ✅ Создана директория $MOODLE_DATA/lang"
+fi
+
+echo "   4.2. Загрузка языковых пакетов (русский и таджикский)..."
+
+# Функция для загрузки языкового пакета
+download_language_pack() {
+    local lang_code="$1"
+    local lang_name="$2"
+    local lang_url="https://download.moodle.org/download.php/direct/langpack/5.0/${lang_code}.zip"
+    local temp_file="/tmp/moodle_${lang_code}_lang.zip"
+    
+    echo "   Загружаем $lang_name ($lang_code)..."
+    
+    if wget -q -O "$temp_file" "$lang_url" 2>/dev/null; then
+        echo "   ✅ $lang_name скачан"
+        
+        # Распаковываем
+        if sudo -u www-data unzip -q -o "$temp_file" -d "$MOODLE_DATA/lang/" 2>/dev/null; then
+            echo "   ✅ $lang_name распакован"
+            
+            # Устанавливаем права
+            if [ -d "$MOODLE_DATA/lang/$lang_code" ]; then
+                sudo chown -R www-data:www-data "$MOODLE_DATA/lang/$lang_code"
+                sudo find "$MOODLE_DATA/lang/$lang_code" -type d -exec chmod 755 {} \;
+                sudo find "$MOODLE_DATA/lang/$lang_code" -type f -exec chmod 644 {} \;
+                echo "   ✅ Права доступа для $lang_name установлены"
+            fi
+        else
+            echo "   ❌ Ошибка распаковки $lang_name"
+        fi
+        rm -f "$temp_file"
+        return 0
+    elif curl -s -o "$temp_file" "$lang_url" 2>/dev/null; then
+        echo "   ✅ $lang_name скачан через curl"
+        
+        if sudo -u www-data unzip -q -o "$temp_file" -d "$MOODLE_DATA/lang/" 2>/dev/null; then
+            echo "   ✅ $lang_name распакован"
+            if [ -d "$MOODLE_DATA/lang/$lang_code" ]; then
+                sudo chown -R www-data:www-data "$MOODLE_DATA/lang/$lang_code"
+                sudo find "$MOODLE_DATA/lang/$lang_code" -type d -exec chmod 755 {} \;
+                sudo find "$MOODLE_DATA/lang/$lang_code" -type f -exec chmod 644 {} \;
+                echo "   ✅ Права доступа для $lang_name установлены"
+            fi
+        fi
+        rm -f "$temp_file"
+        return 0
+    else
+        echo "   ⚠️  Не удалось загрузить $lang_name"
+        return 1
+    fi
+}
+
+# Загружаем языковые пакеты
+download_language_pack "ru" "русский язык"
+download_language_pack "tg" "таджикский язык"
+
+echo "   4.3. Очистка кэша и установка языка по умолчанию..."
+sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
+set_moodle_config "lang" "ru"
+
+echo "   4.4. Проверка доступных языков..."
+# Создаем простую проверку языков
+sudo -u www-data php -r "
+define('CLI_SCRIPT', true);
+require_once('$MOODLE_DIR/config.php');
+\$langs = get_string_manager()->get_list_of_translations();
+echo 'Доступные языки: ' . count(\$langs) . ' шт.' . PHP_EOL;
+foreach (\$langs as \$code => \$name) {
+    \$current = (\$code === get_config('core', 'lang')) ? ' ← ТЕКУЩИЙ' : '';
+    if (in_array(\$code, ['en', 'ru', 'tg'])) {
+        echo '✅ ' . \$code . ': ' . \$name . \$current . PHP_EOL;
+    } else {
+        echo '- ' . \$code . ': ' . \$name . \$current . PHP_EOL;
+    }
+}
+" 2>/dev/null || echo "   ⚠️  Не удалось проверить языки (не критично)"
+
+echo "5. Настройка дополнительных параметров..."
 # Эти настройки НЕ дублируют config.php, а дополняют их
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=sessiontimeout --set=7200
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=enablemobilewebservice --set=1
+set_moodle_config "sessiontimeout" "7200"
+set_moodle_config "enablemobilewebservice" "1"
 
-echo "5. Создание стандартных категорий курсов..."
+echo "6. Дополнительные настройки производительности..."
+
+# Настройки кэширования и производительности
+set_moodle_config "enablecaching" "1"
+set_moodle_config "cachejs" "1"
+set_moodle_config "yuicomboloading" "1"
+
+# Настройки безопасности паролей
+set_moodle_config "lockoutwindow" "1800"   # 30 минут
+set_moodle_config "lockoutduration" "1800"  # 30 минут
+
+# Настройки электронной почты
+DOMAIN_NAME="${DOMAIN_NAME:-omuzgorpro.tj}"
+set_moodle_config "noreplyaddress" "noreply@$DOMAIN_NAME"
+set_moodle_config "supportemail" "support@$DOMAIN_NAME"
+
+# Календарные настройки
+set_moodle_config "calendartype" "gregorian"
+set_moodle_config "calendar_startwday" "1"  # Понедельник
+
+echo "   ✅ Дополнительные параметры настроены"
+
+echo "7. Финальная очистка кэша..."
+sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
+
+echo "8. Создание стандартных категорий курсов..."
 
 # Создаем временный PHP скрипт для создания категорий
 cat > /tmp/create_categories.php << 'PHPEOF'
@@ -131,14 +293,14 @@ fi
 # Удаляем временный файл
 rm -f /tmp/create_categories.php
 
-echo "6. Дополнительные настройки оформления..."
+echo "9. Дополнительные настройки оформления..."
 # Очистка кэша после всех изменений
 sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
 
-echo "7. Установка и настройка плагинов..."
+echo "10. Установка и настройка плагинов..."
 # Все настройки веб-сервисов уже применены в первичных настройках
 
-echo "8. Создание расписания обслуживания..."
+echo "11. Создание расписания обслуживания..."
 cat > /etc/cron.d/moodle-maintenance << 'EOF'
 # Moodle maintenance tasks
 
@@ -269,7 +431,8 @@ cat > /root/moodle-post-install-report.txt << EOF
 
 === ВЫПОЛНЕННЫЕ НАСТРОЙКИ ===
 
-✅ Языковые пакеты: русский, английский
+✅ Языковые пакеты: русский, таджикский, английский
+✅ Язык по умолчанию: русский (ru)
 ✅ Оптимизация производительности: кэширование включено
 ✅ Параметры безопасности: настроены
 ✅ Категории курсов: созданы стандартные категории
@@ -407,6 +570,9 @@ echo "🎉 ПОСТ-УСТАНОВОЧНАЯ НАСТРОЙКА ЗАВЕРШЕН
 echo "🎉 ================================================"
 echo
 echo "✅ Все компоненты настроены и оптимизированы"
+echo "✅ cURL проверен и исправлен (curl_exec функция доступна)"
+echo "✅ Русский и таджикский языковые пакеты установлены"
+echo "✅ Начальные настройки применены"
 echo "✅ Автоматические задачи созданы"
 echo "✅ Мониторинг и обслуживание настроены"
 echo

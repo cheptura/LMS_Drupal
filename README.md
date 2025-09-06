@@ -35,7 +35,7 @@
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal
 
-# Установка LMS Moodle
+# Установка LMS Moodle (с автоматическим исправлением cURL и языков)
 cd moodle-installation
 sudo chmod +x *.sh && sudo ./install-moodle.sh
 

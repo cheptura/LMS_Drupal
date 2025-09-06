@@ -78,6 +78,24 @@ apt install -y \
 # Note: ctype, dom, iconv, json, pcre, simplexml, spl, tokenizer, openssl, sodium
 # встроены в PHP 8.3 и не требуют отдельной установки
 
+echo "5.1. Проверка установки критических расширений..."
+# Проверяем, что все критические расширения установлены
+required_extensions=("curl" "gd" "intl" "mbstring" "xml" "zip" "pgsql" "opcache")
+
+for ext in "${required_extensions[@]}"; do
+    if dpkg -l | grep -q "php8.3-$ext"; then
+        echo "   ✅ php8.3-$ext установлен"
+    else
+        echo "   ❌ php8.3-$ext НЕ установлен, переустанавливаем..."
+        apt install -y "php8.3-$ext"
+    fi
+done
+
+# Дополнительно проверяем curl отдельно
+echo "5.2. Дополнительная проверка cURL..."
+apt install -y curl libcurl4-openssl-dev
+apt install -y --reinstall php8.3-curl
+
 echo "6. Проверка и удаление случайно установленных других версий PHP..."
 # Удаляем любые другие версии PHP, которые могли установиться как зависимости
 apt remove --purge -y php8.0* php8.1* php8.2* php8.4* php7* 2>/dev/null || true
@@ -325,6 +343,31 @@ if [ "$MAX_INPUT_VARS" -ge 5000 ]; then
 else
     echo "❌ max_input_vars = $MAX_INPUT_VARS (недостаточно для Moodle, требуется >= 5000)"
 fi
+
+echo "20.1. Проверка расширений PHP для Moodle..."
+echo "📋 Проверка критических расширений:"
+
+# Проверяем функции, а не только модули
+php -r "
+\$required = ['curl_exec', 'gd_info', 'mb_strlen', 'intl_get_error_code', 'zip_open'];
+foreach (\$required as \$func) {
+    if (function_exists(\$func)) {
+        echo '✅ ' . \$func . '() доступна' . PHP_EOL;
+    } else {
+        echo '❌ ' . \$func . '() НЕ доступна' . PHP_EOL;
+    }
+}
+
+echo PHP_EOL . 'Загруженные расширения:' . PHP_EOL;
+\$extensions = ['curl', 'gd', 'intl', 'mbstring', 'pgsql', 'xml', 'zip', 'opcache'];
+foreach (\$extensions as \$ext) {
+    if (extension_loaded(\$ext)) {
+        echo '✅ ' . \$ext . PHP_EOL;
+    } else {
+        echo '❌ ' . \$ext . ' НЕ ЗАГРУЖЕН' . PHP_EOL;
+    }
+}
+"
 
 echo "21. Сохранение информации о PHP версии..."
 cat > /root/moodle-php-info.txt << EOF
