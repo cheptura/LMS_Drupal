@@ -80,6 +80,22 @@ echo "5. Определение версии Drupal..."
 DRUPAL_VERSION=$(sudo -u www-data php web/core/scripts/drupal version 2>/dev/null || echo "Drupal 11.x")
 echo "Установлена версия: $DRUPAL_VERSION"
 
+echo "5.1. Установка Drush..."
+cd $DRUPAL_DIR
+sudo -u www-data COMPOSER_ALLOW_SUPERUSER=1 composer require drush/drush --no-interaction
+if [ $? -ne 0 ]; then
+    echo "⚠️ Ошибка установки Drush, пробуем альтернативный метод..."
+    sudo -u www-data composer require drush/drush:^12 --no-interaction
+fi
+
+# Проверяем что Drush установлен
+if [ ! -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
+    echo "❌ Drush не найден, установка вручную..."
+    sudo -u www-data composer global require drush/drush
+    # Создаем символическую ссылку
+    ln -sf ~/.composer/vendor/bin/drush $DRUPAL_DIR/vendor/bin/drush 2>/dev/null || true
+fi
+
 echo "6. Установка дополнительных модулей для цифровой библиотеки..."
 cd $DRUPAL_DIR
 
@@ -245,24 +261,63 @@ ADMIN_PASSWORD="RTTIDrupal2024!"
 
 cd $DRUPAL_DIR
 
-# Установка Drupal через Drush (правильный синтаксис)
-sudo -u www-data ./vendor/bin/drush site:install standard \
-    --langcode=ru \
-    --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
-    --site-name="RTTI Digital Library" \
-    --site-mail=library@omuzgorpro.tj \
-    --account-name=admin \
-    --account-pass=$ADMIN_PASSWORD \
-    --account-mail=admin@omuzgorpro.tj \
-    --yes
+# Проверяем наличие Drush
+if [ -f "./vendor/bin/drush" ]; then
+    echo "📍 Найден Drush, используем для установки..."
+    
+    # Установка Drupal через Drush (правильный синтаксис)
+    sudo -u www-data ./vendor/bin/drush site:install standard \
+        --langcode=ru \
+        --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
+        --site-name="RTTI Digital Library" \
+        --site-mail=library@omuzgorpro.tj \
+        --account-name=admin \
+        --account-pass=$ADMIN_PASSWORD \
+        --account-mail=admin@omuzgorpro.tj \
+        --yes
 
-INSTALL_RESULT=$?
+    INSTALL_RESULT=$?
+else
+    echo "⚠️ Drush не найден, используем альтернативный метод..."
+    
+    # Альтернативный метод через PHP скрипт установки
+    echo "📍 Создание конфигурации базы данных..."
+    
+    # Добавляем настройки базы данных в settings.php
+    cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
+
+// Database connection settings
+\$databases['default']['default'] = [
+  'database' => 'drupal_library',
+  'username' => 'drupaluser',
+  'password' => '$DB_PASSWORD',
+  'prefix' => '',
+  'host' => 'localhost',
+  'port' => '5432',
+  'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
+  'driver' => 'pgsql',
+  'autoload' => 'core/modules/pgsql/src/Driver/Database/pgsql/',
+];
+
+// Salt for hashing
+\$settings['hash_salt'] = '$(openssl rand -base64 32)';
+
+// Site settings
+\$settings['config_sync_directory'] = '../config/sync';
+\$settings['file_private_path'] = '../private';
+
+EOF
+
+    echo "📍 Установка через веб-интерфейс будет доступна по адресу сервера"
+    INSTALL_RESULT=1
+fi
 
 if [ $INSTALL_RESULT -eq 0 ]; then
     echo "✅ Установка Drupal завершена успешно"
 else
-    echo "❌ Ошибка установки Drupal через CLI"
-    echo "Попробуем установку через веб-интерфейс..."
+    echo "❌ Ошибка установки Drupal через CLI или Drush не найден"
+    echo "📌 Drupal настроен для установки через веб-интерфейс"
+    echo "📌 Откройте http://$(hostname -I | awk '{print $1}') для завершения установки"
 fi
 
 echo "13. Настройка прав доступа после установки..."
@@ -274,25 +329,36 @@ find $DRUPAL_DIR/web/sites/default/files -type f -exec chmod 644 {} \;
 echo "14. Включение необходимых модулей..."
 cd $DRUPAL_DIR
 
-# Включение основных модулей
-CORE_MODULES=(
-    "toolbar"
-    "admin_toolbar"
-    "admin_toolbar_tools"
-    "pathauto"
-    "metatag"
-    "token"
-    "views_ui"
-    "media"
-    "media_library"
-    "search_api"
-    "search_api_db"
-)
+# Включение основных модулей только если Drupal установлен и Drush доступен
+if [ -f "./vendor/bin/drush" ] && [ $INSTALL_RESULT -eq 0 ]; then
+    echo "📍 Включение модулей через Drush..."
+    
+    # Включение основных модулей
+    CORE_MODULES=(
+        "toolbar"
+        "admin_toolbar"
+        "admin_toolbar_tools"
+        "pathauto"
+        "metatag"
+        "token"
+        "views_ui"
+        "media"
+        "media_library"
+        "search_api"
+        "search_api_db"
+    )
 
-for module in "${CORE_MODULES[@]}"; do
-    echo "Включение модуля $module..."
-    sudo -u www-data ./vendor/bin/drush pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
-done
+    for module in "${CORE_MODULES[@]}"; do
+        echo "Включение модуля $module..."
+        sudo -u www-data ./vendor/bin/drush pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
+    done
+    
+    # Очистка кэша после включения модулей
+    echo "📍 Очистка кэша Drupal..."
+    sudo -u www-data ./vendor/bin/drush cache:rebuild 2>/dev/null || true
+else
+    echo "⚠️ Модули будут доступны для включения через веб-интерфейс после завершения установки"
+fi
 
 echo "15. Создание скрипта управления Drupal..."
 cat > /root/drupal-management.sh << EOF
@@ -458,9 +524,27 @@ echo "📌 Drupal 11 установлен в $DRUPAL_DIR"
 echo "📌 Модули для библиотеки установлены"
 echo "📌 База данных настроена"
 echo "📌 Кэширование активировано"
-echo "📌 URL: https://storage.omuzgorpro.tj"
+
+if [ $INSTALL_RESULT -eq 0 ]; then
+    echo "📌 ✅ Drupal полностью настроен через CLI"
+    echo "📌 URL: https://storage.omuzgorpro.tj"
+    echo "📌 Логин: admin / Пароль: RTTIDrupal2024!"
+else
+    echo "📌 ⚠️ Завершите установку через веб-интерфейс:"
+    echo "📌 URL: http://$(hostname -I | awk '{print $1}')"
+    echo "📌 Используйте данные БД из: /root/drupal-db-credentials.txt"
+    echo "📌 Создайте учетную запись администратора"
+fi
+
 echo "📌 Данные администратора: /root/drupal-admin-credentials.txt"
 echo "📌 Управление: /root/drupal-management.sh"
 echo "📌 Информация: /root/drupal-installation-info.txt"
+
+if [ -f "./vendor/bin/drush" ]; then
+    echo "📌 ✅ Drush доступен для управления"
+else
+    echo "📌 ⚠️ Drush не установлен - ограниченные возможности CLI"
+fi
+
 echo "📌 Следующий шаг: ./07-configure-drupal.sh"
 echo
