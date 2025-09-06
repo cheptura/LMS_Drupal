@@ -27,20 +27,25 @@ echo "Сервер: omuzgorpro.tj"
 echo "Дата: $(date)"
 echo
 
-echo "1. Установка Nginx..."
+echo "1. Настройка часового пояса..."
+# Настройка часового пояса для Таджикистана
+timedatectl set-timezone Asia/Dushanbe
+echo "   ✅ Часовой пояс установлен: $(timedatectl show --property=Timezone --value)"
+
+echo "2. Установка Nginx..."
 apt update
 apt install -y nginx
 
-echo "2. Удаление всех существующих версий PHP..."
+echo "3. Удаление всех существующих версий PHP..."
 # Сначала полностью очищаем систему от PHP
 apt remove --purge -y php* 2>/dev/null || true
 apt autoremove -y
 
-echo "3. Добавление репозитория PHP..."
+echo "4. Добавление репозитория PHP..."
 add-apt-repository ppa:ondrej/php -y
 apt update
 
-echo "4. Установка ТОЛЬКО PHP 8.3 и всех необходимых расширений для Moodle..."
+echo "5. Установка ТОЛЬКО PHP 8.3 и всех необходимых расширений для Moodle..."
 # Устанавливаем только конкретные пакеты PHP 8.3, БЕЗ метапакета php
 # Список основан на официальных требованиях Moodle:
 
@@ -73,20 +78,20 @@ apt install -y \
 # Note: ctype, dom, iconv, json, pcre, simplexml, spl, tokenizer, openssl, sodium
 # встроены в PHP 8.3 и не требуют отдельной установки
 
-echo "5. Проверка и удаление случайно установленных других версий PHP..."
+echo "6. Проверка и удаление случайно установленных других версий PHP..."
 # Удаляем любые другие версии PHP, которые могли установиться как зависимости
 apt remove --purge -y php8.0* php8.1* php8.2* php8.4* php7* 2>/dev/null || true
 apt autoremove -y
 
-echo "6. Установка PHP 8.3 как версии по умолчанию..."
+echo "7. Установка PHP 8.3 как версии по умолчанию..."
 update-alternatives --install /usr/bin/php php /usr/bin/php8.3 100
 update-alternatives --set php /usr/bin/php8.3
 
-echo "7. Закрепление PHP 8.3 от автоматических обновлений..."
+echo "8. Закрепление PHP 8.3 от автоматических обновлений..."
 # Закрепляем пакеты PHP 8.3, чтобы они не обновлялись автоматически до PHP 8.4
 apt-mark hold php8.3-*
 
-echo "8. Расширенная настройка PHP для Moodle..."
+echo "9. Расширенная настройка PHP для Moodle..."
 PHP_INI="/etc/php/8.3/fpm/php.ini"
 PHP_CLI_INI="/etc/php/8.3/cli/php.ini"
 
@@ -119,6 +124,9 @@ configure_php_ini() {
     set_php_setting "post_max_size" "100M" "$ini_file"
     set_php_setting "upload_max_filesize" "100M" "$ini_file"
     set_php_setting "max_input_vars" "5000" "$ini_file"
+    
+    # Настройка часового пояса
+    set_php_setting "date.timezone" "Asia/Dushanbe" "$ini_file"
     
     # Настройки OPcache для производительности
     set_php_setting "opcache.enable" "1" "$ini_file"
@@ -155,6 +163,9 @@ memory_limit = 512M
 post_max_size = 100M
 upload_max_filesize = 100M
 
+; Timezone setting for Tajikistan
+date.timezone = Asia/Dushanbe
+
 ; OPcache settings for Moodle
 opcache.enable = 1
 opcache.memory_consumption = 256
@@ -170,7 +181,7 @@ ln -sf /etc/php/8.3/conf.d/99-moodle-settings.ini /etc/php/8.3/cli/conf.d/99-moo
 
 echo "✅ Расширенные настройки PHP применены для FPM и CLI"
 
-echo "9. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
+echo "10. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
 cat > /etc/nginx/sites-available/omuzgorpro.tj << 'EOF'
 server {
     listen 80;
@@ -313,29 +324,29 @@ server {
 }
 EOF
 
-echo "10. Активация сайта..."
+echo "11. Активация сайта..."
 ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
-echo "11. Проверка конфигурации Nginx..."
+echo "12. Проверка конфигурации Nginx..."
 nginx -t
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка в конфигурации Nginx!"
     exit 1
 fi
 
-echo "12. Запуск и включение автозапуска служб..."
+echo "13. Запуск и включение автозапуска служб..."
 systemctl enable nginx php8.3-fpm
 systemctl start nginx php8.3-fpm
 
-echo "13. Настройка firewall..."
+echo "14. Настройка firewall..."
 ufw allow 'Nginx Full'
 
-echo "14. Создание директории для сайта..."
+echo "15. Создание директории для сайта..."
 mkdir -p /var/www/moodle
 chown -R www-data:www-data /var/www/moodle
 
-echo "15. Создание тестовой страницы..."
+echo "16. Создание тестовой страницы..."
 cat > /var/www/moodle/info.php << 'EOF'
 <?php
 echo "<h1>Moodle Server Status</h1>";
@@ -353,14 +364,14 @@ foreach ($required_extensions as $ext) {
 ?>
 EOF
 
-echo "16. Перезапуск служб..."
+echo "17. Перезапуск служб..."
 systemctl restart nginx php8.3-fpm
 
-echo "17. Проверка статуса..."
+echo "18. Проверка статуса..."
 systemctl status nginx --no-pager -l
 systemctl status php8.3-fpm --no-pager -l
 
-echo "18. Финальная проверка версии PHP..."
+echo "19. Финальная проверка версии PHP..."
 echo "📋 Установленная версия PHP:"
 php -v
 echo
@@ -370,7 +381,7 @@ echo
 echo "📋 Проверка на наличие других версий PHP:"
 dpkg -l | grep -E "php[0-9]" | grep -v php8.3 || echo "✅ Других версий PHP не найдено"
 
-echo "19. Проверка критических настроек PHP для Moodle..."
+echo "20. Проверка критических настроек PHP для Moodle..."
 echo "📊 Текущие настройки PHP:"
 php -r "
 echo 'max_execution_time = ' . ini_get('max_execution_time') . ' (требуется >= 300)' . PHP_EOL;
@@ -378,6 +389,7 @@ echo 'memory_limit = ' . ini_get('memory_limit') . ' (требуется >= 512M
 echo 'max_input_vars = ' . ini_get('max_input_vars') . ' (требуется >= 5000)' . PHP_EOL;
 echo 'post_max_size = ' . ini_get('post_max_size') . ' (требуется >= 100M)' . PHP_EOL;
 echo 'upload_max_filesize = ' . ini_get('upload_max_filesize') . ' (требуется >= 100M)' . PHP_EOL;
+echo 'date.timezone = ' . ini_get('date.timezone') . ' (установлен)' . PHP_EOL;
 echo 'opcache.enable = ' . (ini_get('opcache.enable') ? 'Включен' : 'Отключен') . PHP_EOL;
 "
 
@@ -389,7 +401,7 @@ else
     echo "❌ max_input_vars = $MAX_INPUT_VARS (недостаточно для Moodle, требуется >= 5000)"
 fi
 
-echo "20. Сохранение информации о PHP версии..."
+echo "21. Сохранение информации о PHP версии..."
 cat > /root/moodle-php-info.txt << EOF
 # Информация о PHP для Moodle
 # Дата установки: $(date)
