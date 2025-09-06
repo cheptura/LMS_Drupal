@@ -132,16 +132,28 @@ fi
 
 echo "   📍 Тест версии с таймаутом..."
 # Используем timeout для предотвращения зависания
+# Добавляем COMPOSER_ALLOW_SUPERUSER для работы под root
+export COMPOSER_ALLOW_SUPERUSER=1
 if timeout 30 composer --version --no-ansi >/dev/null 2>&1; then
     COMPOSER_VERSION=$(timeout 30 composer --version --no-ansi 2>/dev/null | head -1)
     echo "✅ Composer установлен: $COMPOSER_VERSION"
 else
-    echo "❌ Ошибка: Composer не отвечает или установлен неправильно"
-    echo "   🔍 Дополнительная диагностика..."
-    echo "   PHP версия: $(php --version | head -1)"
-    echo "   Composer путь: $(which composer 2>/dev/null || echo 'не найден в PATH')"
-    echo "   Попытка прямого вызова: $(timeout 10 php /usr/local/bin/composer --version 2>&1 | head -1 || echo 'не удалось')"
-    exit 1
+    echo "⚠️  Попытка исправления проблем с правами root..."
+    # Попробуем с явным разрешением superuser
+    if timeout 30 env COMPOSER_ALLOW_SUPERUSER=1 composer --version --no-ansi >/dev/null 2>&1; then
+        COMPOSER_VERSION=$(timeout 30 env COMPOSER_ALLOW_SUPERUSER=1 composer --version --no-ansi 2>/dev/null | head -1)
+        echo "✅ Composer установлен (с разрешением superuser): $COMPOSER_VERSION"
+        # Создаем глобальную переменную окружения для всех последующих использований
+        echo 'export COMPOSER_ALLOW_SUPERUSER=1' >> /root/.bashrc
+        echo "   📝 Добавлена переменная COMPOSER_ALLOW_SUPERUSER в ~/.bashrc"
+    else
+        echo "❌ Ошибка: Composer не отвечает или установлен неправильно"
+        echo "   🔍 Дополнительная диагностика..."
+        echo "   PHP версия: $(php --version | head -1)"
+        echo "   Composer путь: $(which composer 2>/dev/null || echo 'не найден в PATH')"
+        echo "   Попытка прямого вызова: $(timeout 10 env COMPOSER_ALLOW_SUPERUSER=1 php /usr/local/bin/composer --version 2>&1 | head -1 || echo 'не удалось')"
+        exit 1
+    fi
 fi
 
 echo "11. Настройка PHP 8.3 для Drupal..."

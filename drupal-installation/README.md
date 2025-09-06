@@ -54,7 +54,7 @@ sudo chmod +x *.sh
 cd /tmp
 rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
-cd LMS_Drupal/drupal-installation
+cd /tmp/LMS_Drupal/drupal-installation
 sudo chmod +x *.sh
 
 # Поэтапное выполнение
