@@ -135,6 +135,17 @@ configure_php_ini() {
 configure_php_ini "$PHP_INI" "PHP-FPM"
 configure_php_ini "$PHP_CLI_INI" "PHP CLI"
 
+# Создаем директории conf.d если они не существуют
+mkdir -p /etc/php/8.3/fpm/conf.d
+mkdir -p /etc/php/8.3/cli/conf.d
+mkdir -p /etc/php/8.3/conf.d
+
+# Проверяем, что директория создана
+if [ ! -d "/etc/php/8.3/conf.d" ]; then
+    echo "❌ Не удалось создать директорию /etc/php/8.3/conf.d"
+    exit 1
+fi
+
 # Дополнительная настройка через отдельный конфиг файл для гарантии
 cat > /etc/php/8.3/conf.d/99-moodle-settings.ini << 'EOF'
 ; Moodle specific PHP settings
@@ -152,6 +163,10 @@ opcache.revalidate_freq = 2
 opcache.save_comments = 1
 opcache.enable_file_override = 1
 EOF
+
+# Создаем симлинки в FPM и CLI директориях для обеспечения единообразия
+ln -sf /etc/php/8.3/conf.d/99-moodle-settings.ini /etc/php/8.3/fpm/conf.d/99-moodle-settings.ini 2>/dev/null || true
+ln -sf /etc/php/8.3/conf.d/99-moodle-settings.ini /etc/php/8.3/cli/conf.d/99-moodle-settings.ini 2>/dev/null || true
 
 echo "✅ Расширенные настройки PHP применены для FPM и CLI"
 

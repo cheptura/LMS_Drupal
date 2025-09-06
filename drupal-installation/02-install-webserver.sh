@@ -85,6 +85,10 @@ PHP_CLI_INI="/etc/php/8.3/cli/php.ini"
 cp $PHP_INI ${PHP_INI}.backup
 cp $PHP_CLI_INI ${PHP_CLI_INI}.backup
 
+# Создаем директории conf.d если они не существуют
+mkdir -p /etc/php/8.3/fpm/conf.d
+mkdir -p /etc/php/8.3/cli/conf.d
+
 # Оптимизация PHP для Drupal
 cat > /etc/php/8.3/fpm/conf.d/99-drupal.ini << 'EOF'
 ; Drupal 11 PHP optimizations
