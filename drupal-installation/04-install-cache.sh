@@ -90,6 +90,14 @@ slowlog-max-len 128
 latency-monitor-threshold 100
 EOF
 
+echo "4.1. Остановка Redis для применения новой конфигурации..."
+systemctl stop redis-server 2>/dev/null || true
+sleep 2
+
+echo "4.2. Проверка что Redis полностью остановлен..."
+pkill -f redis-server 2>/dev/null || true
+sleep 1
+
 echo "5. Настройка Memcached для Drupal..."
 cat > /etc/memcached.conf << 'EOF'
 # Memcached configuration for Drupal
@@ -155,14 +163,28 @@ EOF
 # Копирование для CLI
 cp /etc/php/8.3/fpm/conf.d/20-drupal-cache.ini /etc/php/8.3/cli/conf.d/20-drupal-cache.ini
 
+# Перезапуск PHP-FPM для применения настроек кэширования
+systemctl restart php8.3-fpm
+
 echo "8. Включение и запуск сервисов кэширования..."
 systemctl enable redis-server
-systemctl start redis-server
+systemctl restart redis-server  # Перезапускаем чтобы применить новую конфигурацию с паролем
 systemctl enable memcached
 systemctl start memcached
 
 echo "9. Ожидание запуска сервисов..."
-sleep 3
+sleep 8  # Увеличиваем время ожидания для надежности
+
+# Проверяем что Redis запустился корректно
+for i in {1..5}; do
+    if systemctl is-active --quiet redis-server; then
+        echo "📍 Redis запущен (попытка $i)"
+        break
+    else
+        echo "⏳ Ожидание запуска Redis (попытка $i)..."
+        sleep 2
+    fi
+done
 
 echo "10. Проверка статуса Redis..."
 systemctl status redis-server --no-pager -l | head -5
@@ -171,12 +193,42 @@ echo "11. Проверка статуса Memcached..."
 systemctl status memcached --no-pager -l | head -5
 
 echo "12. Тестирование Redis..."
-redis-cli -a $REDIS_PASSWORD ping
-if [ $? -eq 0 ]; then
-    echo "✅ Redis работает корректно"
-else
-    echo "❌ Ошибка подключения к Redis"
+# Дополнительное ожидание для полного запуска Redis
+sleep 3
+
+# Проверяем, что Redis запущен
+if ! systemctl is-active --quiet redis-server; then
+    echo "❌ Redis сервер не запущен"
+    systemctl status redis-server --no-pager
     exit 1
+fi
+
+# Проверяем подключение с паролем (с подавлением предупреждения)
+REDIS_TEST=$(redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null)
+if [ "$REDIS_TEST" = "PONG" ]; then
+    echo "✅ Redis работает корректно с аутентификацией"
+else
+    echo "⚠️ Проблема с аутентификацией Redis. Применяем конфигурацию динамически..."
+    
+    # Пытаемся подключиться без пароля и настроить
+    if redis-cli ping 2>/dev/null | grep -q "PONG"; then
+        echo "📍 Redis работает без пароля, настраиваем аутентификацию..."
+        redis-cli CONFIG SET requirepass "$REDIS_PASSWORD" 2>/dev/null
+        redis-cli CONFIG REWRITE 2>/dev/null
+        
+        # Тестируем с новым паролем
+        sleep 2
+        REDIS_TEST_FINAL=$(redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null)
+        if [ "$REDIS_TEST_FINAL" = "PONG" ]; then
+            echo "✅ Redis настроен с аутентификацией"
+        else
+            echo "❌ Ошибка настройки пароля Redis"
+            exit 1
+        fi
+    else
+        echo "❌ Не удается подключиться к Redis"
+        exit 1
+    fi
 fi
 
 echo "13. Тестирование Memcached..."
@@ -189,24 +241,46 @@ else
 fi
 
 echo "14. Проверка PHP интеграции с кэшированием..."
-php -r "
+PHP_TEST_RESULT=$(php -r "
 // Тест Redis
 try {
     \$redis = new Redis();
-    \$redis->connect('127.0.0.1', 6379);
-    \$redis->auth('$REDIS_PASSWORD');
-    \$redis->set('drupal_test', 'success');
+    if (!\$redis->connect('127.0.0.1', 6379)) {
+        throw new Exception('Connection failed');
+    }
+    
+    // Проверяем нужна ли аутентификация
+    try {
+        \$redis->ping();
+        \$needsAuth = false;
+    } catch (Exception \$e) {
+        if (strpos(\$e->getMessage(), 'NOAUTH') !== false) {
+            \$needsAuth = true;
+        } else {
+            throw \$e;
+        }
+    }
+    
+    // Аутентификация если нужна
+    if (\$needsAuth) {
+        if (!\$redis->auth('$REDIS_PASSWORD')) {
+            throw new Exception('Authentication failed');
+        }
+    }
+    
+    // Тестирование операций
+    \$redis->set('drupal_test', 'success', 300);
     \$value = \$redis->get('drupal_test');
     if (\$value === 'success') {
         echo 'PHP Redis integration: OK\n';
     } else {
-        echo 'PHP Redis integration: FAILED\n';
+        echo 'PHP Redis integration: FAILED - Value mismatch\n';
         exit(1);
     }
     \$redis->del('drupal_test');
     \$redis->close();
 } catch (Exception \$e) {
-    echo 'PHP Redis error: ' . \$e->getMessage() . '\n';
+    echo 'PHP Redis error: ' . \$e->getMessage() . \"\n\";
     exit(1);
 }
 
@@ -219,12 +293,12 @@ try {
     if (\$value === 'success') {
         echo 'PHP Memcached integration: OK\n';
     } else {
-        echo 'PHP Memcached integration: FAILED\n';
+        echo 'PHP Memcached integration: FAILED - Value mismatch\n';
         exit(1);
     }
     \$memcached->delete('drupal_test');
 } catch (Exception \$e) {
-    echo 'PHP Memcached error: ' . \$e->getMessage() . '\n';
+    echo 'PHP Memcached error: ' . \$e->getMessage() . \"\n\";
     exit(1);
 }
 
@@ -235,19 +309,34 @@ if (function_exists('apcu_store')) {
     if (\$value === 'success') {
         echo 'PHP APCu integration: OK\n';
     } else {
-        echo 'PHP APCu integration: FAILED\n';
+        echo 'PHP APCu integration: FAILED - Value mismatch\n';
     }
     apcu_delete('drupal_test');
 } else {
     echo 'APCu not available\n';
 }
-"
+" 2>&1)
 
-if [ $? -eq 0 ]; then
-    echo "✅ PHP интеграция с кэшированием работает"
-else
+# Выводим результат PHP тестирования
+echo "$PHP_TEST_RESULT"
+
+# Проверяем успешность выполнения
+if echo "$PHP_TEST_RESULT" | grep -q "error:" || echo "$PHP_TEST_RESULT" | grep -q "FAILED"; then
     echo "❌ Ошибка интеграции PHP с кэшированием"
+    echo "📝 Результат тестирования сохранен для диагностики"
+    echo "$PHP_TEST_RESULT" > /root/drupal-cache-test-error.log
     exit 1
+else
+    echo "✅ PHP интеграция с кэшированием работает корректно"
+fi
+
+echo "14.1. Проверка конфигурации Redis..."
+# Проверяем что пароль установлен в конфигурации
+if redis-cli -a "$REDIS_PASSWORD" CONFIG GET requirepass 2>/dev/null | grep -q "$REDIS_PASSWORD"; then
+    echo "✅ Пароль Redis сохранен в конфигурации"
+else
+    echo "⚠️ Пароль не найден в конфигурации, сохраняем..."
+    redis-cli -a "$REDIS_PASSWORD" CONFIG REWRITE 2>/dev/null
 fi
 
 echo "15. Создание скрипта мониторинга кэширования..."
