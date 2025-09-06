@@ -67,71 +67,74 @@ chown www-data:www-data /var/log/php
 
 echo "2. Настройка Nginx для лучшей производительности..."
 
-# Дополнительная конфигурация Nginx для статических файлов
-cat > "$NGINX_DIR/conf.d/drupal-static.conf" << EOF
-# Кэширование статических файлов для Drupal
+# Удаляем старую неправильную конфигурацию если существует
+rm -f "$NGINX_DIR/conf.d/drupal-static.conf"
+
+# Дополнительная глобальная конфигурация Nginx
+cat > "$NGINX_DIR/conf.d/drupal-performance.conf" << EOF
+# Глобальные настройки производительности для Drupal
 # Дата: $(date)
 
-# Кэширование изображений
-location ~* \.(jpg|jpeg|png|gif|ico|svg)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    add_header Vary Accept-Encoding;
-    access_log off;
-    
-    # Сжатие
-    gzip on;
-    gzip_vary on;
-    gzip_types image/svg+xml;
-}
+# Сжатие gzip для всех сайтов
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_comp_level 6;
+gzip_types
+    text/plain
+    text/css
+    text/xml
+    text/javascript
+    application/javascript
+    application/json
+    application/xml
+    application/xml+rss
+    application/font-woff
+    application/font-woff2
+    application/x-font-ttf
+    image/svg+xml;
 
-# Кэширование CSS и JS
-location ~* \.(css|js)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    add_header Vary Accept-Encoding;
-    access_log off;
-    
-    # Сжатие
-    gzip on;
-    gzip_vary on;
-    gzip_comp_level 6;
-    gzip_types
-        text/css
-        application/javascript
-        application/json
-        application/font-woff
-        application/font-woff2
-        application/x-font-ttf
-        image/svg+xml;
-}
+# Настройки буферов
+client_body_buffer_size 16K;
+client_header_buffer_size 1k;
+large_client_header_buffers 4 8k;
 
-# Кэширование шрифтов
-location ~* \.(woff|woff2|ttf|eot)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    add_header Access-Control-Allow-Origin "*";
-    access_log off;
-}
+# Таймауты
+client_body_timeout 60s;
+client_header_timeout 60s;
+keepalive_timeout 65s;
+send_timeout 60s;
 
-# Кэширование документов
-location ~* \.(pdf|doc|docx|xls|xlsx|ppt|pptx)$ {
-    expires 1M;
-    add_header Cache-Control "public";
-    access_log off;
-}
+# Размеры файлов
+client_max_body_size 100M;
 
-# Защита приватных файлов
-location ~ ^/sites/.*/private/ {
-    return 403;
-}
-
-# Защита системных файлов
-location ~ ^/(\.htaccess|\.git|\.env|composer\.|package\.json|yarn\.lock) {
-    deny all;
-    return 404;
-}
+# Логирование
+log_format drupal_detailed '$remote_addr - $remote_user [$time_local] '
+                          '"$request" $status $bytes_sent '
+                          '"$http_referer" "$http_user_agent" '
+                          '$request_time $upstream_response_time';
 EOF
+
+echo "   ✅ Создана конфигурация производительности Nginx"
+
+# Обновляем основную конфигурацию Drupal с кэшированием статических файлов
+echo "   📝 Обновление конфигурации сайта Drupal с кэшированием..."
+
+# Создаем резервную копию текущей конфигурации
+cp /etc/nginx/sites-available/drupal-default /etc/nginx/sites-available/drupal-default.backup
+
+# Добавляем правила кэширования в основную конфигурацию сайта
+sed -i '/# Static files caching/,/}/c\
+    # Enhanced static files caching\
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|doc|docx|xls|xlsx|ppt|pptx)$ {\
+        expires 1y;\
+        add_header Cache-Control "public, immutable";\
+        add_header Vary Accept-Encoding;\
+        log_not_found off;\
+        access_log off;\
+    }' /etc/nginx/sites-available/drupal-default
+
+echo "   ✅ Обновлена конфигурация кэширования статических файлов"
 
 echo "3. Настройка производительности базы данных..."
 
