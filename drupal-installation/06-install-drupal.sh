@@ -3,6 +3,10 @@
 # RTTI Drupal - Шаг 6: Установка Drupal 11
 # Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
+# Настройка переменных окружения для Composer
+export COMPOSER_ALLOW_SUPERUSER=1
+export COMPOSER_MEMORY_LIMIT=-1
+
 echo "=== RTTI Drupal - Шаг 6: Установка Drupal 11 ==="
 echo "📚 Загрузка и установка цифровой библиотеки"
 echo "📅 Дата: $(date)"
@@ -39,6 +43,14 @@ fi
 echo "3. Создание Drupal проекта через Composer..."
 echo "Создание нового проекта Drupal 11..."
 
+# Создание кэш-директории для Composer с правильными правами
+mkdir -p /var/www/.cache/composer
+chown -R www-data:www-data /var/www/.cache
+chmod -R 755 /var/www/.cache
+
+# Настройка COMPOSER_ALLOW_SUPERUSER для работы под root если нужно
+export COMPOSER_ALLOW_SUPERUSER=1
+
 # Создание проекта Drupal с использованием composer
 sudo -u www-data composer create-project drupal/recommended-project:^11.0 . --no-interaction --prefer-dist
 
@@ -46,8 +58,11 @@ if [ $? -ne 0 ]; then
     echo "❌ Ошибка создания проекта Drupal через Composer"
     echo "Попытка установки с другими параметрами..."
     
+    # Очистка кэша Composer
+    sudo -u www-data composer clear-cache
+    
     # Альтернативный метод
-    sudo -u www-data composer create-project drupal/recommended-project . --no-interaction
+    sudo -u www-data COMPOSER_ALLOW_SUPERUSER=1 composer create-project drupal/recommended-project . --no-interaction
     
     if [ $? -ne 0 ]; then
         echo "❌ Не удалось создать проект Drupal"
@@ -92,11 +107,14 @@ DRUPAL_MODULES=(
 echo "Установка модулей для библиотечной системы..."
 for module in "${DRUPAL_MODULES[@]}"; do
     echo "Установка $module..."
-    sudo -u www-data composer require $module --no-interaction
+    sudo -u www-data COMPOSER_ALLOW_SUPERUSER=1 composer require $module --no-interaction
+    if [ $? -ne 0 ]; then
+        echo "⚠️ Ошибка установки $module, продолжаем..."
+    fi
 done
 
 echo "7. Установка темы для библиотеки..."
-sudo -u www-data composer require drupal/bootstrap5 --no-interaction
+sudo -u www-data COMPOSER_ALLOW_SUPERUSER=1 composer require drupal/bootstrap5 --no-interaction
 
 echo "8. Настройка прав доступа..."
 chown -R www-data:www-data $DRUPAL_DIR
@@ -227,20 +245,16 @@ ADMIN_PASSWORD="RTTIDrupal2024!"
 
 cd $DRUPAL_DIR
 
-# Установка Drupal
-sudo -u www-data php web/core/scripts/drupal install \
+# Установка Drupal через Drush (правильный синтаксис)
+sudo -u www-data ./vendor/bin/drush site:install standard \
     --langcode=ru \
-    --db-type=pgsql \
-    --db-host=localhost \
-    --db-name=drupal_library \
-    --db-user=drupaluser \
-    --db-pass=$DB_PASSWORD \
-    --db-port=5432 \
+    --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
     --site-name="RTTI Digital Library" \
     --site-mail=library@omuzgorpro.tj \
     --account-name=admin \
     --account-pass=$ADMIN_PASSWORD \
-    --account-mail=admin@omuzgorpro.tj
+    --account-mail=admin@omuzgorpro.tj \
+    --yes
 
 INSTALL_RESULT=$?
 
@@ -277,7 +291,7 @@ CORE_MODULES=(
 
 for module in "${CORE_MODULES[@]}"; do
     echo "Включение модуля $module..."
-    sudo -u www-data vendor/bin/drush pm:enable $module -y 2>/dev/null || true
+    sudo -u www-data ./vendor/bin/drush pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
 done
 
 echo "15. Создание скрипта управления Drupal..."
