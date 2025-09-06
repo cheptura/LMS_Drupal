@@ -120,7 +120,13 @@ EOF
 
 echo "3. Настройка расширенной безопасности Nginx..."
 
+# Удаляем старые файлы конфигурации, которые могут содержать устаревшие директивы
+echo "   Удаление устаревших файлов конфигурации..."
+rm -f "$NGINX_DIR/conf.d/security-headers.conf" 2>/dev/null || true
+rm -f "$NGINX_DIR/conf.d/headers-more.conf" 2>/dev/null || true
+
 # Дополнительные заголовки безопасности
+echo "   Создание файла заголовков безопасности..."
 cat > "$NGINX_DIR/conf.d/security-headers.conf" << EOF
 # Заголовки безопасности для Moodle LMS
 # Дата: $(date)
@@ -138,9 +144,13 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsaf
 # Строгая транспортная безопасность (HSTS)
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
-# Скрытие версии сервера
+# Скрытие версии сервера (только стандартные директивы Nginx)
 server_tokens off;
-more_clear_headers Server;
+
+# ПРИМЕЧАНИЕ: Директивы типа more_clear_headers требуют модуль nginx-module-headers-more
+# Если нужно более продвинутое управление заголовками, установите:
+# apt install nginx-module-headers-more
+# И добавьте в nginx.conf: load_module modules/ngx_http_headers_more_filter_module.so;
 EOF
 
 # Настройка общих параметров безопасности в отдельном файле
@@ -201,26 +211,41 @@ if [ -n "$SITE_CONFIG" ] && ! grep -q "limit_req zone=login" "$SITE_CONFIG"; the
     location = /login/index.php {\
         limit_req zone=login burst=3 nodelay;\
         limit_req_status 429;\
-        include snippets/fastcgi-php.conf;\
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;\
+        fastcgi_index index.php;\
         fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+        include fastcgi_params;\
+        fastcgi_param PATH_INFO $fastcgi_path_info;\
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\
+        fastcgi_read_timeout 300;\
     }\
 \
-    location ~ ^/admin/ {\
+    location ~ ^/admin/.*\.php(/|$) {\
         limit_req zone=api burst=5 nodelay;\
         limit_req_status 429;\
-        include snippets/fastcgi-php.conf;\
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;\
+        fastcgi_index index.php;\
         fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+        include fastcgi_params;\
+        fastcgi_param PATH_INFO $fastcgi_path_info;\
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\
+        fastcgi_read_timeout 300;\
     }\
 \
-    location ~ ^/repository/ {\
+    location ~ ^/repository/.*\.php(/|$) {\
         limit_req zone=uploads burst=5 nodelay;\
         limit_req_status 429;\
-        include snippets/fastcgi-php.conf;\
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;\
+        fastcgi_index index.php;\
         fastcgi_pass unix:/var/run/php/php'"$PHP_VERSION"'-fpm.sock;\
+        include fastcgi_params;\
+        fastcgi_param PATH_INFO $fastcgi_path_info;\
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\
+        fastcgi_read_timeout 300;\
     }\
 \
     # Connection limiting\
-    limit_conn conn_limit_per_ip 25;' "$SITE_CONFIG"
+    limit_conn perip 25;' "$SITE_CONFIG"
     
     echo "   ✅ DDoS защита добавлена в конфигурацию сайта"
 else

@@ -59,10 +59,18 @@ if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
 else
     echo "   ❌ curl_exec() не найдена, исправляем..."
     
-    # Переустанавливаем cURL
+    # Переустанавливаем cURL и все зависимости
     apt update
-    apt install -y curl libcurl4-openssl-dev
-    apt install -y --reinstall php8.3-curl
+    apt install -y curl libcurl4-openssl-dev ca-certificates
+    apt install -y --reinstall php8.3-curl php8.3-common php8.3-cli php8.3-fpm
+    
+    # Проверяем, что модуль загружается
+    echo "   Проверяем загрузку модуля cURL..."
+    if ! php -m | grep -q curl; then
+        echo "   Модуль cURL не загружается, добавляем в конфигурацию..."
+        echo "extension=curl" >> /etc/php/8.3/fpm/php.ini
+        echo "extension=curl" >> /etc/php/8.3/cli/php.ini
+    fi
     
     # Перезапускаем PHP-FPM
     systemctl restart php8.3-fpm
@@ -71,9 +79,35 @@ else
     if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
         echo "   ✅ curl_exec() исправлена"
     else
-        echo "   ⚠️  curl_exec() все еще недоступна, но продолжаем"
+        echo "   ⚠️  curl_exec() все еще недоступна, может потребоваться перезагрузка сервера"
+        echo "   Попробуйте: sudo reboot"
     fi
 fi
+
+echo "   2.2. Тестирование cURL с реальным запросом..."
+php -r "
+if (function_exists('curl_exec')) {
+    \$ch = curl_init();
+    curl_setopt(\$ch, CURLOPT_URL, 'https://httpbin.org/get');
+    curl_setopt(\$ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt(\$ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt(\$ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt(\$ch, CURLOPT_USERAGENT, 'Moodle cURL Test');
+    
+    \$result = curl_exec(\$ch);
+    \$error = curl_error(\$ch);
+    \$httpCode = curl_getinfo(\$ch, CURLINFO_HTTP_CODE);
+    curl_close(\$ch);
+    
+    if (\$result !== false && \$httpCode == 200) {
+        echo '   ✅ cURL тест успешен (HTTP 200)' . PHP_EOL;
+    } else {
+        echo '   ❌ cURL тест неудачен: ' . \$error . ' (HTTP: ' . \$httpCode . ')' . PHP_EOL;
+    }
+} else {
+    echo '   ❌ curl_exec() все еще недоступна' . PHP_EOL;
+}
+"
 
 echo "3. Применение первичных настроек Moodle..."
 
