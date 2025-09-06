@@ -272,9 +272,12 @@ ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 echo "12. Проверка конфигурации Nginx..."
-nginx -t
-if [ $? -ne 0 ]; then
-    echo "❌ Ошибка в конфигурации Nginx!"
+if nginx -t; then
+    echo "   ✅ Конфигурация Nginx корректна"
+else
+    echo "   ❌ Ошибка в конфигурации Nginx!"
+    echo "   📋 Детали ошибки:"
+    nginx -t
     exit 1
 fi
 

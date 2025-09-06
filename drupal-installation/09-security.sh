@@ -10,7 +10,17 @@ echo
 
 # Проверка прав root
 if [ "$EUID" -ne 0 ]; then
-    echo "❌ Ошибка: Запустите скрипт с правами root"
+    echo "❌ Ошибка:# Дополнительные настройки безопасности PHP
+cat > "/etc/php/$PHP_VERSION/fpm/conf.d/99-security.ini" << EOF
+; Настройки безопасности PHP для Drupal
+; Дата: $(date)
+
+; Отключение опасных функций (ИСКЛЮЧЕНЫ curl_exec и curl_multi_exec)
+; curl_exec и curl_multi_exec могут потребоваться для:
+; - Обновлений модулей
+; - Внешних интеграций
+; - Веб-сервисов
+disable_functions = exec,passthru,shell_exec,system,proc_open,popen,parse_ini_file,show_source,file_get_contents,fopen,fread,fwrite,file_put_contents,fputs,fgets,fsockopen,socket_createите скрипт с правами root"
     exit 1
 fi
 

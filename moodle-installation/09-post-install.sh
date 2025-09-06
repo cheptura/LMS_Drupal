@@ -52,12 +52,13 @@ if (file_exists(\$CFG->dataroot . '/install.lock')) {
 fi
 
 echo "2. Проверка и исправление проблемы с cURL..."
-# Проверяем доступность функции curl_exec
-echo "   2.1. Проверка функции curl_exec()..."
+
+# 2.1. Проверка через CLI
+echo "   2.1. Проверка функции curl_exec() через CLI..."
 if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
-    echo "   ✅ curl_exec() доступна"
+    echo "   ✅ curl_exec() доступна в CLI"
 else
-    echo "   ❌ curl_exec() не найдена, исправляем..."
+    echo "   ❌ curl_exec() не найдена в CLI, исправляем..."
     
     # Переустанавливаем cURL и все зависимости
     apt update
@@ -74,17 +75,70 @@ else
     
     # Перезапускаем PHP-FPM
     systemctl restart php8.3-fpm
+fi
+
+# 2.2. Проверка через PHP-FPM (реальная проверка для веб)
+echo "   2.2. Проверка функции curl_exec() через PHP-FPM..."
+if php-fpm8.3 -r "exit(function_exists('curl_exec') ? 0 : 1);" 2>/dev/null; then
+    echo "   ✅ curl_exec() доступна в PHP-FPM"
+else
+    echo "   ❌ curl_exec() заблокирована в PHP-FPM, проверяем disable_functions..."
     
-    # Проверяем еще раз
-    if php -r "exit(function_exists('curl_exec') ? 0 : 1);"; then
-        echo "   ✅ curl_exec() исправлена"
+    # Проверяем disable_functions в FPM
+    DISABLED_FUNCTIONS=$(php-fpm8.3 -i 2>/dev/null | grep "disable_functions" | head -1 || echo "")
+    
+    if echo "$DISABLED_FUNCTIONS" | grep -q "curl_exec"; then
+        echo "   ❌ curl_exec найдена в disable_functions, исправляем..."
+        
+        # Ищем файлы с disable_functions
+        SECURITY_FILES=$(grep -r "disable_functions.*curl_exec" /etc/php/8.3/ 2>/dev/null | cut -d: -f1 | sort -u || echo "")
+        
+        if [ -n "$SECURITY_FILES" ]; then
+            echo "   Найдены файлы с заблокированным curl_exec:"
+            echo "$SECURITY_FILES"
+            
+            # Исправляем каждый файл
+            for file in $SECURITY_FILES; do
+                echo "   Исправляем файл: $file"
+                # Создаем резервную копию
+                cp "$file" "${file}.backup-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+                
+                # Удаляем curl_exec и curl_multi_exec из disable_functions
+                sed -i 's/disable_functions = \([^=]*\),curl_exec,curl_multi_exec,\([^=]*\)/disable_functions = \1,\2/' "$file" 2>/dev/null || true
+                sed -i 's/disable_functions = \([^=]*\),curl_exec,\([^=]*\)/disable_functions = \1,\2/' "$file" 2>/dev/null || true
+                sed -i 's/disable_functions = \([^=]*\),curl_multi_exec,\([^=]*\)/disable_functions = \1,\2/' "$file" 2>/dev/null || true
+                sed -i 's/disable_functions = curl_exec,curl_multi_exec,\([^=]*\)/disable_functions = \1/' "$file" 2>/dev/null || true
+                sed -i 's/disable_functions = curl_exec,\([^=]*\)/disable_functions = \1/' "$file" 2>/dev/null || true
+                sed -i 's/disable_functions = curl_multi_exec,\([^=]*\)/disable_functions = \1/' "$file" 2>/dev/null || true
+                
+                # Убираем лишние запятые
+                sed -i 's/disable_functions = ,/disable_functions = /' "$file" 2>/dev/null || true
+                sed -i 's/,,/,/g' "$file" 2>/dev/null || true
+                sed -i 's/,$//g' "$file" 2>/dev/null || true
+                
+                echo "   ✅ Файл $file исправлен"
+            done
+            
+            # Перезапускаем PHP-FPM
+            echo "   Перезапускаем PHP-FPM..."
+            systemctl restart php8.3-fpm
+            
+            # Проверяем результат
+            sleep 2
+            if php-fpm8.3 -r "exit(function_exists('curl_exec') ? 0 : 1);" 2>/dev/null; then
+                echo "   ✅ curl_exec() теперь доступна в PHP-FPM"
+            else
+                echo "   ⚠️  curl_exec() все еще заблокирована, может потребоваться ручное исправление"
+            fi
+        else
+            echo "   ⚠️  Файлы с disable_functions не найдены, возможна другая проблема"
+        fi
     else
-        echo "   ⚠️  curl_exec() все еще недоступна, может потребоваться перезагрузка сервера"
-        echo "   Попробуйте: sudo reboot"
+        echo "   ✅ curl_exec не заблокирована в disable_functions"
     fi
 fi
 
-echo "   2.2. Тестирование cURL с реальным запросом..."
+echo "   2.3. Тестирование cURL с реальным запросом..."
 php -r "
 if (function_exists('curl_exec')) {
     \$ch = curl_init();

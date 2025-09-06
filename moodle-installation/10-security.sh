@@ -259,8 +259,13 @@ cat >> "/etc/php/$PHP_VERSION/fpm/conf.d/99-security.ini" << EOF
 ; Дополнительные настройки безопасности PHP для Moodle
 ; Дата: $(date)
 
-; Отключение опасных функций
-disable_functions = exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source
+; Отключение опасных функций (ИСКЛЮЧЕНЫ curl_exec и curl_multi_exec для Moodle)
+; curl_exec и curl_multi_exec НЕОБХОДИМЫ для:
+; - Загрузки языковых пакетов
+; - Обновлений Moodle
+; - Веб-сервисов и внешних интеграций
+; - Работы с внешними репозиториями
+disable_functions = exec,passthru,shell_exec,system,proc_open,popen,parse_ini_file,show_source
 
 ; Скрытие версии PHP
 expose_php = Off
@@ -330,17 +335,27 @@ echo "*/15 * * * * root /usr/local/bin/moodle-security-check.sh" > /etc/cron.d/m
 
 echo "7. Настройка логирования..."
 
-# Настройка логирования Nginx
-cat >> "$NGINX_DIR/nginx.conf" << EOF
+# Проверяем, есть ли уже log_format в nginx.conf
+if grep -q "log_format security" /etc/nginx/nginx.conf; then
+    echo "   ℹ️  Log format уже настроен в nginx.conf"
+else
+    echo "   Добавляем log format в http блок nginx.conf..."
+    
+    # Создаем резервную копию
+    cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup-logging-$(date +%Y%m%d_%H%M%S)
+    
+    # Добавляем log_format в http блок (после других директив)
+    sed -i '/http {/a\\n\t# Security logging format\n\tlog_format security '"'"'$remote_addr - $remote_user [$time_local] '"'"'\n\t                   '"'"'"$request" $status $body_bytes_sent '"'"'\n\t                   '"'"'"$http_referer" "$http_user_agent" '"'"'\n\t                   '"'"'"$http_x_forwarded_for" rt=$request_time '"'"'\n\t                   '"'"'ua="$upstream_addr" us="$upstream_status" '"'"'\n\t                   '"'"'ut="$upstream_response_time"'"'"';\n' /etc/nginx/nginx.conf
+    
+    echo "   ✅ Log format добавлен в nginx.conf"
+fi
 
-# Дополнительное логирование безопасности
-log_format security '\$remote_addr - \$remote_user [\$time_local] '
-                   '"\$request" \$status \$body_bytes_sent '
-                   '"\$http_referer" "\$http_user_agent" '
-                   '"\$http_x_forwarded_for" rt=\$request_time '
-                   'ua="\$upstream_addr" us="\$upstream_status" '
-                   'ut="\$upstream_response_time"';
+# Создаем отдельный файл для security access log
+cat > "$NGINX_DIR/conf.d/security-logging.conf" << 'EOF'
+# Security logging configuration
+# Дата: $(date)
 
+# Логирование безопасности (использует log_format security из nginx.conf)
 access_log /var/log/nginx/security.log security;
 EOF
 
@@ -355,7 +370,36 @@ systemctl enable unattended-upgrades
 systemctl start unattended-upgrades
 
 # Перезапуск Nginx с новыми настройками
-nginx -t && systemctl reload nginx
+echo "   Проверка конфигурации Nginx..."
+if nginx -t; then
+    echo "   ✅ Конфигурация Nginx корректна"
+    systemctl reload nginx
+    echo "   ✅ Nginx перезагружен"
+else
+    echo "   ❌ ОШИБКА в конфигурации Nginx!"
+    echo "   🔧 Откатываем изменения..."
+    
+    # Откатываем изменения в nginx.conf
+    if [ -f "/etc/nginx/nginx.conf.backup-logging-$(date +%Y%m%d)_"* ]; then
+        LATEST_BACKUP=$(ls -t /etc/nginx/nginx.conf.backup-logging-$(date +%Y%m%d)_* | head -1)
+        cp "$LATEST_BACKUP" /etc/nginx/nginx.conf
+        echo "   ↩️  nginx.conf восстановлен из: $LATEST_BACKUP"
+    fi
+    
+    # Удаляем проблемные конфигурации
+    rm -f "$NGINX_DIR/conf.d/security-logging.conf"
+    
+    # Пробуем еще раз
+    if nginx -t; then
+        echo "   ✅ Конфигурация исправлена"
+        systemctl reload nginx
+    else
+        echo "   ❌ Конфигурация все еще содержит ошибки"
+        echo "   📋 Вывод nginx -t:"
+        nginx -t
+        echo "   ⚠️  Пропускаем перезагрузку Nginx"
+    fi
+fi
 
 # Перезапуск PHP-FPM
 systemctl restart php$PHP_VERSION-fpm
