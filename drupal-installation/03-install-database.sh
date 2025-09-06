@@ -3,6 +3,10 @@
 # RTTI Drupal - Шаг 3: Установка базы данных
 # Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
+# Отключение пейджера для psql
+export PAGER=""
+export PSQL_PAGER=""
+
 echo "=== RTTI Drupal - Шаг 3: Установка PostgreSQL для Drupal 11 ==="
 echo "🗄️ PostgreSQL 16 - база данных для цифровой библиотеки"
 echo "📅 Дата: $(date)"
@@ -22,10 +26,11 @@ systemctl start postgresql
 systemctl enable postgresql
 
 echo "3. Проверка версии PostgreSQL..."
-sudo -u postgres psql -c "SELECT version();"
+sudo -u postgres psql -t -c "SELECT version();" | head -1
 
 echo "4. Настройка аутентификации PostgreSQL..."
 PG_VERSION=$(sudo -u postgres psql -t -c "SELECT setting FROM pg_settings WHERE name='server_version_num';" | xargs | cut -c1-2)
+echo "📍 Версия PostgreSQL: $PG_VERSION"
 PG_HBA="/etc/postgresql/$PG_VERSION/main/pg_hba.conf"
 PG_CONF="/etc/postgresql/$PG_VERSION/main/postgresql.conf"
 
@@ -77,15 +82,12 @@ echo "9. Ожидание запуска PostgreSQL..."
 sleep 5
 
 echo "10. Создание пользователя базы данных drupaluser..."
-sudo -u postgres psql << EOF
+sudo -u postgres psql -q << EOF
 -- Создание пользователя для Drupal
 CREATE USER drupaluser WITH PASSWORD '$DB_PASSWORD';
 
 -- Предоставление необходимых прав
 ALTER USER drupaluser CREATEDB;
-
--- Проверка создания пользователя
-\du drupaluser
 EOF
 
 if [ $? -ne 0 ]; then
@@ -94,7 +96,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "11. Создание базы данных drupal_library..."
-sudo -u postgres psql << EOF
+sudo -u postgres psql -q << EOF
 -- Создание базы данных для цифровой библиотеки
 CREATE DATABASE drupal_library 
     WITH OWNER = drupaluser
@@ -105,10 +107,15 @@ CREATE DATABASE drupal_library
 
 -- Предоставление всех прав пользователю
 GRANT ALL PRIVILEGES ON DATABASE drupal_library TO drupaluser;
+EOF
 
--- Подключение к базе данных для настройки схемы
-\c drupal_library
+if [ $? -ne 0 ]; then
+    echo "❌ Ошибка создания базы данных"
+    exit 1
+fi
 
+echo "12. Настройка прав в базе данных..."
+sudo -u postgres psql -q -d drupal_library << EOF
 -- Предоставление прав на схему public
 GRANT ALL ON SCHEMA public TO drupaluser;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO drupaluser;
@@ -117,18 +124,10 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO drupaluser;
 -- Установка прав по умолчанию для будущих объектов
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO drupaluser;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO drupaluser;
-
--- Проверка создания базы данных
-\l drupal_library
 EOF
 
-if [ $? -ne 0 ]; then
-    echo "❌ Ошибка создания базы данных"
-    exit 1
-fi
-
-echo "12. Проверка подключения к базе данных..."
-PGPASSWORD=$DB_PASSWORD psql -h localhost -U drupaluser -d drupal_library -c "SELECT version();"
+echo "13. Проверка подключения к базе данных..."
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U drupaluser -d drupal_library -t -c "SELECT 'Подключение успешно' as status;" | head -1
 
 if [ $? -eq 0 ]; then
     echo "✅ Подключение к базе данных успешно"
@@ -137,8 +136,8 @@ else
     exit 1
 fi
 
-echo "13. Установка дополнительных расширений PostgreSQL для Drupal..."
-sudo -u postgres psql -d drupal_library << EOF
+echo "14. Установка дополнительных расширений PostgreSQL для Drupal..."
+sudo -u postgres psql -q -d drupal_library << EOF
 -- Расширения для улучшения производительности Drupal
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS btree_gin;
@@ -147,9 +146,6 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- Настройка часового пояса для базы данных
 SET timezone = 'Asia/Dushanbe';
 ALTER DATABASE drupal_library SET timezone = 'Asia/Dushanbe';
-
--- Проверка установленных расширений
-\dx
 EOF
 
 echo "14. Создание резервной копии схемы базы данных..."
@@ -201,16 +197,16 @@ echo "1. Статус PostgreSQL:"
 systemctl status postgresql --no-pager -l | head -3
 
 echo -e "\n2. Активные подключения:"
-sudo -u postgres psql -d drupal_library -c "SELECT count(*) as connections FROM pg_stat_activity WHERE datname='drupal_library';" 2>/dev/null
+sudo -u postgres psql -t -d drupal_library -c "SELECT count(*) as connections FROM pg_stat_activity WHERE datname='drupal_library';" 2>/dev/null | head -1
 
 echo -e "\n3. Размер базы данных:"
-sudo -u postgres psql -d drupal_library -c "SELECT pg_size_pretty(pg_database_size('drupal_library')) as size;" 2>/dev/null
+sudo -u postgres psql -t -d drupal_library -c "SELECT pg_size_pretty(pg_database_size('drupal_library')) as size;" 2>/dev/null | head -1
 
 echo -e "\n4. Количество таблиц:"
-PGPASSWORD='$DB_PASSWORD' psql -h localhost -U drupaluser -d drupal_library -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null
+PGPASSWORD='$DB_PASSWORD' psql -h localhost -U drupaluser -d drupal_library -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | head -1
 
 echo -e "\n5. Статистика использования:"
-sudo -u postgres psql -d drupal_library -c "SELECT schemaname,tablename,n_tup_ins,n_tup_upd,n_tup_del FROM pg_stat_user_tables ORDER BY n_tup_ins DESC LIMIT 5;" 2>/dev/null
+sudo -u postgres psql -t -d drupal_library -c "SELECT schemaname,tablename,n_tup_ins,n_tup_upd,n_tup_del FROM pg_stat_user_tables ORDER BY n_tup_ins DESC LIMIT 5;" 2>/dev/null | head -5
 
 echo -e "\n6. Последние запросы (если включено логирование):"
 tail -5 /var/log/postgresql/postgresql-$PG_VERSION-main.log 2>/dev/null || echo "Логирование отключено"
@@ -282,7 +278,7 @@ cat > /root/drupal-database-info.txt << EOF
 Локаль: ru_RU.UTF-8
 
 === РАСШИРЕНИЯ ===
-$(sudo -u postgres psql -d drupal_library -t -c "\dx" | grep -v "^$" | head -5)
+$(sudo -u postgres psql -d drupal_library -t -c "\dx" 2>/dev/null | grep -v "^$" | head -5)
 
 === НАСТРОЙКИ ПРОИЗВОДИТЕЛЬНОСТИ ===
 shared_buffers: 256MB
