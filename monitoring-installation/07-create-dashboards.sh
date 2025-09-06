@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 7: Создание дашбордов Grafana
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 7: Создание дашбордов Grafana ==="
 echo "📊 Настройка специализированных дашбордов и визуализаций"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     SERVER_ROLE="standalone"
     SERVER_NAME=$(hostname -f)
@@ -717,7 +717,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
         "type": "timeseries",
         "targets": [
           {
-            "expr": "probe_http_duration_seconds{instance=~\".*lms.rtti.tj.*\"}",
+            "expr": "probe_http_duration_seconds{instance=~\".*omuzgorpro.tj.*\"}",
             "legendFormat": "{{phase}}"
           }
         ],
@@ -734,7 +734,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
         "type": "timeseries",
         "targets": [
           {
-            "expr": "probe_success{instance=~\".*lms.rtti.tj.*\"}",
+            "expr": "probe_success{instance=~\".*omuzgorpro.tj.*\"}",
             "legendFormat": "{{instance}}"
           }
         ],
@@ -838,7 +838,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
         "type": "timeseries",
         "targets": [
           {
-            "expr": "probe_http_duration_seconds{instance=~\".*library.rtti.tj.*\"}",
+            "expr": "probe_http_duration_seconds{instance=~\".*storage.omuzgorpro.tj.*\"}",
             "legendFormat": "{{phase}}"
           }
         ],
@@ -855,7 +855,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
         "type": "timeseries",
         "targets": [
           {
-            "expr": "probe_success{instance=~\".*library.rtti.tj.*\"}",
+            "expr": "probe_success{instance=~\".*storage.omuzgorpro.tj.*\"}",
             "legendFormat": "{{instance}}"
           }
         ],
@@ -1074,8 +1074,8 @@ cat > $DASHBOARDS_DIR/dashboard-variables.env << EOF
 # Дата: $(date)
 
 # Серверы
-MOODLE_SERVER=lms.rtti.tj
-DRUPAL_SERVER=library.rtti.tj
+MOODLE_SERVER=omuzgorpro.tj
+DRUPAL_SERVER=storage.omuzgorpro.tj
 
 # IP адреса
 MOODLE_IP=92.242.60.172

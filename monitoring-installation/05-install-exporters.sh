@@ -2,7 +2,7 @@
 
 # 05-install-exporters.sh
 # Установка экспортеров метрик для системы мониторинга RTTI
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 set -e
 
@@ -15,10 +15,10 @@ echo
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     echo "⚠️ IP адрес не распознан, используется режим standalone"
     SERVER_ROLE="standalone"
@@ -87,7 +87,7 @@ install_nginx_exporter() {
     
     # Создание конфигурации в зависимости от роли сервера
     if [[ "$SERVER_ROLE" == "moodle" ]]; then
-        # Для Moodle сервера (lms.rtti.tj)
+        # Для Moodle сервера (omuzgorpro.tj)
         sudo tee /etc/nginx/conf.d/status.conf > /dev/null <<EOF
 server {
     listen 8080;
@@ -103,7 +103,7 @@ server {
 }
 EOF
     elif [[ "$SERVER_ROLE" == "drupal" ]]; then
-        # Для Drupal сервера (library.rtti.tj)
+        # Для Drupal сервера (storage.omuzgorpro.tj)
         sudo tee /etc/nginx/conf.d/status.conf > /dev/null <<EOF
 server {
     listen 8080;
@@ -348,8 +348,8 @@ echo "   - Redis Exporter: http://$SERVER_IP:9121/metrics (если redis уст
 echo
 echo "🔗 Для внешнего мониторинга используйте:"
 if [[ "$SERVER_ROLE" == "moodle" ]]; then
-    echo "   - lms.rtti.tj:9100/metrics"
+    echo "   - omuzgorpro.tj:9100/metrics"
 elif [[ "$SERVER_ROLE" == "drupal" ]]; then
-    echo "   - library.rtti.tj:9100/metrics"
+    echo "   - storage.omuzgorpro.tj:9100/metrics"
 fi
 echo

@@ -53,4 +53,4 @@ echo "✅ Выключение режима обслуживания..."
 sudo -u www-data php admin/cli/maintenance.php --disable
 
 echo "🎉 Обновление Moodle завершено успешно!"
-echo "📋 Проверьте сайт: https://lms.rtti.tj"
+echo "📋 Проверьте сайт: https://omuzgorpro.tj"

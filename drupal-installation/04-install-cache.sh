@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 4: Установка системы кэширования
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 4: Установка Redis для кэширования Drupal 11 ==="
 echo "🚀 Redis + Memcached для ускорения цифровой библиотеки"
@@ -328,7 +328,7 @@ echo "17. Сохранение данных подключения к кэшам
 cat > /root/drupal-cache-credentials.txt << EOF
 # Данные подключения к системам кэширования Drupal
 # Дата создания: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === REDIS ===
 Хост: 127.0.0.1
@@ -390,7 +390,7 @@ echo "19. Создание информационного файла..."
 cat > /root/drupal-cache-info.txt << EOF
 # Информация о системе кэширования Drupal
 # Дата: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === УСТАНОВЛЕННЫЕ КОМПОНЕНТЫ ===
 ✅ Redis $(redis-server --version | awk '{print $3}')

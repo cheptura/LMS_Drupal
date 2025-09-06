@@ -9,19 +9,19 @@
 ### 📚 **LMS (Learning Management System)**
 - **Платформа:** Moodle 5.0+
 - **Назначение:** Система управления обучением
-- **Домен:** lms.rtti.tj
+- **Домен:** omuzgorpro.tj
 - **Папка:** `moodle-installation/`
 
 ### 📖 **Digital Library System**
 - **Платформа:** Drupal 11 LTS
 - **Назначение:** Цифровая библиотека и каталог ресурсов
-- **Домен:** library.rtti.tj
+- **Домен:** storage.omuzgorpro.tj
 - **Папка:** `drupal-installation/`
 
 ### 📊 **Monitoring System**
 - **Платформа:** Prometheus + Grafana + Alertmanager
 - **Назначение:** Мониторинг всей инфраструктуры
-- **Домен:** monitoring.rtti.tj
+- **Домен:** monitoring.omuzgorpro.tj
 - **Папка:** `monitoring-installation/`
 
 ## 🚀 QUICK_INSTALL (Полная инфраструктура)
@@ -153,9 +153,9 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 | Node Exporter | 9100 | TCP | Системные метрики |
 
 ### Доменная структура:
-- **lms.rtti.tj** → Moodle LMS
-- **library.rtti.tj** → Drupal Digital Library
-- **monitoring.rtti.tj** → Grafana + Prometheus
+- **omuzgorpro.tj** → Moodle LMS
+- **storage.omuzgorpro.tj** → Drupal Digital Library
+- **monitoring.omuzgorpro.tj** → Grafana + Prometheus
 
 ## 🔐 Безопасность
 
@@ -244,13 +244,13 @@ cd ../monitoring-installation && sudo ./update-monitoring.sh
 После успешной установки доступны следующие интерфейсы:
 
 ### 🎓 Образовательные системы:
-- **Moodle LMS:** https://lms.rtti.tj
-- **Digital Library:** https://library.rtti.tj
+- **Moodle LMS:** https://omuzgorpro.tj
+- **Digital Library:** https://storage.omuzgorpro.tj
 
 ### 📊 Система мониторинга:
-- **Grafana Dashboard:** https://monitoring.rtti.tj:3000
-- **Prometheus:** https://monitoring.rtti.tj:9090
-- **Alertmanager:** https://monitoring.rtti.tj:9093
+- **Grafana Dashboard:** https://monitoring.omuzgorpro.tj:3000
+- **Prometheus:** https://monitoring.omuzgorpro.tj:9090
+- **Alertmanager:** https://monitoring.omuzgorpro.tj:9093
 
 ## 🔧 Troubleshooting
 
@@ -267,8 +267,8 @@ sudo journalctl -u nginx -f
 sudo -u postgres psql -l
 
 # Тест веб-доступности
-curl -I https://lms.rtti.tj
-curl -I https://library.rtti.tj
+curl -I https://omuzgorpro.tj
+curl -I https://storage.omuzgorpro.tj
 ```
 
 ### Восстановление после сбоев:
@@ -298,7 +298,7 @@ cd drupal-installation && sudo ./restore-drupal.sh /path/to/backup.tar.gz
 ### Поддержка проекта:
 - **GitHub Issues:** https://github.com/cheptura/LMS_Drupal/issues
 - **Wiki:** https://github.com/cheptura/LMS_Drupal/wiki
-- **Email:** admin@rtti.tj
+- **Email:** admin@omuzgorpro.tj
 
 ## 📈 Масштабирование
 

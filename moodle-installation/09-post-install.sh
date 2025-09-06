@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 9: Пост-установочная настройка
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 9: Пост-установочная настройка ==="
 echo "🔧 Оптимизация и дополнительные настройки"
@@ -137,8 +137,8 @@ echo "8. Создание стандартных ролей и разрешен�
 sudo -u www-data php $MOODLE_DIR/admin/cli/purge_caches.php
 
 echo "9. Настройка уведомлений по email..."
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=noreplyaddress --set="noreply@rtti.tj"
-sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=supportemail --set="support@rtti.tj"
+sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=noreplyaddress --set="noreply@omuzgorpro.tj"
+sudo -u www-data php $MOODLE_DIR/admin/cli/cfg.php --name=supportemail --set="support@omuzgorpro.tj"
 
 echo "10. Установка и настройка плагинов..."
 # Включение веб-сервисов
@@ -274,7 +274,7 @@ echo "16. Создание отчета о пост-установке..."
 cat > /root/moodle-post-install-report.txt << EOF
 # Отчет о пост-установочной настройке Moodle
 # Дата: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === ВЫПОЛНЕННЫЕ НАСТРОЙКИ ===
 
@@ -283,7 +283,7 @@ cat > /root/moodle-post-install-report.txt << EOF
 ✅ Параметры безопасности: настроены
 ✅ Категории курсов: созданы стандартные категории
 ✅ Тема оформления: Boost
-✅ Email настройки: noreply@rtti.tj, support@rtti.tj
+✅ Email настройки: noreply@omuzgorpro.tj, support@omuzgorpro.tj
 ✅ Веб-сервисы: включены
 ✅ Мобильное приложение: поддержка включена
 ✅ Расписание обслуживания: создано
@@ -340,7 +340,7 @@ cat > /root/moodle-admin-guide.txt << EOF
 === ПЕРВОНАЧАЛЬНАЯ НАСТРОЙКА ===
 
 1. ВХОД В СИСТЕМУ
-   URL: https://lms.rtti.tj
+   URL: https://omuzgorpro.tj
    Логин: admin
    Пароль: см. /root/moodle-admin-credentials.txt
 
@@ -396,16 +396,16 @@ cat > /root/moodle-admin-guide.txt << EOF
 
 === ВАЖНЫЕ ССЫЛКИ ===
 
-Главная: https://lms.rtti.tj
-Админ-панель: https://lms.rtti.tj/admin/
-Пользователи: https://lms.rtti.tj/admin/user.php
-Курсы: https://lms.rtti.tj/course/
-Плагины: https://lms.rtti.tj/admin/plugins.php
-Отчеты: https://lms.rtti.tj/admin/reports.php
+Главная: https://omuzgorpro.tj
+Админ-панель: https://omuzgorpro.tj/admin/
+Пользователи: https://omuzgorpro.tj/admin/user.php
+Курсы: https://omuzgorpro.tj/course/
+Плагины: https://omuzgorpro.tj/admin/plugins.php
+Отчеты: https://omuzgorpro.tj/admin/reports.php
 
 === ПОДДЕРЖКА ===
 
-Email: support@rtti.tj
+Email: support@omuzgorpro.tj
 Документация: https://docs.moodle.org/
 Сообщество: https://moodle.org/community/
 EOF
@@ -425,7 +425,7 @@ echo "   - Руководство: /root/moodle-admin-guide.txt"
 echo "   - Мониторинг: /root/moodle-performance-monitor.sh"
 echo
 echo "🚀 Система готова к работе!"
-echo "   URL: https://lms.rtti.tj"
+echo "   URL: https://omuzgorpro.tj"
 echo "   Администратор: admin"
 echo
 echo "📖 Следующие шаги:"

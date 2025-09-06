@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle LMS - Полная автоматическая установка
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 # Версия: Moodle 5.0+
 
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
@@ -9,7 +9,7 @@ echo "║                        RTTI Moodle LMS - Установка           
 echo "║                             Версия: 5.0+                                    ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo
-echo "🎓 Сервер: lms.rtti.tj (92.242.60.172)"
+echo "🎓 Сервер: omuzgorpro.tj (92.242.60.172)"
 echo "📅 Дата: $(date)"
 echo "🖥️  IP: $(hostname -I | awk '{print $1}')"
 echo
@@ -228,10 +228,10 @@ echo "   ⏱️  Время установки: $(date)"
 echo "   📄 Лог: $INSTALL_LOG"
 echo
 echo "🎓 Moodle LMS готов к использованию:"
-echo "   🌐 URL: https://lms.rtti.tj"
+echo "   🌐 URL: https://omuzgorpro.tj"
 echo "   👤 Администратор: admin"
 echo "   🔑 Пароль: RTTIAdmin2024!"
-echo "   📧 Email: admin@rtti.tj"
+echo "   📧 Email: admin@omuzgorpro.tj"
 echo
 echo "📁 Важные файлы:"
 echo "   📋 Данные админа: /root/moodle-admin-credentials.txt"
@@ -240,7 +240,7 @@ echo "   ⚙️ Конфигурация: /var/www/html/moodle/config.php"
 echo "   📂 Данные: /var/moodledata/"
 echo
 echo "🔧 Следующие шаги:"
-echo "   1. Откройте https://lms.rtti.tj в браузере"
+echo "   1. Откройте https://omuzgorpro.tj в браузере"
 echo "   2. Войдите с данными администратора"
 echo "   3. Настройте систему под ваши потребности"
 echo "   4. Создайте курсы и добавьте пользователей"

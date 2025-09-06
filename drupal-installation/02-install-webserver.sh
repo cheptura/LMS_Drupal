@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 2: Установка веб-сервера
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 2: Установка Nginx и PHP 8.3 ==="
 echo "🌐 Веб-сервер для Drupal 11"
@@ -180,7 +180,7 @@ echo "11. Создание базовой конфигурации Nginx для 
 cat > /etc/nginx/sites-available/drupal-default << 'EOF'
 server {
     listen 80;
-    server_name library.rtti.tj www.library.rtti.tj;
+    server_name storage.omuzgorpro.tj www.storage.omuzgorpro.tj;
     
     root /var/www/drupal/web;
     index index.php index.html;
@@ -414,7 +414,7 @@ echo "20. Создание информационного файла..."
 cat > /root/drupal-webserver-info.txt << EOF
 # Информация о веб-сервере для Drupal
 # Дата установки: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === УСТАНОВЛЕННЫЕ КОМПОНЕНТЫ ===
 Веб-сервер: Nginx $(nginx -v 2>&1 | awk '{print $3}')
@@ -431,7 +431,7 @@ PHP-FPM пул: /etc/php/8.3/fpm/pool.d/drupal.conf
 $(php -m | grep -E "(pgsql|gd|curl|zip|xml|mbstring|intl|opcache|redis)" | sed 's/^/✅ /')
 
 === ТЕСТИРОВАНИЕ ===
-Тест PHP: http://library.rtti.tj/phpinfo.php (УДАЛИТЬ ПОСЛЕ УСТАНОВКИ!)
+Тест PHP: http://storage.omuzgorpro.tj/phpinfo.php (УДАЛИТЬ ПОСЛЕ УСТАНОВКИ!)
 
 === КОМАНДЫ УПРАВЛЕНИЯ ===
 Перезапуск Nginx: systemctl restart nginx
@@ -447,7 +447,7 @@ PHP ошибки: /var/log/php8.3-fpm-errors.log
 
 === СЛЕДУЮЩИЕ ШАГИ ===
 1. Запустите: ./03-install-database.sh
-2. Проверьте: http://library.rtti.tj/phpinfo.php
+2. Проверьте: http://storage.omuzgorpro.tj/phpinfo.php
 3. Убедитесь что все расширения PHP установлены
 EOF
 
@@ -457,7 +457,7 @@ echo "📌 Nginx установлен и настроен"
 echo "📌 PHP 8.3 с расширениями для Drupal 11"
 echo "📌 Composer установлен"
 echo "📌 Конфигурация оптимизирована"
-echo "📌 Тест: http://library.rtti.tj/phpinfo.php"
+echo "📌 Тест: http://storage.omuzgorpro.tj/phpinfo.php"
 echo "📌 Мониторинг: /root/drupal-webserver-monitor.sh"
 echo "📌 Информация: /root/drupal-webserver-info.txt"
 echo "📌 Следующий шаг: ./03-install-database.sh"

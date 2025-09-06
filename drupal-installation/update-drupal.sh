@@ -65,4 +65,4 @@ echo "🔍 Проверка состояния Drupal..."
 sudo -u www-data vendor/bin/drush status
 
 echo "🎉 Обновление Drupal завершено успешно!"
-echo "📋 Проверьте сайт: https://library.rtti.tj"
+echo "📋 Проверьте сайт: https://storage.omuzgorpro.tj"

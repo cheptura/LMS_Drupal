@@ -199,19 +199,19 @@ sudo systemctl restart alertmanager
 
 ### 🔍 Prometheus
 - **Порт**: 9090
-- **URL**: http://lms.rtti.tj:9090
+- **URL**: http://monitoring.omuzgorpro.tj:9090
 - **Функции**: Сбор метрик, правила алертов
 - **Хранение**: 30 дней данных
 
 ### 📈 Grafana
 - **Порт**: 3000
-- **URL**: http://lms.rtti.tj:3000
+- **URL**: http://monitoring.omuzgorpro.tj:3000
 - **Данные**: admin / RTTIMonitor2024!
 - **Функции**: Дашборды, визуализация
 
 ### 🚨 Alertmanager
 - **Порт**: 9093
-- **URL**: http://lms.rtti.tj:9093
+- **URL**: http://monitoring.omuzgorpro.tj:9093
 - **Функции**: Управление алертами, уведомления
 
 ### 📡 Exporters
@@ -222,17 +222,21 @@ sudo systemctl restart alertmanager
 
 ## 📊 Мониторинг серверов
 
-### 🎓 Moodle сервер (lms.rtti.tj)
+### 🎓 Moodle сервер (omuzgorpro.tj) - ЦЕНТРАЛЬНЫЙ МОНИТОРИНГ
 - Системные ресурсы (CPU, RAM, Disk)
 - Nginx производительность
 - PHP-FPM метрики
 - PostgreSQL статистика
 - Redis статистика
 - Moodle специфичные метрики
+- **Prometheus сервер**: установлен здесь
+- **Grafana дашборды**: установлены здесь
+- **Alertmanager**: установлен здесь
 
-### 📚 Drupal сервер (library.rtti.tj)
+### 📚 Drupal сервер (storage.omuzgorpro.tj) - УДАЛЕННЫЙ МОНИТОРИНГ
 - Системные ресурсы
 - Nginx производительность
+- **Только экспортеры метрик**: данные отправляются на центральный сервер
 - PHP-FPM метрики
 - PostgreSQL статистика
 - Drupal специфичные метрики
@@ -273,7 +277,7 @@ sudo systemctl restart alertmanager
 ### Каналы уведомлений
 ```bash
 # Email уведомления
-./setup-email-alerts.sh admin@rtti.tj
+./setup-email-alerts.sh admin@omuzgorpro.tj
 
 # Telegram уведомления
 ./setup-telegram-alerts.sh
@@ -408,7 +412,7 @@ rate(nginx_http_requests_total[5m])
 ## 📞 Поддержка
 
 - **GitHub**: https://github.com/cheptura/LMS_Drupal/issues
-- **Email**: admin@rtti.tj
+- **Email**: admin@omuzgorpro.tj
 - **Документация**: [RTTI LMS Wiki](https://github.com/cheptura/LMS_Drupal/wiki)
 - **Prometheus**: https://prometheus.io/docs/
 - **Grafana**: https://grafana.com/docs/

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 8: Пост-установочная настройка
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 8: Пост-установочная настройка ==="
 echo "🔧 Тонкая настройка системы и производительности"
@@ -275,7 +275,7 @@ cat > /root/drupal-monitor.sh << 'EOF'
 
 DRUPAL_DIR="/var/www/drupal"
 LOG_FILE="/var/log/drupal-monitor.log"
-EMAIL="admin@rtti.tj"
+EMAIL="admin@omuzgorpro.tj"
 
 # Функция логирования
 log_message() {
@@ -284,7 +284,7 @@ log_message() {
 
 # Проверка доступности сайта
 check_site_availability() {
-    local url="https://library.rtti.tj"
+    local url="https://storage.omuzgorpro.tj"
     local status=$(curl -s -o /dev/null -w "%{http_code}" $url)
     
     if [ "$status" != "200" ]; then
@@ -580,7 +580,7 @@ echo "14. Создание отчета о настройке..."
 cat > /root/drupal-post-install-report.txt << EOF
 # ОТЧЕТ О ПОСТ-УСТАНОВОЧНОЙ НАСТРОЙКЕ DRUPAL LIBRARY
 # Дата: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ ===
 

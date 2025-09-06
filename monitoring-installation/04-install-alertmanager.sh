@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 4: Настройка Alertmanager
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 4: Система уведомлений Alertmanager ==="
 echo "🚨 Настройка алертов и уведомлений"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     SERVER_ROLE="standalone"
     SERVER_NAME=$(hostname -f)
@@ -61,10 +61,10 @@ cat > $ALERTMANAGER_DIR/config/alertmanager.yml << EOF
 global:
   # Глобальные настройки SMTP
   smtp_smarthost: 'smtp.gmail.com:587'
-  smtp_from: 'monitoring@rtti.tj'
-  smtp_auth_username: 'monitoring@rtti.tj'
+  smtp_from: 'monitoring@omuzgorpro.tj'
+  smtp_auth_username: 'monitoring@omuzgorpro.tj'
   smtp_auth_password: 'your_app_password_here'
-  smtp_auth_identity: 'monitoring@rtti.tj'
+  smtp_auth_identity: 'monitoring@omuzgorpro.tj'
   
   # Глобальные настройки уведомлений
   resolve_timeout: 5m
@@ -116,8 +116,8 @@ receivers:
   # Основной администратор
   - name: 'rtti-admin'
     email_configs:
-      - to: 'admin@rtti.tj'
-        from: 'monitoring@rtti.tj'
+      - to: 'admin@omuzgorpro.tj'
+        from: 'monitoring@omuzgorpro.tj'
         subject: '[RTTI Monitoring] {{ .GroupLabels.alertname }}'
         html: |
           <!DOCTYPE html>
@@ -169,8 +169,8 @@ receivers:
   # Критические алерты (дополнительные получатели)
   - name: 'critical-alerts'
     email_configs:
-      - to: 'admin@rtti.tj'
-        from: 'monitoring@rtti.tj'
+      - to: 'admin@omuzgorpro.tj'
+        from: 'monitoring@omuzgorpro.tj'
         subject: '🚨 [КРИТИЧНО] {{ .GroupLabels.alertname }} - $SERVER_NAME'
         body: |
           КРИТИЧЕСКИЙ АЛЕРТ НА СЕРВЕРЕ $SERVER_NAME
@@ -197,8 +197,8 @@ receivers:
   # Веб-администратор
   - name: 'web-admin'
     email_configs:
-      - to: 'webadmin@rtti.tj'
-        from: 'monitoring@rtti.tj'
+      - to: 'webadmin@omuzgorpro.tj'
+        from: 'monitoring@omuzgorpro.tj'
         subject: '[WEB] {{ .GroupLabels.alertname }} - $SERVER_NAME'
         body: |
           Алерт веб-сервиса на $SERVER_NAME
@@ -213,8 +213,8 @@ receivers:
   # Администратор БД
   - name: 'db-admin'
     email_configs:
-      - to: 'dbadmin@rtti.tj'
-        from: 'monitoring@rtti.tj'
+      - to: 'dbadmin@omuzgorpro.tj'
+        from: 'monitoring@omuzgorpro.tj'
         subject: '[DATABASE] {{ .GroupLabels.alertname }} - $SERVER_NAME'
         body: |
           Алерт базы данных на $SERVER_NAME
@@ -229,8 +229,8 @@ receivers:
   # Системный администратор
   - name: 'system-admin'
     email_configs:
-      - to: 'sysadmin@rtti.tj'
-        from: 'monitoring@rtti.tj'
+      - to: 'sysadmin@omuzgorpro.tj'
+        from: 'monitoring@omuzgorpro.tj'
         subject: '[SYSTEM] {{ .GroupLabels.alertname }} - $SERVER_NAME'
         body: |
           Системный алерт на $SERVER_NAME
@@ -426,18 +426,18 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
     rules:
       # Moodle LMS недоступен
       - alert: MoodleDown
-        expr: probe_success{instance="https://lms.rtti.tj"} == 0
+        expr: probe_success{instance="https://omuzgorpro.tj"} == 0
         for: 2m
         labels:
           severity: critical
           service: moodle
         annotations:
           summary: "Система обучения Moodle недоступна"
-          description: "LMS система lms.rtti.tj не отвечает более 2 минут"
+          description: "LMS система omuzgorpro.tj не отвечает более 2 минут"
 
       # Медленный ответ Moodle
       - alert: MoodleSlow
-        expr: probe_duration_seconds{instance="https://lms.rtti.tj"} > 5
+        expr: probe_duration_seconds{instance="https://omuzgorpro.tj"} > 5
         for: 10m
         labels:
           severity: warning
@@ -448,14 +448,14 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
 
       # Проблемы с Drupal сервером (мониторинг с Moodle)
       - alert: DrupalServerIssue
-        expr: up{instance="library.rtti.tj"} == 0
+        expr: up{instance="storage.omuzgorpro.tj"} == 0
         for: 5m
         labels:
           severity: warning
           service: drupal
         annotations:
           summary: "Проблемы с Drupal сервером"
-          description: "Drupal сервер library.rtti.tj недоступен с Moodle сервера"
+          description: "Drupal сервер storage.omuzgorpro.tj недоступен с Moodle сервера"
 
 EOF
 elif [ "$SERVER_ROLE" == "drupal" ]; then
@@ -464,18 +464,18 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
     rules:
       # Drupal Library недоступна
       - alert: DrupalDown
-        expr: probe_success{instance="https://library.rtti.tj"} == 0
+        expr: probe_success{instance="https://storage.omuzgorpro.tj"} == 0
         for: 2m
         labels:
           severity: critical
           service: drupal
         annotations:
           summary: "Цифровая библиотека Drupal недоступна"
-          description: "Библиотечная система library.rtti.tj не отвечает более 2 минут"
+          description: "Библиотечная система storage.omuzgorpro.tj не отвечает более 2 минут"
 
       # Медленный ответ Drupal
       - alert: DrupalSlow
-        expr: probe_duration_seconds{instance="https://library.rtti.tj"} > 5
+        expr: probe_duration_seconds{instance="https://storage.omuzgorpro.tj"} > 5
         for: 10m
         labels:
           severity: warning
@@ -486,14 +486,14 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
 
       # Проблемы с Moodle сервером (мониторинг с Drupal)
       - alert: MoodleServerIssue
-        expr: up{instance="lms.rtti.tj"} == 0
+        expr: up{instance="omuzgorpro.tj"} == 0
         for: 5m
         labels:
           severity: warning
           service: moodle
         annotations:
           summary: "Проблемы с Moodle сервером"
-          description: "Moodle сервер lms.rtti.tj недоступен с Drupal сервера"
+          description: "Moodle сервер omuzgorpro.tj недоступен с Drupal сервера"
 
 EOF
 fi
@@ -634,7 +634,7 @@ echo "1. Создайте приложение Gmail App Password"
 echo "2. Отредактируйте файл: $ALERTMANAGER_CONFIG"
 echo "3. Замените следующие параметры:"
 echo "   - smtp_auth_password: 'your_app_password_here'"
-echo "   - Все email адреса admin@rtti.tj, webadmin@rtti.tj и т.д."
+echo "   - Все email адреса admin@omuzgorpro.tj, webadmin@omuzgorpro.tj и т.д."
 echo "4. Перезапустите Alertmanager: docker-compose restart alertmanager"
 echo
 echo "Пример настройки Gmail:"
@@ -726,11 +726,11 @@ cat >> /root/alertmanager-setup-report.txt << EOF
 === ПОЛУЧАТЕЛИ УВЕДОМЛЕНИЙ ===
 
 По умолчанию (требует настройки email):
-- rtti-admin: admin@rtti.tj
-- critical-alerts: admin@rtti.tj (критические)
-- web-admin: webadmin@rtti.tj
-- db-admin: dbadmin@rtti.tj
-- system-admin: sysadmin@rtti.tj
+- rtti-admin: admin@omuzgorpro.tj
+- critical-alerts: admin@omuzgorpro.tj (критические)
+- web-admin: webadmin@omuzgorpro.tj
+- db-admin: dbadmin@omuzgorpro.tj
+- system-admin: sysadmin@omuzgorpro.tj
 
 === МАРШРУТИЗАЦИЯ ===
 

@@ -222,7 +222,7 @@ composer audit
 - `/root/drupal-db-credentials.txt` - База данных
 
 **По умолчанию:**
-- URL: https://library.rtti.tj
+- URL: https://storage.omuzgorpro.tj
 - Пользователь: admin
 - Пароль: RTTIAdmin2024!
 
@@ -236,7 +236,7 @@ systemctl status redis-server
 systemctl status php8.3-fpm
 
 # Проверка сайта
-curl -I https://library.rtti.tj
+curl -I https://storage.omuzgorpro.tj
 
 # Проверка логов
 tail -f /var/log/nginx/error.log
@@ -352,7 +352,7 @@ sudo ./install-monitoring.sh
 ## 📞 Поддержка
 
 - **GitHub**: https://github.com/cheptura/LMS_Drupal/issues
-- **Email**: admin@rtti.tj
+- **Email**: admin@omuzgorpro.tj
 - **Документация**: [RTTI LMS Wiki](https://github.com/cheptura/LMS_Drupal/wiki)
 - **Drupal.org**: https://www.drupal.org/docs
 

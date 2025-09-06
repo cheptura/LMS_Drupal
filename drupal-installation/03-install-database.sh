@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 3: Установка базы данных
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 3: Установка PostgreSQL для Drupal 11 ==="
 echo "🗄️ PostgreSQL 16 - база данных для цифровой библиотеки"
@@ -158,7 +158,7 @@ echo "15. Сохранение данных подключения к базе �
 cat > /root/drupal-db-credentials.txt << EOF
 # Данные подключения к базе данных Drupal
 # Дата создания: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Хост: localhost
 База данных: drupal_library
@@ -268,7 +268,7 @@ echo "20. Создание информационного файла о базе
 cat > /root/drupal-database-info.txt << EOF
 # Информация о базе данных Drupal
 # Дата создания: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === ПАРАМЕТРЫ БАЗЫ ДАННЫХ ===
 СУБД: PostgreSQL $(sudo -u postgres psql -t -c "SELECT version();" | head -1 | awk '{print $2}')

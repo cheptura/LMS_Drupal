@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 2: Установка Docker и Prometheus
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 2: Docker и Prometheus ==="
 echo "🐳 Установка контейнерной платформы и системы мониторинга"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     echo "⚠️ IP адрес не распознан, используется режим standalone"
     SERVER_ROLE="standalone"
@@ -182,7 +182,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'library.rtti.tj'
+        replacement: 'storage.omuzgorpro.tj'
 
   # Проверка доступности Drupal
   - job_name: 'drupal-health'
@@ -191,8 +191,8 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
       module: [http_2xx]
     static_configs:
       - targets:
-          - https://library.rtti.tj
-          - https://library.rtti.tj/admin
+          - https://storage.omuzgorpro.tj
+          - https://storage.omuzgorpro.tj/admin
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -214,7 +214,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'lms.rtti.tj'
+        replacement: 'omuzgorpro.tj'
 
   # Проверка доступности Moodle
   - job_name: 'moodle-health'
@@ -223,8 +223,8 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
       module: [http_2xx]
     static_configs:
       - targets:
-          - https://lms.rtti.tj
-          - https://lms.rtti.tj/login
+          - https://omuzgorpro.tj
+          - https://omuzgorpro.tj/login
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -874,7 +874,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
 
 Мониторируемые внешние цели:
 - Drupal сервер: 92.242.61.204:9100
-- library.rtti.tj: HTTPS проверки
+- storage.omuzgorpro.tj: HTTPS проверки
 EOF
 elif [ "$SERVER_ROLE" == "drupal" ]; then
     cat >> /root/monitoring-setup-report.txt << EOF
@@ -882,7 +882,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
 
 Мониторируемые внешние цели:
 - Moodle сервер: 92.242.60.172:9100
-- lms.rtti.tj: HTTPS проверки
+- omuzgorpro.tj: HTTPS проверки
 EOF
 fi
 

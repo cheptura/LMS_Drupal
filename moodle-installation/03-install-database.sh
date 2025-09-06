@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 3: Установка базы данных
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 3: Установка PostgreSQL ==="
 echo "🗄️ PostgreSQL 16 для Moodle"
@@ -119,7 +119,7 @@ echo "13. Сохранение данных подключения к базе �
 cat > /root/moodle-db-credentials.txt << EOF
 # Данные подключения к базе данных Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Хост: localhost
 База данных: moodle

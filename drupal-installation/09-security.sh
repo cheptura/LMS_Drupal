@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 9: Настройка безопасности
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 9: Углубленная настройка безопасности ==="
 echo "🛡️ Комплексная защита системы и данных"
@@ -132,25 +132,25 @@ EOF
 # Обновление конфигурации основного сайта с ограничениями
 cat > "$NGINX_DIR/sites-available/drupal" << EOF
 # Конфигурация Nginx для Drupal Library с безопасностью
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 # Дата: $(date)
 
 server {
     listen 80;
-    server_name library.rtti.tj;
+    server_name storage.omuzgorpro.tj;
     return 301 https://\$server_name\$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name library.rtti.tj;
+    server_name storage.omuzgorpro.tj;
     
     root $DRUPAL_DIR/web;
     index index.php;
     
     # SSL конфигурация
-    ssl_certificate /etc/letsencrypt/live/library.rtti.tj/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/library.rtti.tj/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/storage.omuzgorpro.tj/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/storage.omuzgorpro.tj/privkey.pem;
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;
     ssl_session_tickets off;
@@ -163,7 +163,7 @@ server {
     # OCSP Stapling
     ssl_stapling on;
     ssl_stapling_verify on;
-    ssl_trusted_certificate /etc/letsencrypt/live/library.rtti.tj/chain.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/storage.omuzgorpro.tj/chain.pem;
     
     # Логирование
     access_log /var/log/nginx/drupal_access.log;
@@ -482,7 +482,7 @@ cat > /root/security-monitor.sh << 'EOF'
 # Мониторинг безопасности Drupal Library
 
 LOG_FILE="/var/log/security-monitor.log"
-EMAIL="security@rtti.tj"
+EMAIL="security@omuzgorpro.tj"
 DRUPAL_DIR="/var/www/drupal"
 
 # Функция логирования
@@ -601,7 +601,7 @@ Unattended-Upgrade::MinimalSteps "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
 Unattended-Upgrade::Automatic-Reboot "false";
-Unattended-Upgrade::Mail "security@rtti.tj";
+Unattended-Upgrade::Mail "security@omuzgorpro.tj";
 Unattended-Upgrade::MailReport "on-change";
 EOF
 
@@ -622,7 +622,7 @@ cat > /root/secure-backup.sh << 'EOF'
 BACKUP_DIR="/var/backups/secure-drupal"
 DRUPAL_DIR="/var/www/drupal"
 DATE=$(date +%Y%m%d-%H%M%S)
-GPG_RECIPIENT="backup@rtti.tj"
+GPG_RECIPIENT="backup@omuzgorpro.tj"
 
 mkdir -p $BACKUP_DIR
 
@@ -708,7 +708,7 @@ echo "13. Создание отчета о безопасности..."
 cat > /root/security-setup-report.txt << EOF
 # ОТЧЕТ О НАСТРОЙКЕ БЕЗОПАСНОСТИ DRUPAL LIBRARY
 # Дата: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === РЕАЛИЗОВАННЫЕ МЕРЫ БЕЗОПАСНОСТИ ===
 

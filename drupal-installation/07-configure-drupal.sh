@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 7: Конфигурация библиотечной системы
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 7: Настройка цифровой библиотеки ==="
 echo "📖 Конфигурация библиотечных функций и контента"
@@ -347,7 +347,7 @@ echo "11. Настройка конфигурации сайта..."
 # Базовые настройки сайта
 sudo -u www-data vendor/bin/drush config:set system.site name "RTTI Digital Library" -y
 sudo -u www-data vendor/bin/drush config:set system.site slogan "Цифровая библиотека РЦТИ" -y
-sudo -u www-data vendor/bin/drush config:set system.site mail "library@rtti.tj" -y
+sudo -u www-data vendor/bin/drush config:set system.site mail "library@omuzgorpro.tj" -y
 
 # Настройки производительности
 sudo -u www-data vendor/bin/drush config:set system.performance css.preprocess 1 -y
@@ -522,7 +522,7 @@ echo "17. Создание отчета о конфигурации..."
 cat > /root/drupal-library-config.txt << EOF
 # Конфигурация цифровой библиотеки РЦТИ
 # Дата: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === НАСТРОЕННЫЕ КОМПОНЕНТЫ ===
 

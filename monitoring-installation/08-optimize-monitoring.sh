@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 8: Оптимизация мониторинга
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 8: Оптимизация мониторинга ==="
 echo "⚡ Оптимизация производительности и настройка retention политик"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     SERVER_ROLE="standalone"
     SERVER_NAME=$(hostname -f)
@@ -659,13 +659,13 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
     cat >> $MONITORING_DIR/prometheus/rules/recording-rules.yml << EOF
       # Moodle specific metrics
       - record: rtti:moodle_availability
-        expr: probe_success{instance=~".*lms.rtti.tj.*"}
+        expr: probe_success{instance=~".*omuzgorpro.tj.*"}
         labels:
           type: "application"
           app: "moodle"
           
       - record: rtti:moodle_response_time
-        expr: probe_http_duration_seconds{instance=~".*lms.rtti.tj.*", phase="processing"}
+        expr: probe_http_duration_seconds{instance=~".*omuzgorpro.tj.*", phase="processing"}
         labels:
           type: "application"
           app: "moodle"
@@ -681,13 +681,13 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
     cat >> $MONITORING_DIR/prometheus/rules/recording-rules.yml << EOF
       # Drupal specific metrics
       - record: rtti:drupal_availability
-        expr: probe_success{instance=~".*library.rtti.tj.*"}
+        expr: probe_success{instance=~".*storage.omuzgorpro.tj.*"}
         labels:
           type: "application"
           app: "drupal"
           
       - record: rtti:drupal_response_time
-        expr: probe_http_duration_seconds{instance=~".*library.rtti.tj.*", phase="processing"}
+        expr: probe_http_duration_seconds{instance=~".*storage.omuzgorpro.tj.*", phase="processing"}
         labels:
           type: "application"
           app: "drupal"

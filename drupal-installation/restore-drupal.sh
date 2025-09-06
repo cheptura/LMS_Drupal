@@ -142,7 +142,7 @@ echo "✅ Выключение режима обслуживания..."
 sudo -u www-data vendor/bin/drush state:set system.maintenance_mode 0 --input-format=integer
 
 echo "🎉 Восстановление Drupal завершено успешно!"
-echo "📋 Проверьте сайт: https://library.rtti.tj"
+echo "📋 Проверьте сайт: https://storage.omuzgorpro.tj"
 echo "📂 Старые файлы сохранены в:"
 echo "   - $DRUPAL_DIR.backup"
 echo "   - $FILES_DIR.backup"

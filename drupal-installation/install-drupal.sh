@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal Library - Полная автоматическая установка
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 # Версия: Drupal 11 LTS
 
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
@@ -9,7 +9,7 @@ echo "║                      RTTI Drupal Library - Установка         
 echo "║                            Версия: 11 LTS                                   ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo
-echo "📚 Сервер: library.rtti.tj (92.242.61.204)"
+echo "📚 Сервер: storage.omuzgorpro.tj (92.242.61.204)"
 echo "📅 Дата: $(date)"
 echo "🖥️  IP: $(hostname -I | awk '{print $1}')"
 echo
@@ -228,10 +228,10 @@ echo "   ⏱️  Время установки: $(date)"
 echo "   📄 Лог: $INSTALL_LOG"
 echo
 echo "📚 Drupal Library готова к использованию:"
-echo "   🌐 URL: https://library.rtti.tj"
+echo "   🌐 URL: https://storage.omuzgorpro.tj"
 echo "   👤 Администратор: admin"
 echo "   🔑 Пароль: RTTIAdmin2024!"
-echo "   📧 Email: admin@rtti.tj"
+echo "   📧 Email: admin@omuzgorpro.tj"
 echo
 echo "📁 Важные файлы:"
 echo "   📋 Данные админа: /root/drupal-admin-credentials.txt"
@@ -241,7 +241,7 @@ echo "   📂 Файлы: /var/www/html/drupal/web/sites/default/files/"
 echo "   🔒 Приватные файлы: /var/drupalfiles/"
 echo
 echo "🔧 Следующие шаги:"
-echo "   1. Откройте https://library.rtti.tj в браузере"
+echo "   1. Откройте https://storage.omuzgorpro.tj в браузере"
 echo "   2. Войдите с данными администратора"
 echo "   3. Создайте категории и таксономии"
 echo "   4. Добавьте книги и ресурсы в библиотеку"

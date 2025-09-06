@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # RTTI Monitoring System - Полная автоматическая установка
-# Сервер: lms.rtti.tj (92.242.60.172) - основной мониторинг
-# Агенты: library.rtti.tj (92.242.61.204) - удаленный мониторинг
+# Сервер: monitoring.omuzgorpro.tj (92.242.60.172) - центральный мониторинг
+# Агенты: storage.omuzgorpro.tj (92.242.61.204) - удаленный мониторинг
 
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
 echo "║                     RTTI Monitoring System - Установка                      ║"
 echo "║                   Prometheus + Grafana + Alertmanager                       ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo
-echo "📊 Сервер мониторинга: lms.rtti.tj (92.242.60.172)"
+echo "📊 Сервер мониторинга: monitoring.omuzgorpro.tj (92.242.60.172)"
 echo "📅 Дата: $(date)"
 echo "🖥️  IP: $(hostname -I | awk '{print $1}')"
 echo
@@ -240,22 +240,22 @@ echo
 echo "📊 Система мониторинга готова к использованию:"
 echo
 echo "🔍 Prometheus (метрики и алерты):"
-echo "   🌐 URL: http://lms.rtti.tj:9090"
+echo "   🌐 URL: http://monitoring.omuzgorpro.tj:9090"
 echo "   ⚙️ Конфигурация: /etc/prometheus/prometheus.yml"
 echo
 echo "📈 Grafana (дашборды):"
-echo "   🌐 URL: http://lms.rtti.tj:3000"
+echo "   🌐 URL: http://monitoring.omuzgorpro.tj:3000"
 echo "   👤 Пользователь: admin"
 echo "   🔑 Пароль: RTTIMonitor2024!"
 echo
 echo "🚨 Alertmanager (уведомления):"
-echo "   🌐 URL: http://lms.rtti.tj:9093"
+echo "   🌐 URL: http://monitoring.omuzgorpro.tj:9093"
 echo "   ⚙️ Конфигурация: /etc/alertmanager/alertmanager.yml"
 echo
 echo "📡 Exporters (агенты сбора метрик):"
-echo "   🖥️  Node Exporter: http://lms.rtti.tj:9100"
-echo "   🌐 Nginx Exporter: http://lms.rtti.tj:9113"
-echo "   🗄️ Postgres Exporter: http://lms.rtti.tj:9187"
+echo "   🖥️  Node Exporter: http://omuzgorpro.tj:9100"
+echo "   🌐 Nginx Exporter: http://omuzgorpro.tj:9113"
+echo "   🗄️ Postgres Exporter: http://omuzgorpro.tj:9187"
 echo
 echo "📁 Важные файлы:"
 echo "   📋 Данные доступа: /root/monitoring-credentials.txt"
@@ -264,18 +264,19 @@ echo "   📈 Данные Grafana: /var/lib/grafana/"
 echo "   ⚙️ Конфигурации: /etc/prometheus/ /etc/grafana/ /etc/alertmanager/"
 echo
 echo "🔧 Следующие шаги:"
-echo "   1. Откройте http://lms.rtti.tj:3000 для доступа к Grafana"
+echo "   1. Откройте http://monitoring.omuzgorpro.tj:3000 для доступа к Grafana"
 echo "   2. Войдите с данными администратора"
 echo "   3. Просмотрите предустановленные дашборды"
 echo "   4. Настройте алерты и уведомления"
 echo "   5. Добавьте мониторинг дополнительных серверов"
 echo
 echo "📊 Мониторинг серверов:"
-echo "   🎓 Moodle LMS: lms.rtti.tj (92.242.60.172) - локальный"
-echo "   📚 Drupal Library: library.rtti.tj (92.242.61.204) - удаленный"
+echo "   🎓 Moodle LMS: omuzgorpro.tj (92.242.60.172) - ЦЕНТРАЛЬНЫЙ СЕРВЕР"
+echo "   📚 Drupal Library: storage.omuzgorpro.tj (92.242.61.204) - удаленные агенты"
+echo "   🌐 Веб-интерфейс: monitoring.omuzgorpro.tj"
 echo
 echo "🔗 Дополнительные настройки:"
-echo "   📧 Email алерты: ./setup-email-alerts.sh admin@rtti.tj"
+echo "   📧 Email алерты: ./setup-email-alerts.sh admin@omuzgorpro.tj"
 echo "   📱 Telegram: ./setup-telegram-alerts.sh"
 echo "   🔒 SSL для мониторинга: ./setup-ssl-monitoring.sh"
 echo

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 10: Финальная проверка и запуск
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 10: Финальная проверка и запуск ==="
 echo "🎯 Комплексная проверка системы мониторинга и запуск в продакшн"
@@ -18,13 +18,13 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
-    OTHER_SERVER="library.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
+    OTHER_SERVER="storage.omuzgorpro.tj"
     OTHER_IP="92.242.61.204"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
-    OTHER_SERVER="lms.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
+    OTHER_SERVER="omuzgorpro.tj"
     OTHER_IP="92.242.60.172"
 else
     SERVER_ROLE="standalone"

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 1: Подготовка системы
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 1: Подготовка системы ==="
-echo "🎓 Сервер: lms.rtti.tj"
+echo "🎓 Сервер: omuzgorpro.tj"
 echo "📅 Дата: $(date)"
 echo "🖥️  IP: $(hostname -I | awk '{print $1}')"
 echo

@@ -2,7 +2,7 @@
 
 # LMS_Drupal - Moodle Installation Script
 # Шаг 2: Установка веб-сервера (Nginx + PHP 8.3)
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 # Автор: cheptura (GitHub: https://github.com/cheptura/LMS_Drupal)
 # Дата: $(date)
 #
@@ -23,7 +23,7 @@ fi
 
 echo "🚀 LMS_Drupal - Установка веб-сервера для Moodle"
 echo "================================================"
-echo "Сервер: lms.rtti.tj"
+echo "Сервер: omuzgorpro.tj"
 echo "Дата: $(date)"
 echo
 
@@ -156,10 +156,10 @@ EOF
 echo "✅ Расширенные настройки PHP применены для FPM и CLI"
 
 echo "9. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
-cat > /etc/nginx/sites-available/lms.rtti.tj << 'EOF'
+cat > /etc/nginx/sites-available/omuzgorpro.tj << 'EOF'
 server {
     listen 80;
-    server_name lms.rtti.tj;
+    server_name omuzgorpro.tj;
     root /var/www/moodle;
     index index.php index.html index.htm;
 
@@ -299,7 +299,7 @@ server {
 EOF
 
 echo "10. Активация сайта..."
-ln -sf /etc/nginx/sites-available/lms.rtti.tj /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 echo "11. Проверка конфигурации Nginx..."
@@ -324,7 +324,7 @@ echo "15. Создание тестовой страницы..."
 cat > /var/www/moodle/info.php << 'EOF'
 <?php
 echo "<h1>Moodle Server Status</h1>";
-echo "<p><strong>Server:</strong> lms.rtti.tj</p>";
+echo "<p><strong>Server:</strong> omuzgorpro.tj</p>";
 echo "<p><strong>PHP Version:</strong> " . phpversion() . "</p>";
 echo "<p><strong>Date:</strong> " . date('Y-m-d H:i:s') . "</p>";
 
@@ -390,6 +390,6 @@ echo
 echo "✅ Шаг 2 завершен успешно!"
 echo "📌 Nginx и PHP 8.3 установлены и настроены"
 echo "📌 Включены: CSP для YUI, обработчики font.php/image.php, расширенная PHP конфигурация"
-echo "📌 Проверьте: http://lms.rtti.tj/info.php"
+echo "📌 Проверьте: http://omuzgorpro.tj/info.php"
 echo "📌 Следующий шаг: ./03-install-database.sh"
 echo

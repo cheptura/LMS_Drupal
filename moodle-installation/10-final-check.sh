@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 10: Финальная проверка системы
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 10: Финальная проверка системы ==="
 echo "🔍 Комплексная проверка всех компонентов"
@@ -116,7 +116,7 @@ else
 fi
 
 # Проверка доступности сайта
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://lms.rtti.tj 2>/dev/null)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://omuzgorpro.tj 2>/dev/null)
 if [ "$HTTP_CODE" = "200" ]; then
     echo_success "HTTPS доступность: $HTTP_CODE"
 elif [ "$HTTP_CODE" = "000" ]; then
@@ -126,8 +126,8 @@ else
 fi
 
 # Проверка SSL сертификата
-if openssl x509 -in /etc/letsencrypt/live/lms.rtti.tj/fullchain.pem -noout -checkend 86400 >/dev/null 2>&1; then
-    CERT_EXPIRY=$(openssl x509 -in /etc/letsencrypt/live/lms.rtti.tj/fullchain.pem -noout -enddate | cut -d= -f2)
+if openssl x509 -in /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem -noout -checkend 86400 >/dev/null 2>&1; then
+    CERT_EXPIRY=$(openssl x509 -in /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem -noout -enddate | cut -d= -f2)
     echo_success "SSL сертификат: действителен до $CERT_EXPIRY"
 else
     echo_warning "SSL сертификат: истекает менее чем через 24 часа или отсутствует"
@@ -362,7 +362,7 @@ echo "13. Создание финального отчета..."
 cat > /root/moodle-final-check-report.txt << EOF
 # Финальный отчет проверки Moodle RTTI LMS
 # Дата: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === РЕЗУЛЬТАТЫ ПРОВЕРКИ ===
 Ошибки: $ERRORS
@@ -388,7 +388,7 @@ done)
 
 === СЕТЬ ===
 HTTP статус: $HTTP_CODE
-SSL сертификат: $(if openssl x509 -in /etc/letsencrypt/live/lms.rtti.tj/fullchain.pem -noout -checkend 86400 >/dev/null 2>&1; then echo "✅ действителен"; else echo "⚠️ проблемы"; fi)
+SSL сертификат: $(if openssl x509 -in /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem -noout -checkend 86400 >/dev/null 2>&1; then echo "✅ действителен"; else echo "⚠️ проблемы"; fi)
 
 === PHP ===
 Версия: $PHP_VERSION
@@ -473,7 +473,7 @@ if [ $ERRORS -eq 0 ]; then
     echo "🚀 MOODLE RTTI LMS ГОТОВ К РАБОТЕ!"
     echo "🚀 ================================================"
     echo
-    echo "🌐 URL: https://lms.rtti.tj"
+    echo "🌐 URL: https://omuzgorpro.tj"
     echo "👤 Администратор: admin"
     echo "🔑 Пароль: см. /root/moodle-admin-credentials.txt"
     echo

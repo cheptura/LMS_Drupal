@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 5: Настройка SSL/TLS
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 # ИСПРАВЛЕНО: убрана поддержка www домена
 
-echo "=== RTTI Drupal - Шаг 5: Настройка SSL/TLS для library.rtti.tj ==="
+echo "=== RTTI Drupal - Шаг 5: Настройка SSL/TLS для storage.omuzgorpro.tj ==="
 echo "🔒 Let's Encrypt SSL сертификаты для цифровой библиотеки"
 echo "📅 Дата: $(date)"
 echo
@@ -15,8 +15,8 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-DOMAIN="library.rtti.tj"
-EMAIL="admin@rtti.tj"
+DOMAIN="storage.omuzgorpro.tj"
+EMAIL="admin@omuzgorpro.tj"
 
 echo "1. Установка Certbot для Let's Encrypt..."
 apt install -y certbot python3-certbot-nginx
@@ -310,7 +310,7 @@ echo "15. Создание файла с информацией о SSL..."
 cat > /root/drupal-ssl-info.txt << EOF
 # SSL/TLS информация для Drupal
 # Дата создания: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Домен: $DOMAIN
 SSL сертификат: Let's Encrypt

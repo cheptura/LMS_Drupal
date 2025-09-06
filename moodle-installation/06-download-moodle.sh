@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 6: Загрузка Moodle
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 6: Загрузка и подготовка Moodle 5.0+ ==="
 echo "📦 Загрузка последней стабильной версии Moodle"
@@ -142,7 +142,7 @@ $CFG = new stdClass();
 //     'dbcollation' => 'utf8_unicode_ci',
 // );
 
-$CFG->wwwroot   = 'https://lms.rtti.tj';
+$CFG->wwwroot   = 'https://omuzgorpro.tj';
 $CFG->dataroot  = '/var/moodledata';
 $CFG->admin     = 'admin';
 
@@ -228,7 +228,7 @@ echo "14. Создание информационного файла..."
 cat > /root/moodle-installation-info.txt << EOF
 # Информация об установке Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Путь к Moodle: $MOODLE_DIR
 Путь к данным: $MOODLEDATA_DIR
@@ -291,6 +291,6 @@ echo "📌 Данные будут в $MOODLEDATA_DIR"
 echo "📌 Конфигурация: $CONFIG_FILE"
 echo "📌 Информация: /root/moodle-installation-info.txt"
 echo "📌 Скрипт обновления: /root/update-moodle.sh"
-echo "📌 Тест PHP: https://lms.rtti.tj/phpinfo.php (УДАЛИТЬ ПОСЛЕ УСТАНОВКИ!)"
+echo "📌 Тест PHP: https://omuzgorpro.tj/phpinfo.php (УДАЛИТЬ ПОСЛЕ УСТАНОВКИ!)"
 echo "📌 Следующий шаг: ./07-configure-moodle.sh"
 echo

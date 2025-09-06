@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 10: Финальная проверка установки
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 10: Финальная проверка системы ==="
 echo "✅ Комплексная диагностика и валидация установки"
@@ -16,7 +16,7 @@ fi
 
 DRUPAL_DIR="/var/www/drupal"
 PHP_VERSION="8.3"
-DOMAIN="library.rtti.tj"
+DOMAIN="storage.omuzgorpro.tj"
 REPORT_FILE="/root/drupal-final-report.txt"
 
 # Цвета для вывода
@@ -510,7 +510,7 @@ cat >> $REPORT_FILE << EOF
 5. Проводите регулярные проверки безопасности
 
 === КОНТАКТЫ ТЕХНИЧЕСКОЙ ПОДДЕРЖКИ ===
-Email: support@rtti.tj
+Email: support@omuzgorpro.tj
 Документация: /root/drupal-*-report.txt
 Мониторинг: /root/drupal-monitor.sh
 Обслуживание: /root/library-maintenance.sh

@@ -4,13 +4,13 @@
 
 ## 🚀 Быстрая установка одной командой
 
-### 1. Moodle LMS 5.0+ (lms.rtti.tj)
+### 1. Moodle LMS 5.0+ (omuzgorpro.tj)
 
 ```bash
 wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/moodle-installation/install-moodle.sh && chmod +x install-moodle.sh && sudo ./install-moodle.sh
 ```
 
-### 2. Drupal 11 Library (library.rtti.tj)
+### 2. Drupal 11 Library (storage.omuzgorpro.tj)
 
 ```bash
 wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/drupal-installation/install-drupal.sh && chmod +x install-drupal.sh && sudo ./install-drupal.sh
@@ -47,14 +47,14 @@ wget https://raw.githubusercontent.com/cheptura/LMS_Drupal/main/monitoring-insta
 ## 📊 Результат установки
 
 ### Moodle LMS
-- **URL**: https://lms.rtti.tj
+- **URL**: https://omuzgorpro.tj
 - **Админ**: admin / RTTIAdmin2024!
 - **База данных**: PostgreSQL 16
 - **Кэш**: Redis
 - **SSL**: Let's Encrypt
 
 ### Drupal Library  
-- **URL**: https://library.rtti.tj
+- **URL**: https://storage.omuzgorpro.tj
 - **Админ**: admin / RTTILibrary2024!
 - **База данных**: PostgreSQL 16
 - **Кэш**: Redis

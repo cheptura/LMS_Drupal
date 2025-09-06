@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 3: Установка и настройка Grafana
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 3: Grafana Dashboard ==="
 echo "📊 Установка системы визуализации и дашбордов"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     SERVER_ROLE="standalone"
     SERVER_NAME=$(hostname -f)
@@ -852,7 +852,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "probe_success{instance=\"https://lms.rtti.tj\"}",
+          "expr": "probe_success{instance=\"https://omuzgorpro.tj\"}",
           "interval": "",
           "legendFormat": "Moodle Status",
           "refId": "A"
@@ -929,7 +929,7 @@ if [ "$SERVER_ROLE" == "moodle" ]; then
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "probe_success{instance=\"https://library.rtti.tj\"}",
+          "expr": "probe_success{instance=\"https://storage.omuzgorpro.tj\"}",
           "interval": "",
           "legendFormat": "Drupal Status",
           "refId": "A"
@@ -1039,7 +1039,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "probe_success{instance=\"https://library.rtti.tj\"}",
+          "expr": "probe_success{instance=\"https://storage.omuzgorpro.tj\"}",
           "interval": "",
           "legendFormat": "Drupal Status",
           "refId": "A"
@@ -1116,7 +1116,7 @@ elif [ "$SERVER_ROLE" == "drupal" ]; then
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "probe_success{instance=\"https://lms.rtti.tj\"}",
+          "expr": "probe_success{instance=\"https://omuzgorpro.tj\"}",
           "interval": "",
           "legendFormat": "Moodle Status",
           "refId": "A"

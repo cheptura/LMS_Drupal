@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 4: Установка системы кэширования
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 4: Установка Redis ==="
 echo "🔄 Настройка системы кэширования"
@@ -135,7 +135,7 @@ if [ ! -z "$REDIS_PASSWORD" ] && [ "$REDIS_PASSWORD" != "" ]; then
     cat > /root/moodle-redis-credentials.txt << EOF
 # Данные подключения к Redis для Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Хост: 127.0.0.1
 Порт: 6379
@@ -160,7 +160,7 @@ else
     cat > /root/moodle-redis-credentials.txt << EOF
 # Данные подключения к Redis для Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Хост: 127.0.0.1
 Порт: 6379

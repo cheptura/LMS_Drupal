@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Drupal - Шаг 6: Установка Drupal 11
-# Сервер: library.rtti.tj (92.242.61.204)
+# Сервер: storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Drupal - Шаг 6: Установка Drupal 11 ==="
 echo "📚 Загрузка и установка цифровой библиотеки"
@@ -202,7 +202,7 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 // RTTI Library specific settings
 \$config['system.site']['name'] = 'RTTI Digital Library';
 \$config['system.site']['slogan'] = 'Цифровая библиотека РЦТИ';
-\$config['system.site']['mail'] = 'library@rtti.tj';
+\$config['system.site']['mail'] = 'library@omuzgorpro.tj';
 
 // Performance settings
 \$config['system.performance']['css']['preprocess'] = TRUE;
@@ -215,7 +215,7 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 \$config['system.logging']['error_level'] = 'hide';
 
 // Update notifications
-\$config['update.settings']['notification']['emails'] = ['admin@rtti.tj'];
+\$config['update.settings']['notification']['emails'] = ['admin@omuzgorpro.tj'];
 
 EOF
 
@@ -234,10 +234,10 @@ sudo -u www-data php web/core/scripts/drupal install \
     --db-pass=$DB_PASSWORD \
     --db-port=5432 \
     --site-name="RTTI Digital Library" \
-    --site-mail=library@rtti.tj \
+    --site-mail=library@omuzgorpro.tj \
     --account-name=admin \
     --account-pass=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-12) \
-    --account-mail=admin@rtti.tj
+    --account-mail=admin@omuzgorpro.tj
 
 INSTALL_RESULT=$?
 
@@ -332,25 +332,25 @@ ADMIN_PASSWORD=$(grep "account-pass" /var/log/drupal-install.log 2>/dev/null | a
 cat > /root/drupal-admin-credentials.txt << EOF
 # Данные администратора Drupal
 # Дата создания: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
-URL: https://library.rtti.tj
+URL: https://storage.omuzgorpro.tj
 Администратор: admin
 Пароль: $ADMIN_PASSWORD
-Email: admin@rtti.tj
+Email: admin@omuzgorpro.tj
 
 # Первый вход:
-# 1. Откройте https://library.rtti.tj
+# 1. Откройте https://storage.omuzgorpro.tj
 # 2. Войдите как admin с паролем выше
 # 3. Смените пароль через профиль
 # 4. Настройте сайт через Администрирование
 
 # Важные ссылки:
-# Админ-панель: https://library.rtti.tj/admin
-# Управление контентом: https://library.rtti.tj/admin/content
-# Конфигурация: https://library.rtti.tj/admin/config
-# Модули: https://library.rtti.tj/admin/modules
-# Темы: https://library.rtti.tj/admin/appearance
+# Админ-панель: https://storage.omuzgorpro.tj/admin
+# Управление контентом: https://storage.omuzgorpro.tj/admin/content
+# Конфигурация: https://storage.omuzgorpro.tj/admin/config
+# Модули: https://storage.omuzgorpro.tj/admin/modules
+# Темы: https://storage.omuzgorpro.tj/admin/appearance
 
 # Drush команды:
 # Очистка кэша: cd $DRUPAL_DIR && sudo -u www-data vendor/bin/drush cache:rebuild
@@ -364,7 +364,7 @@ echo "17. Создание информационного файла..."
 cat > /root/drupal-installation-info.txt << EOF
 # Информация об установке Drupal 11
 # Дата: $(date)
-# Сервер: library.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === УСТАНОВКА ===
 Путь: $DRUPAL_DIR
@@ -373,7 +373,7 @@ cat > /root/drupal-installation-info.txt << EOF
 Кэширование: Redis + Memcached + APCu
 
 === ДОСТУП ===
-URL: https://library.rtti.tj
+URL: https://storage.omuzgorpro.tj
 Админ: admin
 Конфигурация: /root/drupal-admin-credentials.txt
 
@@ -402,7 +402,7 @@ URL: https://library.rtti.tj
 Composer: $DRUPAL_DIR/composer.json
 
 === СЛЕДУЮЩИЕ ШАГИ ===
-1. Откройте https://library.rtti.tj
+1. Откройте https://storage.omuzgorpro.tj
 2. Войдите как администратор
 3. Настройте тему оформления
 4. Создайте типы контента для библиотеки
@@ -442,7 +442,7 @@ echo "📌 Drupal 11 установлен в $DRUPAL_DIR"
 echo "📌 Модули для библиотеки установлены"
 echo "📌 База данных настроена"
 echo "📌 Кэширование активировано"
-echo "📌 URL: https://library.rtti.tj"
+echo "📌 URL: https://storage.omuzgorpro.tj"
 echo "📌 Данные администратора: /root/drupal-admin-credentials.txt"
 echo "📌 Управление: /root/drupal-management.sh"
 echo "📌 Информация: /root/drupal-installation-info.txt"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Monitoring - Шаг 9: Резервное копирование мониторинга
-# Серверы: lms.rtti.tj (92.242.60.172), library.rtti.tj (92.242.61.204)
+# Серверы: omuzgorpro.tj (92.242.60.172), storage.omuzgorpro.tj (92.242.61.204)
 
 echo "=== RTTI Monitoring - Шаг 9: Резервное копирование мониторинга ==="
 echo "💾 Настройка автоматического резервного копирования конфигураций и данных"
@@ -18,10 +18,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     SERVER_ROLE="moodle"
-    SERVER_NAME="lms.rtti.tj"
+    SERVER_NAME="omuzgorpro.tj"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     SERVER_ROLE="drupal"
-    SERVER_NAME="library.rtti.tj"
+    SERVER_NAME="storage.omuzgorpro.tj"
 else
     SERVER_ROLE="standalone"
     SERVER_NAME=$(hostname -f)
@@ -572,10 +572,10 @@ REMOTE_BACKUP_DIR="/opt/remote-backup"
 # Определение удаленного сервера
 SERVER_IP=$(hostname -I | awk '{print $1}')
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
-    REMOTE_SERVER="library.rtti.tj"  # Drupal сервер
+    REMOTE_SERVER="storage.omuzgorpro.tj"  # Drupal сервер
     REMOTE_IP="92.242.61.204"
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
-    REMOTE_SERVER="lms.rtti.tj"      # Moodle сервер
+    REMOTE_SERVER="omuzgorpro.tj"      # Moodle сервер
     REMOTE_IP="92.242.60.172"
 else
     echo "❌ Неизвестный сервер, синхронизация невозможна"
@@ -915,12 +915,12 @@ EOF
 
 if [[ "$SERVER_IP" == "92.242.60.172" ]]; then
     cat >> /root/backup-guide.txt << EOF
-Удаленный сервер: library.rtti.tj (92.242.61.204)
+Удаленный сервер: storage.omuzgorpro.tj (92.242.61.204)
 Синхронизация: Конфигурации ежедневно, полные копии еженедельно
 EOF
 elif [[ "$SERVER_IP" == "92.242.61.204" ]]; then
     cat >> /root/backup-guide.txt << EOF
-Удаленный сервер: lms.rtti.tj (92.242.60.172)
+Удаленный сервер: omuzgorpro.tj (92.242.60.172)
 Синхронизация: Конфигурации ежедневно, полные копии еженедельно
 EOF
 fi

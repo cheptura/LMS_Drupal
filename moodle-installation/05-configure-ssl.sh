@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 5: Настройка SSL/TLS
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 # ИСПРАВЛЕНО: убрана поддержка www домена
 #
 # ✅ ИНТЕГРИРОВАННЫЕ ИСПРАВЛЕНИЯ (2025-09-05):
@@ -9,7 +9,7 @@
 # - Обработчики font.php и image.php с PATH_INFO поддержкой
 # - Все необходимые JavaScript/CSS handlers для SSL
 
-echo "=== RTTI Moodle - Шаг 5: Настройка SSL/TLS для lms.rtti.tj ==="
+echo "=== RTTI Moodle - Шаг 5: Настройка SSL/TLS для omuzgorpro.tj ==="
 echo "🔒 Let's Encrypt SSL сертификаты"
 echo "📅 Дата: $(date)"
 echo
@@ -20,8 +20,8 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-DOMAIN="lms.rtti.tj"
-EMAIL="admin@rtti.tj"
+DOMAIN="omuzgorpro.tj"
+EMAIL="admin@omuzgorpro.tj"
 
 echo "1. Установка Certbot для Let's Encrypt..."
 apt install -y certbot python3-certbot-nginx
@@ -321,7 +321,7 @@ echo "16. Создание файла с информацией о SSL..."
 cat > /root/moodle-ssl-info.txt << EOF
 # SSL/TLS информация для Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Домен: $DOMAIN
 SSL сертификат: Let's Encrypt

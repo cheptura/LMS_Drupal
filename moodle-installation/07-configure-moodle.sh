@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 7: Конфигурация Moodle
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 
 echo "=== RTTI Moodle - Шаг 7: Конфигурация Moodle ==="
 echo "⚙️  Настройка config.php и параметров"
@@ -57,7 +57,7 @@ cat > $CONFIG_FILE << EOF
 <?php  
 // Moodle configuration file
 // Generated: $(date)
-// Server: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+// Server: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 unset(\$CFG);
 global \$CFG;
@@ -82,7 +82,7 @@ global \$CFG;
 //=========================================================================
 // 2. WEB ADDRESSES
 //=========================================================================
-\$CFG->wwwroot   = 'https://lms.rtti.tj';
+\$CFG->wwwroot   = 'https://omuzgorpro.tj';
 
 //=========================================================================
 // 3. DATA DIRECTORIES
@@ -170,8 +170,8 @@ global \$CFG;
 \$CFG->smtppass = '';
 \$CFG->smtpsecure = '';
 \$CFG->smtpautotls = false;
-\$CFG->noreplyaddress = 'noreply@rtti.tj';
-\$CFG->supportemail = 'support@rtti.tj';
+\$CFG->noreplyaddress = 'noreply@omuzgorpro.tj';
+\$CFG->supportemail = 'support@omuzgorpro.tj';
 
 //=========================================================================
 // 10. LOGGING
@@ -339,7 +339,7 @@ echo -e "\n9. Дисковое пространство:"
 df -h | grep -E "(Filesystem|/var|/)"
 
 echo -e "\n10. SSL сертификат:"
-openssl x509 -in /etc/letsencrypt/live/lms.rtti.tj/fullchain.pem -noout -dates 2>/dev/null || echo "SSL: Не настроен"
+openssl x509 -in /etc/letsencrypt/live/omuzgorpro.tj/fullchain.pem -noout -dates 2>/dev/null || echo "SSL: Не настроен"
 EOF
 
 chmod +x /root/moodle-diagnostics.sh
@@ -348,10 +348,10 @@ echo "11. Создание файла с параметрами конфигур
 cat > /root/moodle-config-summary.txt << EOF
 # Сводка конфигурации Moodle
 # Дата: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === ОСНОВНЫЕ ПАРАМЕТРЫ ===
-URL: https://lms.rtti.tj
+URL: https://omuzgorpro.tj
 Каталог: $MOODLE_DIR
 Данные: /var/moodledata
 Конфигурация: $CONFIG_FILE

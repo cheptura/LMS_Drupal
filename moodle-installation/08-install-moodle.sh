@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RTTI Moodle - Шаг 8: Умная установка Moodle
-# Сервер: lms.rtti.tj (92.242.60.172)
+# Сервер: omuzgorpro.tj (92.242.60.172)
 # Автоматически обрабатывает все возможные ситуации и проблемы
 #
 # ✅ ОБНОВЛЕНО (2025-09-05): Упрощена логика PHP конфигурации
@@ -94,11 +94,11 @@ for service in "${SERVICES[@]}"; do
 done
 
 echo "2. Проверка доступности домена..."
-curl -I https://lms.rtti.tj >/dev/null 2>&1
+curl -I https://omuzgorpro.tj >/dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "✅ Домен lms.rtti.tj доступен"
+    echo "✅ Домен omuzgorpro.tj доступен"
 else
-    echo "⚠️  Домен lms.rtti.tj недоступен извне, но установка продолжится"
+    echo "⚠️  Домен omuzgorpro.tj недоступен извне, но установка продолжится"
 fi
 
 echo "3. Проверка подключений к базе данных и Redis..."
@@ -125,7 +125,7 @@ fi
 
 echo "4. Анализ ситуации и выбор стратегии установки..."
 ADMIN_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-16)
-ADMIN_EMAIL="admin@rtti.tj"
+ADMIN_EMAIL="admin@omuzgorpro.tj"
 
 cd $MOODLE_DIR
 
@@ -170,7 +170,7 @@ if [ "$CONFIG_EXISTS" = true ] && [ "$DB_EXISTS" = true ]; then
         
         if [ "$ADMIN_EXISTS" = "true" ]; then
             echo "✅ Администратор уже существует"
-            echo "🌐 Доступ: https://lms.rtti.tj"
+            echo "🌐 Доступ: https://omuzgorpro.tj"
             echo "👤 Пользователь: admin"
             echo "🔐 Используйте существующий пароль или сбросьте его через интерфейс"
         fi
@@ -241,7 +241,7 @@ global \$CFG;
     'dbsocket' => '',
 );
 
-\$CFG->wwwroot   = 'https://lms.rtti.tj';
+\$CFG->wwwroot   = 'https://omuzgorpro.tj';
 \$CFG->dataroot  = '/var/moodledata';
 \$CFG->admin     = 'admin';
 
@@ -272,7 +272,7 @@ EOF
         --non-interactive \
         --agree-license \
         --lang=ru \
-        --wwwroot=https://lms.rtti.tj \
+        --wwwroot=https://omuzgorpro.tj \
         --dataroot=/var/moodledata \
         --dbtype=pgsql \
         --dbhost=localhost \
@@ -301,7 +301,7 @@ elif [ $INSTALL_RESULT -eq 0 ]; then
     echo "Пользователь: admin" >> /var/log/moodle-install.log
     echo "Пароль: $ADMIN_PASSWORD" >> /var/log/moodle-install.log
     echo "Email: $ADMIN_EMAIL" >> /var/log/moodle-install.log
-    echo "URL: https://lms.rtti.tj" >> /var/log/moodle-install.log
+    echo "URL: https://omuzgorpro.tj" >> /var/log/moodle-install.log
     
     chmod 600 /var/log/moodle-install.log
     
@@ -464,7 +464,7 @@ chown root:root /var/backups/moodle
 chmod 755 /var/backups/moodle
 
 echo "11. Проверка работы веб-интерфейса..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lms.rtti.tj)
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://omuzgorpro.tj)
 if [ "$HTTP_STATUS" = "200" ]; then
     echo "✅ Веб-интерфейс доступен (HTTP $HTTP_STATUS)"
 else
@@ -492,24 +492,24 @@ echo "13. Сохранение данных администратора..."
 cat > /root/moodle-admin-credentials.txt << EOF
 # Данные администратора Moodle
 # Дата создания: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
-URL: https://lms.rtti.tj
+URL: https://omuzgorpro.tj
 Администратор: admin
 Пароль: $ADMIN_PASSWORD
 Email: $ADMIN_EMAIL
 
 # Первый вход:
-# 1. Откройте https://lms.rtti.tj
+# 1. Откройте https://omuzgorpro.tj
 # 2. Войдите как admin с паролем выше
 # 3. Измените пароль на более запоминающийся
 # 4. Настройте профиль и параметры сайта
 
 # Важные ссылки:
-# Панель администратора: https://lms.rtti.tj/admin/
-# Управление пользователями: https://lms.rtti.tj/admin/user.php
-# Настройки сайта: https://lms.rtti.tj/admin/settings.php
-# Плагины: https://lms.rtti.tj/admin/plugins.php
+# Панель администратора: https://omuzgorpro.tj/admin/
+# Управление пользователями: https://omuzgorpro.tj/admin/user.php
+# Настройки сайта: https://omuzgorpro.tj/admin/settings.php
+# Плагины: https://omuzgorpro.tj/admin/plugins.php
 EOF
 
 chmod 600 /root/moodle-admin-credentials.txt
@@ -518,11 +518,11 @@ echo "14. Создание файла статуса установки..."
 cat > /root/moodle-installation-status.txt << EOF
 # Статус установки Moodle RTTI LMS
 # Дата завершения: $(date)
-# Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+# Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 === СТАТУС: УСТАНОВЛЕНО ✅ ===
 
-URL: https://lms.rtti.tj
+URL: https://omuzgorpro.tj
 Администратор: admin
 Email: $ADMIN_EMAIL
 
@@ -548,7 +548,7 @@ Email: $ADMIN_EMAIL
 Резервное копирование: /root/moodle-backup.sh
 
 === СЛЕДУЮЩИЕ ШАГИ ===
-1. Откройте https://lms.rtti.tj
+1. Откройте https://omuzgorpro.tj
 2. Войдите как admin
 3. Смените пароль администратора
 4. Настройте параметры организации
@@ -638,7 +638,7 @@ cat > /root/moodle-installation-status.txt << EOF
 === MOODLE INSTALLATION STATUS ===
 Дата установки: $(date)
 Статус: УСПЕШНО ЗАВЕРШЕНА
-Сервер: lms.rtti.tj ($(hostname -I | awk '{print $1}'))
+Сервер: omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 
 Компоненты:
 - Moodle: $(sudo -u www-data php -r "require_once '$MOODLE_DIR/config.php'; require_once '$MOODLE_DIR/version.php'; echo \$release;" 2>/dev/null || echo "Установлен")
@@ -653,7 +653,7 @@ cat > /root/moodle-installation-status.txt << EOF
 - max_execution_time: $(php -r "echo ini_get('max_execution_time');")
 
 Доступ:
-- URL: https://lms.rtti.tj
+- URL: https://omuzgorpro.tj
 - Администратор: admin
 - Данные сохранены в: /var/log/moodle-install.log
 
@@ -670,7 +670,7 @@ echo "🎉 ================================================"
 echo "🎉 УМНАЯ УСТАНОВКА MOODLE ЗАВЕРШЕНА УСПЕШНО!"
 echo "🎉 ================================================"
 echo
-echo "📍 URL: https://lms.rtti.tj"
+echo "📍 URL: https://omuzgorpro.tj"
 echo "👤 Администратор: admin"
 if [ "$MOODLE_INSTALLED" != true ]; then
     echo "🔑 Пароль: $ADMIN_PASSWORD"
@@ -680,7 +680,7 @@ else
 fi
 echo
 echo "📋 Следующие шаги:"
-echo "1. Откройте https://lms.rtti.tj в браузере"
+echo "1. Откройте https://omuzgorpro.tj в браузере"
 echo "2. Войдите с данными администратора"
 if [ "$MOODLE_INSTALLED" != true ]; then
     echo "3. Смените пароль на более безопасный"

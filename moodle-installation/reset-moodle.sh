@@ -159,7 +159,7 @@ sudo -u www-data php admin/cli/install_database.php \
     --agree-license \
     --adminuser=admin \
     --adminpass=RTTIAdmin2024! \
-    --adminemail=admin@rtti.tj \
+    --adminemail=admin@omuzgorpro.tj \
     --fullname="RTTI Learning Management System" \
     --shortname="RTTI LMS" \
     --summary="Система управления обучением RTTI"
@@ -178,7 +178,7 @@ sudo -u www-data php admin/cli/cfg.php --name=registerauth --set=email
 
 # Настройка email
 sudo -u www-data php admin/cli/cfg.php --name=smtphosts --set=localhost
-sudo -u www-data php admin/cli/cfg.php --name=noreplyaddress --set=noreply@rtti.tj
+sudo -u www-data php admin/cli/cfg.php --name=noreplyaddress --set=noreply@omuzgorpro.tj
 
 # Отключение режима обслуживания
 echo "✅ Отключение режима обслуживания..."
@@ -207,7 +207,7 @@ Database Details:
 Administrator Account:
 - Username: admin
 - Password: RTTIAdmin2024!
-- Email: admin@rtti.tj
+- Email: admin@omuzgorpro.tj
 
 URLs:
 - Site: $WWW_ROOT
@@ -233,7 +233,7 @@ echo "════════════════════════�
 echo "🌐 URL: $WWW_ROOT"
 echo "👤 Администратор: admin"
 echo "🔑 Пароль: RTTIAdmin2024!"
-echo "📧 Email: admin@rtti.tj"
+echo "📧 Email: admin@omuzgorpro.tj"
 echo
 echo "📁 Важные файлы:"
 echo "   📋 Информация о сбросе: $RESET_INFO"

@@ -102,7 +102,7 @@ echo "🧹 Очистка кэша..."
 sudo -u www-data php admin/cli/purge_caches.php
 
 echo "🎉 Восстановление Moodle завершено успешно!"
-echo "📋 Проверьте сайт: https://lms.rtti.tj"
+echo "📋 Проверьте сайт: https://omuzgorpro.tj"
 echo "📂 Старые файлы сохранены в:"
 echo "   - $MOODLE_DIR.backup"
 echo "   - $DATA_DIR.backup"
