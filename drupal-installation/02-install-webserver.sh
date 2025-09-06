@@ -112,10 +112,35 @@ fi
 
 # Проверка установки Composer
 echo "   🔍 Проверка установки..."
-if composer --version >/dev/null 2>&1; then
-    echo "✅ Composer установлен: $(composer --version --no-ansi | head -1)"
+echo "   📍 Проверка существования файла Composer..."
+if [ -f "/usr/local/bin/composer" ]; then
+    echo "   ✅ Файл /usr/local/bin/composer существует"
+elif which composer >/dev/null 2>&1; then
+    echo "   ✅ Composer найден в PATH: $(which composer)"
 else
-    echo "❌ Ошибка установки Composer"
+    echo "   ❌ Файл Composer не найден"
+    exit 1
+fi
+
+echo "   📍 Проверка прав доступа..."
+if [ -x "/usr/local/bin/composer" ] || [ -x "$(which composer 2>/dev/null)" ]; then
+    echo "   ✅ Права на выполнение установлены"
+else
+    echo "   ⚠️  Установка прав на выполнение..."
+    chmod +x /usr/local/bin/composer 2>/dev/null || chmod +x "$(which composer)"
+fi
+
+echo "   📍 Тест версии с таймаутом..."
+# Используем timeout для предотвращения зависания
+if timeout 30 composer --version --no-ansi >/dev/null 2>&1; then
+    COMPOSER_VERSION=$(timeout 30 composer --version --no-ansi 2>/dev/null | head -1)
+    echo "✅ Composer установлен: $COMPOSER_VERSION"
+else
+    echo "❌ Ошибка: Composer не отвечает или установлен неправильно"
+    echo "   🔍 Дополнительная диагностика..."
+    echo "   PHP версия: $(php --version | head -1)"
+    echo "   Composer путь: $(which composer 2>/dev/null || echo 'не найден в PATH')"
+    echo "   Попытка прямого вызова: $(timeout 10 php /usr/local/bin/composer --version 2>&1 | head -1 || echo 'не удалось')"
     exit 1
 fi
 
