@@ -182,7 +182,7 @@ ln -sf /etc/php/8.3/conf.d/99-moodle-settings.ini /etc/php/8.3/cli/conf.d/99-moo
 echo "✅ Расширенные настройки PHP применены для FPM и CLI"
 
 echo "10. Создание конфигурации Nginx для Moodle (с CSP и обработчиками font.php/image.php)..."
-cat > /etc/nginx/sites-available/omuzgorpro.tj << 'EOF'
+cat > /etc/nginx/sites-available/omuzgorpro.tj << 'NGINX_CONFIG'
 server {
     listen 80;
     server_name omuzgorpro.tj;
@@ -247,7 +247,7 @@ server {
         deny all;
     }
 }
-EOF
+NGINX_CONFIG
 
 echo "11. Активация сайта..."
 ln -sf /etc/nginx/sites-available/omuzgorpro.tj /etc/nginx/sites-enabled/
