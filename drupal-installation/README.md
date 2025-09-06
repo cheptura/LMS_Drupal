@@ -123,8 +123,8 @@ drush config:import     # Импорт конфигурации
 ## Доступ к системе
 
 ### 🌐 Веб-интерфейс Drupal:
-- **HTTP:** http://ваш-ip-адрес
-- **HTTPS:** https://ваш-домен (после настройки SSL)
+- **HTTP:** http://storage.omuzgorpro.tj
+- **HTTPS:** https://storage.omuzgorpro.tj (после настройки SSL)
 - **Админ панель:** /admin
 
 ### 👤 Учетные данные:
@@ -132,10 +132,10 @@ drush config:import     # Импорт конфигурации
 - Сохраняются в файле `/var/log/drupal-install.log`
 
 ### 📁 Важные директории:
-- **Код Drupal:** `/var/www/html/drupal`
-- **Файлы сайта:** `/var/www/html/drupal/web/sites/default/files`
-- **Конфигурация:** `/var/www/html/drupal/config/sync`
-- **Composer:** `/var/www/html/drupal/composer.json`
+- **Код Drupal:** `/var/www/drupal`
+- **Файлы сайта:** `/var/www/drupal/web/sites/default/files`
+- **Конфигурация:** `/var/www/drupal/config/sync`
+- **Composer:** `/var/www/drupal/composer.json`
 - **Логи Nginx:** `/var/log/nginx/`
 - **Логи PHP:** `/var/log/php8.3-fpm.log`
 
@@ -212,7 +212,7 @@ composer audit
 ## 📁 Структура после установки
 
 ```
-/var/www/html/drupal/          # Drupal файлы
+/var/www/drupal/               # Drupal файлы
 /var/drupalfiles/              # Приватные файлы
 /root/drupal-credentials.txt   # Данные доступа
 /etc/nginx/sites-available/    # Конфигурация Nginx
@@ -228,7 +228,7 @@ composer audit
 **По умолчанию:**
 - URL: https://storage.omuzgorpro.tj
 - Пользователь: admin
-- Пароль: RTTIAdmin2024!
+- Пароль: RTTIDrupal2024!
 
 ## ✅ Проверка установки
 
@@ -250,7 +250,7 @@ tail -f /var/log/nginx/error.log
 
 ### Drush CLI
 ```bash
-cd /var/www/html/drupal
+cd /var/www/drupal
 vendor/bin/drush status
 vendor/bin/drush cache:rebuild
 vendor/bin/drush user:login admin
@@ -259,7 +259,7 @@ vendor/bin/drush pm:enable module_name
 
 ### Composer
 ```bash
-cd /var/www/html/drupal
+cd /var/www/drupal
 composer require drupal/module_name
 composer update
 ```
@@ -288,7 +288,7 @@ composer update
 
 ### Рекомендуемые дополнительные модули
 ```bash
-cd /var/www/html/drupal
+cd /var/www/drupal
 composer require drupal/facets              # Фасетный поиск
 composer require drupal/search_api          # Расширенный поиск
 composer require drupal/pdf                 # Поддержка PDF

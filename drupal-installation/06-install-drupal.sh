@@ -88,12 +88,37 @@ if [ $? -ne 0 ]; then
     sudo -u www-data composer require drush/drush:^12 --no-interaction
 fi
 
-# Проверяем что Drush установлен
-if [ ! -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
+# Проверяем что Drush установлен и работает
+echo "📍 Проверка установки Drush..."
+DRUSH_AVAILABLE=false
+
+if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
+    # Проверяем что Drush исполняется
+    if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
+        DRUSH_AVAILABLE=true
+        echo "✅ Drush установлен и работает"
+    else
+        echo "⚠️ Drush найден, но не работает"
+    fi
+else
     echo "❌ Drush не найден, установка вручную..."
-    sudo -u www-data composer global require drush/drush
-    # Создаем символическую ссылку
-    ln -sf ~/.composer/vendor/bin/drush $DRUPAL_DIR/vendor/bin/drush 2>/dev/null || true
+    sudo -u www-data composer global require drush/drush 2>/dev/null || true
+    
+    # Попытка создать символическую ссылку
+    if [ -d "/var/www/.composer/vendor/bin" ] && [ -f "/var/www/.composer/vendor/bin/drush" ]; then
+        mkdir -p "$DRUPAL_DIR/vendor/bin"
+        ln -sf /var/www/.composer/vendor/bin/drush $DRUPAL_DIR/vendor/bin/drush 2>/dev/null || true
+        
+        # Проверяем снова
+        if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
+            DRUSH_AVAILABLE=true
+            echo "✅ Drush установлен глобально и связан"
+        fi
+    fi
+fi
+
+if [ "$DRUSH_AVAILABLE" = false ]; then
+    echo "⚠️ Drush недоступен - будет использована веб-установка"
 fi
 
 echo "6. Установка дополнительных модулей для цифровой библиотеки..."
@@ -186,8 +211,8 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 
 // Trusted host patterns
 \$settings['trusted_host_patterns'] = [
-  '^library\.rtti\.tj\$',
-  '^www\.library\.rtti\.tj\$',
+  '^storage\.omuzgorpro\.tj\$',
+  '^www\.storage\.omuzgorpro\.tj\$',
 ];
 
 // Salt for one-time login links, cancel links, form tokens, etc.
@@ -238,6 +263,9 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 \$config['system.site']['slogan'] = 'Цифровая библиотека РЦТИ';
 \$config['system.site']['mail'] = 'library@omuzgorpro.tj';
 
+// Base URL configuration
+\$base_url = 'https://storage.omuzgorpro.tj';
+
 // Performance settings
 \$config['system.performance']['css']['preprocess'] = TRUE;
 \$config['system.performance']['js']['preprocess'] = TRUE;
@@ -261,9 +289,9 @@ ADMIN_PASSWORD="RTTIDrupal2024!"
 
 cd $DRUPAL_DIR
 
-# Проверяем наличие Drush
-if [ -f "./vendor/bin/drush" ]; then
-    echo "📍 Найден Drush, используем для установки..."
+# Проверяем доступность Drush для установки
+if [ "$DRUSH_AVAILABLE" = true ]; then
+    echo "📍 Используем Drush для автоматической установки..."
     
     # Установка Drupal через Drush (правильный синтаксис)
     sudo -u www-data ./vendor/bin/drush site:install standard \
@@ -317,7 +345,7 @@ if [ $INSTALL_RESULT -eq 0 ]; then
 else
     echo "❌ Ошибка установки Drupal через CLI или Drush не найден"
     echo "📌 Drupal настроен для установки через веб-интерфейс"
-    echo "📌 Откройте http://$(hostname -I | awk '{print $1}') для завершения установки"
+    echo "📌 Откройте https://storage.omuzgorpro.tj для завершения установки"
 fi
 
 echo "13. Настройка прав доступа после установки..."
@@ -330,7 +358,7 @@ echo "14. Включение необходимых модулей..."
 cd $DRUPAL_DIR
 
 # Включение основных модулей только если Drupal установлен и Drush доступен
-if [ -f "./vendor/bin/drush" ] && [ $INSTALL_RESULT -eq 0 ]; then
+if [ "$DRUSH_AVAILABLE" = true ] && [ $INSTALL_RESULT -eq 0 ]; then
     echo "📍 Включение модулей через Drush..."
     
     # Включение основных модулей
@@ -531,7 +559,7 @@ if [ $INSTALL_RESULT -eq 0 ]; then
     echo "📌 Логин: admin / Пароль: RTTIDrupal2024!"
 else
     echo "📌 ⚠️ Завершите установку через веб-интерфейс:"
-    echo "📌 URL: http://$(hostname -I | awk '{print $1}')"
+    echo "📌 URL: https://storage.omuzgorpro.tj"
     echo "📌 Используйте данные БД из: /root/drupal-db-credentials.txt"
     echo "📌 Создайте учетную запись администратора"
 fi
@@ -540,7 +568,7 @@ echo "📌 Данные администратора: /root/drupal-admin-credent
 echo "📌 Управление: /root/drupal-management.sh"
 echo "📌 Информация: /root/drupal-installation-info.txt"
 
-if [ -f "./vendor/bin/drush" ]; then
+if [ "$DRUSH_AVAILABLE" = true ]; then
     echo "📌 ✅ Drush доступен для управления"
 else
     echo "📌 ⚠️ Drush не установлен - ограниченные возможности CLI"
