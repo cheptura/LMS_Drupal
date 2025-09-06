@@ -247,7 +247,7 @@ server {
         deny all;
     }
 }
-}
+EOF
 EOF
 
 echo "11. Активация сайта..."
