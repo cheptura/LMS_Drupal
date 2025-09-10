@@ -81,49 +81,62 @@ DRUPAL_VERSION=$(sudo -u www-data php web/core/scripts/drupal version 2>/dev/nul
 echo "Установлена версия: $DRUPAL_VERSION"
 
 echo "5.1. Установка Drush..."
+echo "🔍 ОТЛАДКА: Начинаем установку Drush..."
 cd $DRUPAL_DIR
 
 # Показываем текущее состояние
 echo "   Текущая директория: $(pwd)"
-echo "   Содержимое vendor/bin до установки:"
-ls -la vendor/bin/ 2>/dev/null || echo "   Директория vendor/bin не существует"
+echo "   Пользователь: $(whoami)"
+echo "   Проверяем наличие composer.json..."
 
-# Убеждаемся что composer.json существует
-if [ ! -f "composer.json" ]; then
+if [ -f "composer.json" ]; then
+    echo "✅ composer.json найден"
+    echo "   Содержимое composer.json (первые 10 строк):"
+    head -10 composer.json
+else
     echo "❌ composer.json не найден!"
+    echo "   Содержимое текущей директории:"
+    ls -la
     exit 1
 fi
 
-echo "   Устанавливаем Drush через Composer..."
+echo "   Содержимое vendor/bin до установки:"
+ls -la vendor/bin/ 2>/dev/null || echo "   Директория vendor/bin не существует"
+
+echo "   🚀 Устанавливаем Drush через Composer..."
 sudo -u www-data composer require drush/drush --no-interaction --verbose
 
 COMPOSER_RESULT=$?
-echo "   Результат установки Composer: $COMPOSER_RESULT"
+echo "   📊 Результат установки Composer: $COMPOSER_RESULT"
 
 if [ $COMPOSER_RESULT -ne 0 ]; then
     echo "⚠️ Ошибка установки Drush, пробуем альтернативные методы..."
     
     # Очистка кэша Composer
-    echo "   Очищаем кэш Composer..."
+    echo "   🧹 Очищаем кэш Composer..."
     sudo -u www-data composer clear-cache
     
     # Попытка с конкретной версией
-    echo "   Попытка установки конкретной версии..."
+    echo "   🎯 Попытка установки конкретной версии..."
     sudo -u www-data composer require drush/drush:^12.4 --no-interaction
     
-    if [ $? -ne 0 ]; then
-        echo "   Попытка через глобальную установку..."
+    COMPOSER_RESULT2=$?
+    echo "   📊 Результат второй попытки: $COMPOSER_RESULT2"
+    
+    if [ $COMPOSER_RESULT2 -ne 0 ]; then
+        echo "   🌐 Попытка через глобальную установку..."
         composer global require drush/drush
         
         # Создаем символическую ссылку
         if [ -f "$HOME/.composer/vendor/bin/drush" ]; then
             mkdir -p vendor/bin
             ln -sf "$HOME/.composer/vendor/bin/drush" vendor/bin/drush
+            echo "   🔗 Создана символическая ссылка на глобальный Drush"
         fi
     fi
 fi
 
-echo "   Содержимое vendor/bin после установки:"
+echo "   📁 Содержимое vendor/bin после установки:"
 ls -la vendor/bin/ 2>/dev/null || echo "   Директория vendor/bin не создана"
 
 # Проверяем что файл создался
@@ -134,21 +147,45 @@ if [ -f vendor/bin/drush ]; then
     sudo chown www-data:www-data vendor/bin/drush
     sudo chmod +x vendor/bin/drush
     
-    echo "   Права доступа исправлены"
+    echo "   ✅ Права доступа исправлены"
+    
+    # Тестируем Drush
+    echo "   🧪 Тестируем Drush..."
+    if sudo -u www-data vendor/bin/drush --version; then
+        echo "   ✅ Drush работает!"
+    else
+        echo "   ❌ Drush не запускается"
+    fi
 else
     echo "❌ Файл Drush не создан после всех попыток"
-    echo "   Попытка прямого скачивания..."
+    echo "   📥 Попытка прямого скачивания..."
     
     # Создаем директорию если не существует
     mkdir -p vendor/bin
     
     # Скачиваем Drush напрямую
+    echo "   📥 Скачиваем Drush.phar..."
     wget -O vendor/bin/drush https://github.com/drush-ops/drush/releases/download/12.4.3/drush.phar
-    chmod +x vendor/bin/drush
-    chown www-data:www-data vendor/bin/drush
     
-    echo "   Drush скачан напрямую"
+    if [ $? -eq 0 ]; then
+        chmod +x vendor/bin/drush
+        chown www-data:www-data vendor/bin/drush
+        
+        echo "   ✅ Drush скачан напрямую"
+        
+        # Тестируем скачанный Drush
+        echo "   🧪 Тестируем скачанный Drush..."
+        if sudo -u www-data vendor/bin/drush --version; then
+            echo "   ✅ Скачанный Drush работает!"
+        else
+            echo "   ❌ Скачанный Drush не запускается"
+        fi
+    else
+        echo "   ❌ Ошибка скачивания Drush"
+    fi
 fi
+
+echo "🔍 ОТЛАДКА: Завершили установку Drush"
 
 echo "5.2. Проверка установки Drush..."
 DRUSH_AVAILABLE=false
