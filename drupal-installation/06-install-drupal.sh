@@ -82,10 +82,72 @@ echo "Установлена версия: $DRUPAL_VERSION"
 
 echo "5.1. Установка Drush..."
 cd $DRUPAL_DIR
-sudo -u www-data COMPOSER_ALLOW_SUPERUSER=1 composer require drush/drush --no-interaction
-if [ $? -ne 0 ]; then
-    echo "⚠️ Ошибка установки Drush, пробуем альтернативный метод..."
-    sudo -u www-data composer require drush/drush:^12 --no-interaction
+
+# Показываем текущее состояние
+echo "   Текущая директория: $(pwd)"
+echo "   Содержимое vendor/bin до установки:"
+ls -la vendor/bin/ 2>/dev/null || echo "   Директория vendor/bin не существует"
+
+# Убеждаемся что composer.json существует
+if [ ! -f "composer.json" ]; then
+    echo "❌ composer.json не найден!"
+    exit 1
+fi
+
+echo "   Устанавливаем Drush через Composer..."
+sudo -u www-data composer require drush/drush --no-interaction --verbose
+
+COMPOSER_RESULT=$?
+echo "   Результат установки Composer: $COMPOSER_RESULT"
+
+if [ $COMPOSER_RESULT -ne 0 ]; then
+    echo "⚠️ Ошибка установки Drush, пробуем альтернативные методы..."
+    
+    # Очистка кэша Composer
+    echo "   Очищаем кэш Composer..."
+    sudo -u www-data composer clear-cache
+    
+    # Попытка с конкретной версией
+    echo "   Попытка установки конкретной версии..."
+    sudo -u www-data composer require drush/drush:^12.4 --no-interaction
+    
+    if [ $? -ne 0 ]; then
+        echo "   Попытка через глобальную установку..."
+        composer global require drush/drush
+        
+        # Создаем символическую ссылку
+        if [ -f "$HOME/.composer/vendor/bin/drush" ]; then
+            mkdir -p vendor/bin
+            ln -sf "$HOME/.composer/vendor/bin/drush" vendor/bin/drush
+        fi
+    fi
+fi
+
+echo "   Содержимое vendor/bin после установки:"
+ls -la vendor/bin/ 2>/dev/null || echo "   Директория vendor/bin не создана"
+
+# Проверяем что файл создался
+if [ -f vendor/bin/drush ]; then
+    echo "✅ Файл Drush создан: $(ls -la vendor/bin/drush)"
+    
+    # Проверяем права доступа
+    sudo chown www-data:www-data vendor/bin/drush
+    sudo chmod +x vendor/bin/drush
+    
+    echo "   Права доступа исправлены"
+else
+    echo "❌ Файл Drush не создан после всех попыток"
+    echo "   Попытка прямого скачивания..."
+    
+    # Создаем директорию если не существует
+    mkdir -p vendor/bin
+    
+    # Скачиваем Drush напрямую
+    wget -O vendor/bin/drush https://github.com/drush-ops/drush/releases/download/12.4.3/drush.phar
+    chmod +x vendor/bin/drush
+    chown www-data:www-data vendor/bin/drush
+    
+    echo "   Drush скачан напрямую"
 fi
 
 echo "5.2. Проверка установки Drush..."
@@ -378,7 +440,8 @@ EOF
     INSTALL_RESULT=1
 fi
 
-if [ $INSTALL_RESULT -eq 0 ]; then
+# Проверяем результат установки (исправлена проверка переменной)
+if [ "${INSTALL_RESULT:-1}" -eq 0 ]; then
     echo "✅ Установка Drupal завершена успешно"
 else
     echo "❌ Ошибка установки Drupal через CLI или Drush не найден"
