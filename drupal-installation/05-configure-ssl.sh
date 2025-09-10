@@ -359,14 +359,12 @@ server {
         fastcgi_temp_file_write_size 256k;
     }
     
-    # Static files caching - simpler and more reliable approach
-    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
-        expires max;
-        add_header Cache-Control "public, immutable";
-        add_header Vary Accept-Encoding;
-        try_files \$uri =404;
-        log_not_found off;
+    # Static files caching - optimized for Drupal aggregation
+    location ~* \\.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff2?|ttf|eot)\$ {
+        try_files \$uri /index.php?\$query_string;
+        expires 1M;
         access_log off;
+        add_header Cache-Control "public";
     }
     
     # Deny access to vendor and other sensitive files

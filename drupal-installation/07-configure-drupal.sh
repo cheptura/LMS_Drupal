@@ -63,11 +63,24 @@ sudo -u www-data $DRUSH_CMD config:set system.performance css.preprocess true -y
 sudo -u www-data $DRUSH_CMD config:set system.performance js.preprocess true -y
 sudo -u www-data $DRUSH_CMD config:set system.performance cache.page.max_age 3600 -y
 
-echo "10. Индексация поиска..."
+echo "10. Настройка путей к файлам..."
+# Раскомментирование и настройка file_public_path в settings.php
+SETTINGS_FILE="$DRUPAL_DIR/web/sites/default/settings.php"
+if grep -q "^# \$settings\['file_public_path'\]" "$SETTINGS_FILE"; then
+    sed -i "s/^# \$settings\['file_public_path'\]/\$settings['file_public_path']/" "$SETTINGS_FILE"
+    echo "   ✅ Раскомментирован file_public_path"
+elif ! grep -q "\$settings\['file_public_path'\]" "$SETTINGS_FILE"; then
+    echo "\$settings['file_public_path'] = 'sites/default/files';" >> "$SETTINGS_FILE"
+    echo "   ✅ Добавлен file_public_path"
+else
+    echo "   ✅ file_public_path уже настроен"
+fi
+
+echo "11. Индексация поиска..."
 sudo -u www-data $DRUSH_CMD search-api:reset-tracker 2>/dev/null || echo "   ⚠️  Search API не установлен"
 sudo -u www-data $DRUSH_CMD search-api:index 2>/dev/null || echo "   ✅ Стандартный поиск"
 
-echo "11. Очистка кэша..."
+echo "12. Очистка кэша..."
 sudo -u www-data $DRUSH_CMD cache:rebuild
 echo "   ✅ Кэш очищен"
 

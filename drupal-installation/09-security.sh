@@ -155,13 +155,12 @@ server {
         try_files $uri @rewrite;
     }
     
-    # Статические файлы
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        try_files $uri =404;
-        log_not_found off;
+    # Статические файлы - optimized for Drupal aggregation
+    location ~* \.(css|js|jpg|jpeg|gif|png|ico|svg|woff2?|ttf|eot)$ {
+        try_files $uri /index.php?$query_string;
+        expires 1M;
         access_log off;
+        add_header Cache-Control "public";
     }
 }
 EOF
