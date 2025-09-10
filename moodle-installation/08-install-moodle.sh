@@ -403,9 +403,6 @@ cat > /etc/cron.d/moodle << EOF
 # Очистка кэша каждые 4 часа
 0 */4 * * * www-data /usr/bin/php $MOODLE_DIR/admin/cli/purge_caches.php >/dev/null 2>&1
 
-# Проверка обновлений каждый день в 3:00
-0 3 * * * www-data /usr/bin/php $MOODLE_DIR/admin/cli/check_for_updates.php >/dev/null 2>&1
-
 # Резервное копирование каждую ночь в 2:00
 0 2 * * * root [ -f /root/moodle-backup.sh ] && /root/moodle-backup.sh >/dev/null 2>&1
 EOF
