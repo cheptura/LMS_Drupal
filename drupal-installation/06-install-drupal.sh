@@ -347,26 +347,8 @@ if [ -f "/root/drupal-cache-credentials.txt" ]; then
     REDIS_PASSWORD=$(grep "Пароль:" /root/drupal-cache-credentials.txt | awk '{print $2}')
     
     # Добавление настроек кэширования
-    cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
-// Redis configuration
-\$settings['redis.connection']['interface'] = 'PhpRedis';
-\$settings['redis.connection']['host'] = '127.0.0.1';
-\$settings['redis.connection']['port'] = 6379;
-\$settings['redis.connection']['password'] = '$REDIS_PASSWORD';
-\$settings['redis.connection']['base'] = 0;
-
-\$settings['cache']['default'] = 'cache.backend.redis';
-
-// Bootstrap cache with Redis
-\$settings['cache']['bins']['bootstrap'] = 'cache.backend.chainedfast';
-\$settings['cache']['bins']['discovery'] = 'cache.backend.chainedfast';
-\$settings['cache']['bins']['config'] = 'cache.backend.chainedfast';
-
-// Memcached configuration (optional)
-\$settings['memcache']['servers'] = ['127.0.0.1:11211' => 'default'];
-\$settings['memcache']['bins'] = ['cache.page' => 'default'];
-
-EOF
+    # Временно комментируем Redis конфигурацию - она будет добавлена после включения модуля Redis
+    echo "# Redis конфигурация будет добавлена после включения модуля Redis" >> $DRUPAL_DIR/web/sites/default/settings.php
 fi
 
 # Дополнительные настройки для библиотеки
@@ -578,6 +560,36 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ $INSTALL_RESULT -eq 0 ]; then
         echo "Включение модуля $module..."
         sudo -u www-data $DRUSH_CMD pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
     done
+    
+    # После включения модуля Redis добавляем его конфигурацию
+    echo "📍 Добавление Redis конфигурации в settings.php..."
+    cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
+
+// Redis configuration (добавлено после включения модуля Redis)
+if (extension_loaded('redis') && \Drupal::hasService('cache.backend.redis')) {
+  \$settings['redis.connection']['interface'] = 'PhpRedis';
+  \$settings['redis.connection']['host'] = '127.0.0.1';
+  \$settings['redis.connection']['port'] = 6379;
+  \$settings['redis.connection']['base'] = 0;
+EOF
+
+    # Добавляем пароль Redis если он установлен
+    if [ -n "$REDIS_PASSWORD" ]; then
+        cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
+  \$settings['redis.connection']['password'] = '$REDIS_PASSWORD';
+EOF
+    fi
+
+    cat >> $DRUPAL_DIR/web/sites/default/settings.php << 'EOF'
+
+  $settings['cache']['default'] = 'cache.backend.redis';
+
+  // Bootstrap cache with Redis
+  $settings['cache']['bins']['bootstrap'] = 'cache.backend.chainedfast';
+  $settings['cache']['bins']['discovery'] = 'cache.backend.chainedfast';
+  $settings['cache']['bins']['config'] = 'cache.backend.chainedfast';
+}
+EOF
     
     # Очистка кэша после включения модулей
     echo "Очистка кэша после включения модулей..."
