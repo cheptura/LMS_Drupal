@@ -191,6 +191,7 @@ server {
         allow 192.168.0.0/16;
         allow 10.0.0.0/8;
         allow 172.16.0.0/12;
+        allow 109.75.50.43;
         deny all;
         try_files \$uri /index.php?\$query_string;
     }

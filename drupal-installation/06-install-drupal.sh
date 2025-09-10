@@ -91,28 +91,43 @@ fi
 # Проверяем что Drush установлен и работает
 echo "📍 Проверка установки Drush..."
 DRUSH_AVAILABLE=false
+DRUSH_CMD=""
 
+# Сначала проверяем локальный Drush
 if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
-    # Проверяем что Drush исполняется
+    echo "   Проверяем локальный Drush..."
     if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
         DRUSH_AVAILABLE=true
-        echo "✅ Drush установлен и работает"
+        DRUSH_CMD="$DRUPAL_DIR/vendor/bin/drush"
+        echo "✅ Локальный Drush работает: $DRUSH_CMD"
     else
-        echo "⚠️ Drush найден, но не работает"
+        echo "   ⚠️ Локальный Drush найден, но не работает"
     fi
-else
-    echo "❌ Drush не найден, установка вручную..."
-    sudo -u www-data composer global require drush/drush 2>/dev/null || true
+fi
+
+# Если локальный не работает, проверяем глобальный
+if [ "$DRUSH_AVAILABLE" = false ]; then
+    echo "   Проверяем глобальный Drush..."
+    if which drush >/dev/null 2>&1; then
+        if sudo -u www-data drush --version >/dev/null 2>&1; then
+            DRUSH_AVAILABLE=true
+            DRUSH_CMD="drush"
+            echo "✅ Глобальный Drush работает: $DRUSH_CMD"
+        fi
+    fi
+fi
+
+# Если ничего не работает, устанавливаем через Composer
+if [ "$DRUSH_AVAILABLE" = false ]; then
+    echo "   ❌ Drush не найден, установка через Composer..."
+    cd $DRUPAL_DIR
+    sudo -u www-data composer require drush/drush
     
-    # Попытка создать символическую ссылку
-    if [ -d "/var/www/.composer/vendor/bin" ] && [ -f "/var/www/.composer/vendor/bin/drush" ]; then
-        mkdir -p "$DRUPAL_DIR/vendor/bin"
-        ln -sf /var/www/.composer/vendor/bin/drush $DRUPAL_DIR/vendor/bin/drush 2>/dev/null || true
-        
-        # Проверяем снова
+    if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
         if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
             DRUSH_AVAILABLE=true
-            echo "✅ Drush установлен глобально и связан"
+            DRUSH_CMD="$DRUPAL_DIR/vendor/bin/drush"
+            echo "✅ Drush установлен и работает: $DRUSH_CMD"
         fi
     fi
 fi
@@ -292,9 +307,10 @@ cd $DRUPAL_DIR
 # Проверяем доступность Drush для установки
 if [ "$DRUSH_AVAILABLE" = true ]; then
     echo "📍 Используем Drush для автоматической установки..."
+    echo "   Команда Drush: $DRUSH_CMD"
     
     # Установка Drupal через Drush (правильный синтаксис)
-    sudo -u www-data ./vendor/bin/drush site:install standard \
+    sudo -u www-data $DRUSH_CMD site:install standard \
         --langcode=ru \
         --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
         --site-name="RTTI Digital Library" \
@@ -378,12 +394,14 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ $INSTALL_RESULT -eq 0 ]; then
 
     for module in "${CORE_MODULES[@]}"; do
         echo "Включение модуля $module..."
-        sudo -u www-data ./vendor/bin/drush pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
+        sudo -u www-data $DRUSH_CMD pm:enable $module --yes 2>/dev/null || echo "⚠️ Модуль $module не найден или уже включен"
     done
     
     # Очистка кэша после включения модулей
+    echo "Очистка кэша после включения модулей..."
+    sudo -u www-data $DRUSH_CMD cache:rebuild 2>/dev/null || true
     echo "📍 Очистка кэша Drupal..."
-    sudo -u www-data ./vendor/bin/drush cache:rebuild 2>/dev/null || true
+    sudo -u www-data $DRUSH_CMD cache:rebuild 2>/dev/null || true
 else
     echo "⚠️ Модули будут доступны для включения через веб-интерфейс после завершения установки"
 fi
@@ -395,11 +413,22 @@ cat > /root/drupal-management.sh << EOF
 
 DRUPAL_DIR="$DRUPAL_DIR"
 
+# Поиск Drush
+if [ -f "\$DRUPAL_DIR/vendor/bin/drush" ]; then
+    DRUSH_CMD="\$DRUPAL_DIR/vendor/bin/drush"
+    elif which drush >/dev/null 2>&1; then
+        DRUSH_CMD="drush"
+    else
+        echo "❌ Drush не найден!"
+        exit 1
+    fi
+fi
+
 case "\$1" in
     cache-clear)
         echo "Очистка кэша Drupal..."
         cd \$DRUPAL_DIR
-        sudo -u www-data vendor/bin/drush cache:rebuild
+        sudo -u www-data \$DRUSH_CMD cache:rebuild
         echo "✅ Кэш очищен"
         ;;
     backup)
@@ -414,19 +443,19 @@ case "\$1" in
         echo "Обновление Drupal..."
         cd \$DRUPAL_DIR
         sudo -u www-data composer update --no-interaction
-        sudo -u www-data vendor/bin/drush updatedb -y
-        sudo -u www-data vendor/bin/drush cache:rebuild
+        sudo -u www-data \$DRUSH_CMD updatedb -y
+        sudo -u www-data \$DRUSH_CMD cache:rebuild
         echo "✅ Drupal обновлен"
         ;;
     status)
         echo "Статус Drupal:"
         cd \$DRUPAL_DIR
-        sudo -u www-data vendor/bin/drush status
+        sudo -u www-data \$DRUSH_CMD status
         ;;
     modules)
         echo "Список модулей:"
         cd \$DRUPAL_DIR
-        sudo -u www-data vendor/bin/drush pm:list --type=module --status=enabled
+        sudo -u www-data \$DRUSH_CMD pm:list --type=module --status=enabled
         ;;
     *)
         echo "Использование: \$0 {cache-clear|backup|update|status|modules}"
@@ -463,9 +492,9 @@ Email: admin@omuzgorpro.tj
 # Темы: https://storage.omuzgorpro.tj/admin/appearance
 
 # Drush команды:
-# Очистка кэша: cd $DRUPAL_DIR && sudo -u www-data vendor/bin/drush cache:rebuild
-# Статус: cd $DRUPAL_DIR && sudo -u www-data vendor/bin/drush status
-# Пользователи: cd $DRUPAL_DIR && sudo -u www-data vendor/bin/drush user:list
+# Очистка кэша: cd $DRUPAL_DIR && sudo -u www-data $DRUSH_CMD cache:rebuild
+# Статус: cd $DRUPAL_DIR && sudo -u www-data $DRUSH_CMD status  
+# Пользователи: cd $DRUPAL_DIR && sudo -u www-data $DRUSH_CMD user:list
 EOF
 
 chmod 600 /root/drupal-admin-credentials.txt
