@@ -283,6 +283,11 @@ mkdir -p $DRUPAL_DIR/web/sites/default/files
 mkdir -p $DRUPAL_DIR/web/sites/default/files/private
 mkdir -p $DRUPAL_DIR/web/sites/default/files/translations
 mkdir -p $DRUPAL_DIR/web/sites/default/files/backup
+mkdir -p $DRUPAL_DIR/web/sites/default/files/css
+mkdir -p $DRUPAL_DIR/web/sites/default/files/js
+mkdir -p $DRUPAL_DIR/web/sites/default/files/styles
+mkdir -p $DRUPAL_DIR/web/sites/default/files/php
+mkdir -p $DRUPAL_DIR/web/sites/default/files/tmp
 
 chown -R www-data:www-data $DRUPAL_DIR/web/sites/default/files
 chmod -R 755 $DRUPAL_DIR/web/sites/default/files
@@ -331,8 +336,8 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 // Private file path
 \$settings['file_private_path'] = 'sites/default/files/private';
 
-// Temporary file path
-\$settings['file_temp_path'] = '/tmp';
+// Temporary file path (в директории сайта для лучшей совместимости)
+\$settings['file_temp_path'] = 'sites/default/files/tmp';
 
 EOF
 
@@ -603,6 +608,12 @@ EOF
     echo "Очистка кэша после включения модулей..."
     sudo -u www-data $DRUSH_CMD cache:rebuild 2>/dev/null || true
     echo "📍 Очистка кэша Drupal..."
+    sudo -u www-data $DRUSH_CMD cache:rebuild 2>/dev/null || true
+    
+    # Настройка агрегации CSS/JS для создания необходимых файлов
+    echo "Настройка агрегации CSS/JS файлов..."
+    sudo -u www-data $DRUSH_CMD config:set system.performance css.preprocess 1 2>/dev/null || true
+    sudo -u www-data $DRUSH_CMD config:set system.performance js.preprocess 1 2>/dev/null || true
     sudo -u www-data $DRUSH_CMD cache:rebuild 2>/dev/null || true
 else
     echo "⚠️ Модули будут доступны для включения через веб-интерфейс после завершения установки"

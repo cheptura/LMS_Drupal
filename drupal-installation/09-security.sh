@@ -81,7 +81,7 @@ EOF
 echo "3. Создание безопасной конфигурации сайта..."
 
 # Простая безопасная конфигурация Drupal
-cat > "$NGINX_DIR/sites-available/drupal" << 'EOF'
+cat > "$NGINX_DIR/sites-available/drupal-ssl" << 'EOF'
 # Безопасная конфигурация Drupal
 server {
     listen 80;
@@ -159,6 +159,7 @@ server {
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files $uri =404;
         log_not_found off;
         access_log off;
     }
@@ -183,8 +184,9 @@ if nginx -t >/dev/null 2>&1; then
     echo "   ✅ Конфигурация Nginx корректна"
     
     # Активация сайта
-    ln -sf "$NGINX_DIR/sites-available/drupal" "$NGINX_DIR/sites-enabled/"
+    ln -sf "$NGINX_DIR/sites-available/drupal-ssl" "$NGINX_DIR/sites-enabled/"
     rm -f "$NGINX_DIR/sites-enabled/default"
+    rm -f "$NGINX_DIR/sites-enabled/drupal-temp"
     
     # Перезапуск сервисов
     systemctl restart nginx

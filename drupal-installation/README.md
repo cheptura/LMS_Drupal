@@ -5,6 +5,140 @@
 
 ## 🚨 ЭКСТРЕННОЕ РЕШЕНИЕ ОШИБОК
 
+### ❌ Ошибка 404 для CSS/JS файлов после установки
+**БЫСТРОЕ РЕШЕНИЕ:**
+```bash
+sudo mkdir -p /var/www/drupal/web/sites/default/files/{css,js,styles}
+sudo chown -R www-data:www-### 📁 Важные директории:
+- **Код Drupal:** `/var/www/drupal`
+- **Файлы сайта:** `/var/www/drupal/web/sites/default/files`
+- **Конфигурация:** `/var/www/drupal/config/sync`
+- **Composer:** `/var/www/drupal/composer.json`
+- **Nginx SSL конфигурация:** `/etc/nginx/sites-available/drupal-ssl`
+- **Логи Nginx:** `/var/log/nginx/`
+- **Логи PHP:** `/var/log/php8.3-fpm.log`
+
+⚠️ **Важно**: Все скрипты (05-configure-ssl.sh и 09-security.sh) используют единый файл конфигурации Nginx: `/etc/nginx/sites-available/drupal-ssl`ar/www/drupal/web/sites/default/files
+sudo chmod -R 755 /var/www/drupal/web/sites/default/files
+cd /var/www/drupal && sudo -u www-data ./vendor/bin/drush cache:rebuild
+```
+
+**ЕСЛИ 404 ОСТАЕТСЯ - РАСШИРЕННАЯ ДИАГНОСТИКА:**
+```bash
+# 0. Проверить базовую конфигурацию сайта
+curl -I https://storage.omuzgorpro.tj/
+sudo nginx -T | grep "root.*drupal"
+
+# 1. Проверить статус агрегации
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush config:get system.performance
+
+# 2. Принудительно отключить и включить агрегацию
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 0
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 0
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 1
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 1
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+
+# 3. Проверить создались ли файлы
+ls -la /var/www/drupal/web/sites/default/files/css/
+ls -la /var/www/drupal/web/sites/default/files/js/
+
+# 4. Если файлы не создались - проверить логи PHP
+sudo tail -f /var/log/php8.3-fpm.log
+
+# 5. Проверить настройки в settings.php
+grep -A 5 -B 5 "files\|temp" /var/www/drupal/web/sites/default/settings.php
+
+# 6. Проверить конфигурацию Nginx для статических файлов
+sudo nginx -T | grep -A 10 -B 5 "location.*\.\(css\|js\)"
+
+# 7. Тестировать прямой доступ к файлам
+sudo touch /var/www/drupal/web/sites/default/files/test.css
+curl -I https://storage.omuzgorpro.tj/sites/default/files/test.css
+sudo rm /var/www/drupal/web/sites/default/files/test.css
+```
+
+**КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ NGINX (ОСНОВНАЯ ПРИЧИНА):**
+```bash
+# 1. Обновить репозиторий с исправленной конфигурацией
+cd /tmp/LMS_Drupal
+git pull --force origin main
+
+# 2. Принудительно пересоздать SSL конфигурацию с исправлениями
+cd drupal-installation
+sudo chmod +x 05-configure-ssl.sh 09-security.sh
+sudo rm -f /etc/nginx/sites-enabled/drupal-ssl
+sudo rm -f /etc/nginx/sites-available/drupal-ssl
+sudo rm -f /etc/nginx/sites-available/drupal
+sudo ./05-configure-ssl.sh
+
+# 3. Создать недостающие директории
+sudo mkdir -p /var/www/drupal/web/sites/default/files/{css,js,styles,tmp}
+sudo chown -R www-data:www-data /var/www/drupal/web/sites/default/files
+sudo chmod -R 755 /var/www/drupal/web/sites/default/files
+
+# 4. Очистить кэш Drupal
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+```
+
+⚠️ **Важно**: Все скрипты теперь используют единый файл конфигурации `/etc/nginx/sites-available/drupal-ssl`
+
+**ПРОВЕРКА И ИСПРАВЛЕНИЕ NGINX (ВЕРОЯТНАЯ ПРИЧИНА):**
+```bash
+# 1. Проверить конфигурацию Nginx для статических файлов
+sudo nginx -T | grep -A 20 -B 5 "location.*files"
+
+# 2. Проверить есть ли правила для CSS/JS файлов
+sudo nginx -T | grep -A 10 "\.css\|\.js"
+
+# 3. Проверить корневую директорию сайта
+sudo nginx -T | grep "root.*drupal"
+
+# 4. КРИТИЧНО: Проверить блокировку .htaccess и скрытых файлов
+sudo nginx -T | grep -A 5 -B 5 "deny.*\."
+
+# 5. Если CSS/JS заблокированы - исправить конфигурацию
+sudo cp /etc/nginx/sites-available/drupal-ssl /etc/nginx/sites-available/drupal-ssl.backup
+
+# 6. Добавить правильные правила для статических файлов (если их нет)
+sudo tee -a /etc/nginx/sites-available/drupal-ssl << 'EOF'
+
+    # Статические файлы CSS/JS с кэшированием
+    location ~* \.(css|js)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # Файлы изображений и медиа
+    location ~* \.(jpg|jpeg|gif|png|svg|ico|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+EOF
+
+# 7. Перезагрузить Nginx и проверить конфигурацию
+sudo nginx -t && sudo systemctl reload nginx
+
+# 8. Проверить доступность файлов напрямую
+sudo touch /var/www/drupal/web/sites/default/files/test.css
+curl -I https://storage.omuzgorpro.tj/sites/default/files/test.css
+sudo rm /var/www/drupal/web/sites/default/files/test.css
+```
+
+**АЛЬТЕРНАТИВНОЕ РЕШЕНИЕ - ОТКЛЮЧЕНИЕ АГРЕГАЦИИ:**
+```bash
+# Если проблема с Nginx не решается, отключить агрегацию полностью
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 0
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 0
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+```
+
 ### ❌ Ошибка "invalid number of arguments in try_files directive"
 **Эта ошибка возникает из-за неправильного экранирования переменных Nginx.**
 
@@ -40,24 +174,6 @@ rm -rf LMS_Drupal 2>/dev/null || true
 git clone https://github.com/cheptura/LMS_Drupal.git
 cd LMS_Drupal/drupal-installation
 sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
-```
-
-⚠️ **ВАЖНО для SSL:** Если получите ошибку лимита сертификатов Let's Encrypt ("too many certificates"), см. раздел troubleshooting → "Ошибка лимита сертификатов Let's Encrypt"
-
-⚠️ **КРИТИЧНО для try_files:** Если получите ошибку "invalid number of arguments in try_files directive", ОБЯЗАТЕЛЬНО обновите репозиторий:
-```bash
-cd /tmp/LMS_Drupal && git pull --force origin main
-cd drupal-installation && sudo chmod +x *.sh
-# Если ошибка повторяется, принудительно очистите Nginx конфигурацию:
-sudo rm -f /etc/nginx/sites-enabled/drupal-ssl
-sudo rm -f /etc/nginx/sites-available/drupal-ssl
-sudo rm -f /etc/nginx/sites-available/drupal-temp
-sudo ./05-configure-ssl.sh  # Перезапуск SSL с исправленными файлами
-```
-
-⚠️ **ВАЖНО для старых версий:** Если при запуске встречается ошибка "location directive is not allowed here", обновите репозиторий:
-```bash
-cd /tmp/LMS_Drupal && git pull --force origin main
 ```
 
 ### 🔄 Обновление существующего репозитория:
@@ -126,6 +242,74 @@ sudo ./10-final-check.sh         # Финальная проверка
 
 ### 🚨 Распространенные проблемы:
 
+#### ❌ Ошибка 404 для статических файлов (CSS/JS) после установки
+**Проблема:** Drupal не может загрузить CSS/JS файлы из `/sites/default/files/css/` и `/sites/default/files/js/`
+
+**Симптомы:**
+```
+GET https://storage.omuzgorpro.tj/sites/default/files/css/css_*.css net::ERR_ABORTED 404 (Not Found)
+GET https://storage.omuzgorpro.tj/sites/default/files/js/js_*.js net::ERR_ABORTED 404 (Not Found)
+```
+
+**Решение:**
+```bash
+# 1. Проверить и создать директории для файлов
+sudo mkdir -p /var/www/drupal/web/sites/default/files/css
+sudo mkdir -p /var/www/drupal/web/sites/default/files/js
+sudo mkdir -p /var/www/drupal/web/sites/default/files/styles
+
+# 2. Установить правильные права доступа
+sudo chown -R www-data:www-data /var/www/drupal/web/sites/default/files
+sudo chmod -R 755 /var/www/drupal/web/sites/default/files
+
+# 3. Очистить кэш Drupal для пересоздания файлов
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+
+# 4. Проверить конфигурацию Nginx для статических файлов
+sudo nginx -t && sudo systemctl reload nginx
+
+# 5. Если проблема не решена, выполнить агрегацию CSS/JS вручную
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 1
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 1
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+```
+
+**Дополнительная диагностика:**
+```bash
+# Проверить права доступа
+ls -la /var/www/drupal/web/sites/default/files/
+
+# Проверить настройки файловой системы в Drupal
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush config:get system.file
+sudo -u www-data ./vendor/bin/drush config:get system.performance
+
+# Проверить правильность настроек временной папки
+cat web/sites/default/settings.php | grep -A3 -B3 "file_temp_path"
+
+# Создать и настроить временную папку для агрегации
+sudo mkdir -p /var/www/drupal/web/sites/default/files/tmp
+sudo chown www-data:www-data /var/www/drupal/web/sites/default/files/tmp
+sudo chmod 755 /var/www/drupal/web/sites/default/files/tmp
+
+# Принудительно пересоздать агрегированные файлы
+sudo -u www-data ./vendor/bin/drush cache:clear css-js
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 0
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 1
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 0
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 1
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+
+# Проверить логи PHP на ошибки
+sudo tail -f /var/log/php8.3-fpm.log &
+# Откройте сайт в браузере, затем остановите просмотр логов командой:
+sudo pkill tail
+
+# Проверить логи Nginx
+sudo tail -f /var/log/nginx/error.log
+```
+
 #### Ошибка конфигурации Nginx
 ```bash
 # Если nginx -t показывает ошибки синтаксиса:
@@ -172,7 +356,36 @@ sudo systemctl reload nginx                      # Перезагрузка Ngin
 - Данные администратора выводятся в конце установки
 - Сохраняются в файле `/var/log/drupal-install.log`
 
-### 📁 Важные директории:
+### � Альтернативное решение проблем с CSS/JS
+
+Если все предыдущие шаги не помогли решить проблему 404 для CSS/JS файлов:
+
+```bash
+# ВАРИАНТ 1: Полное отключение агрегации (работает всегда)
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 0 -y
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 0 -y
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+
+# ВАРИАНТ 2: Если нужна агрегация, но с другими настройками
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.gzip 0 -y
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.gzip 0 -y
+sudo -u www-data ./vendor/bin/drush config:set system.performance css.preprocess 1 -y
+sudo -u www-data ./vendor/bin/drush config:set system.performance js.preprocess 1 -y
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+
+# ВАРИАНТ 3: Принудительная очистка и пересоздание всех файлов
+sudo rm -rf /var/www/drupal/web/sites/default/files/css/*
+sudo rm -rf /var/www/drupal/web/sites/default/files/js/*
+sudo rm -rf /var/www/drupal/web/sites/default/files/styles/*
+sudo -u www-data ./vendor/bin/drush cache:rebuild
+```
+
+⚠️ **Примечание:** Вариант 1 (отключение агрегации) решит проблему, но сайт может загружаться немного медленнее, так как CSS/JS файлы будут загружаться по отдельности.
+
+---
+
+### �📁 Важные директории:
 - **Код Drupal:** `/var/www/drupal`
 - **Файлы сайта:** `/var/www/drupal/web/sites/default/files`
 - **Конфигурация:** `/var/www/drupal/config/sync`
@@ -194,6 +407,17 @@ curl -I https://storage.omuzgorpro.tj
 
 # Проверка логов
 tail -f /var/log/nginx/error.log
+
+# Проверка прав доступа к файлам Drupal
+ls -la /var/www/drupal/web/sites/default/files/
+
+# Проверка создания CSS/JS файлов
+ls -la /var/www/drupal/web/sites/default/files/css/
+ls -la /var/www/drupal/web/sites/default/files/js/
+
+# Принудительная регенерация статических файлов при необходимости
+cd /var/www/drupal
+sudo -u www-data ./vendor/bin/drush cache:rebuild
 ```
 
 ---

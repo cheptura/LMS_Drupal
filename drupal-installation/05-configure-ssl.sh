@@ -364,6 +364,7 @@ server {
         expires max;
         add_header Cache-Control "public, immutable";
         add_header Vary Accept-Encoding;
+        try_files \$uri =404;
         log_not_found off;
         access_log off;
     }
@@ -405,6 +406,9 @@ server {
         application/xml+rss
         application/atom+xml
         image/svg+xml;
+}
+EOF
+
 echo "8. Удаление временной конфигурации и активация SSL..."
 rm -f /etc/nginx/sites-enabled/drupal-temp
 ln -sf /etc/nginx/sites-available/drupal-ssl /etc/nginx/sites-enabled/
