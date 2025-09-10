@@ -463,15 +463,15 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
             fi
             
             echo "🚀 Запуск установки Drupal..."
-            # Установка Drupal через Drush (правильный синтаксис)
+            # Установка Drupal через Drush (синтаксис для Drush 13.x)
             sudo -u www-data "$DRUSH_CMD" site:install standard \
-                --langcode=ru \
                 --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
                 --site-name="RTTI Digital Library" \
                 --site-mail=library@omuzgorpro.tj \
                 --account-name=admin \
                 --account-pass=$ADMIN_PASSWORD \
                 --account-mail=admin@omuzgorpro.tj \
+                --locale=ru \
                 --yes
 
             INSTALL_RESULT=$?
