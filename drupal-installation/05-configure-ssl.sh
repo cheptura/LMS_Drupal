@@ -248,7 +248,7 @@ server {
     }
     
     location / {
-        return 301 https://$server_name$request_uri;
+        return 301 https://\$server_name\$request_uri;
     }
 }
 
@@ -290,7 +290,7 @@ server {
     }
     
     # Very rarely should these ever be accessed outside of your lan
-    location ~* \.(txt|log)$ {
+    location ~* \.(txt|log)\$ {
         allow 192.168.0.0/16;
         allow 10.0.0.0/8;
         allow 172.16.0.0/12;
@@ -298,7 +298,7 @@ server {
     }
     
     # Deny access to configuration files
-    location ~ \..*/.*\.php$ {
+    location ~ \\..*/.*\\.php\$ {
         return 403;
     }
     
@@ -307,16 +307,16 @@ server {
     }
     
     # Block access to "hidden" files and directories whose names begin with a period
-    location ~ (^|/)\. {
+    location ~ (^|/)\\. {
         return 403;
     }
     
     # Block access to Drupal source code files
-    location ~* \.(module|inc|install|engine|theme|tpl(\.php)?$|info|po|sh|.*sql|xtmpl)$ {
+    location ~* \\.(module|inc|install|engine|theme|tpl(\\.php)?\$|info|po|sh|.*sql|xtmpl)\$ {
         deny all;
     }
     
-    location ~ ^/sites/[^/]+/files/.*\.php$ {
+    location ~ ^/sites/[^/]+/files/.*\\.php\$ {
         deny all;
     }
     
@@ -326,26 +326,26 @@ server {
     
     # Drupal clean URLs - For Drupal >= 7
     location / {
-        try_files $uri /index.php?$query_string;
+        try_files \$uri /index.php?\$query_string;
     }
     
     location @rewrite {
-        rewrite ^/(.*)$ /index.php?q=$1;
+        rewrite ^/(.*)\$ /index.php?q=\$1;
     }
     
     # Fighting with Styles? For Drupal >= 7
     location ~ ^/sites/.*/files/styles/ {
-        try_files $uri @rewrite;
+        try_files \$uri @rewrite;
     }
     
     # In Drupal 8+, we must also match new paths where the '.php' appears in the middle
-    location ~ '\.php$|^/update.php' {
-        fastcgi_split_path_info ^(.+?\.php)(|/.*)$;
+    location ~ '\\.php\$|^/update.php' {
+        fastcgi_split_path_info ^(.+?\\.php)(|/.*)\$;
         fastcgi_index index.php;
         fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
         include fastcgi_params;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param HTTPS on;
         fastcgi_intercept_errors on;
         
@@ -360,7 +360,7 @@ server {
     }
     
     # Static files caching - simpler and more reliable approach
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
         expires max;
         add_header Cache-Control "public, immutable";
         add_header Vary Accept-Encoding;
@@ -374,19 +374,19 @@ server {
         return 403;
     }
     
-    location ~* composer\.(json|lock)$ {
+    location ~* composer\\.(json|lock)\$ {
         deny all;
         return 403;
     }
     
-    location ~* package\.json$ {
+    location ~* package\\.json\$ {
         deny all;
         return 403;
     }
     
     # Drupal file serving for private files
     location ^~ /system/files/ {
-        try_files $uri /index.php?$query_string;
+        try_files \$uri /index.php?\$query_string;
     }
     
     # Gzip compression
@@ -405,9 +405,6 @@ server {
         application/xml+rss
         application/atom+xml
         image/svg+xml;
-}
-EOF
-
 echo "8. Удаление временной конфигурации и активация SSL..."
 rm -f /etc/nginx/sites-enabled/drupal-temp
 ln -sf /etc/nginx/sites-available/drupal-ssl /etc/nginx/sites-enabled/

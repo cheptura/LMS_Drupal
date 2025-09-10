@@ -6,21 +6,28 @@
 ## 🚨 ЭКСТРЕННОЕ РЕШЕНИЕ ОШИБОК
 
 ### ❌ Ошибка "invalid number of arguments in try_files directive"
-**Если ошибка повторяется даже после обновления репозитория:**
+**Эта ошибка возникает из-за неправильного экранирования переменных Nginx.**
+
+**Диагностика:**
 ```bash
-# 1. Принудительное обновление
+# Проверить текущую проблему:
+sudo cat /etc/nginx/sites-enabled/drupal-ssl | grep -n "try_files"
+# Неправильно: try_files  /index.php?;
+# Правильно: try_files $uri /index.php?$query_string;
+```
+
+**Решение:**
+```bash
+# 1. Принудительное обновление с исправлениями
 cd /tmp/LMS_Drupal && git reset --hard HEAD && git pull --force origin main
 
-# 2. Диагностика проблемного файла
-sudo cat /etc/nginx/sites-enabled/drupal-ssl | grep -n "try_files"
-
-# 3. Полная очистка проблемных конфигураций Nginx
+# 2. Полная очистка проблемных конфигураций Nginx
 sudo rm -f /etc/nginx/sites-enabled/drupal-ssl
 sudo rm -f /etc/nginx/sites-available/drupal-ssl  
 sudo rm -f /etc/nginx/sites-available/drupal-temp
 sudo systemctl reload nginx
 
-# 4. Перезапуск SSL с чистого состояния
+# 3. Перезапуск SSL с исправленными файлами
 cd drupal-installation && sudo chmod +x *.sh
 sudo ./05-configure-ssl.sh
 ```
