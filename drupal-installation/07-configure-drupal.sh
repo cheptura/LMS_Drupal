@@ -311,10 +311,10 @@ use Drupal\node\Entity\Node;
 // Создание страницы "О библиотеке"
 $about_page = Node::create([
   'type' => 'page',
-  'title' => 'О цифровой библиотеке РЦТИ',
+  'title' => 'О цифровой библиотеке RTTI',
   'body' => [
-    'value' => '<h2>Добро пожаловать в цифровую библиотеку РЦТИ</h2>
-<p>Республиканский центр телекоммуникаций и информатизации (РЦТИ) представляет современную цифровую библиотеку, содержащую обширную коллекцию технической литературы, научных публикаций и образовательных материалов.</p>
+    'value' => '<h2>Добро пожаловать в цифровую библиотеку RTTI</h2>
+<p>Республиканский центр телекоммуникаций и информатизации (RTTI) представляет современную цифровую библиотеку, содержащую обширную коллекцию технической литературы, научных публикаций и образовательных материалов.</p>
 
 <h3>Наши коллекции включают:</h3>
 <ul>
@@ -350,7 +350,7 @@ echo "11. Настройка конфигурации сайта..."
 
 # Базовые настройки сайта
 sudo -u www-data vendor/bin/drush config:set system.site name "RTTI Digital Library" -y
-sudo -u www-data vendor/bin/drush config:set system.site slogan "Цифровая библиотека РЦТИ" -y
+sudo -u www-data vendor/bin/drush config:set system.site slogan "Цифровая библиотека RTTI" -y
 sudo -u www-data vendor/bin/drush config:set system.site mail "library@omuzgorpro.tj" -y
 
 # Настройки производительности
@@ -524,7 +524,7 @@ chmod +x /root/library-maintenance.sh
 
 echo "17. Создание отчета о конфигурации..."
 cat > /root/drupal-library-config.txt << EOF
-# Конфигурация цифровой библиотеки РЦТИ
+# Конфигурация цифровой библиотеки RTTI
 # Дата: $(date)
 # Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
 

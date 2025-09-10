@@ -186,7 +186,7 @@ set_moodle_config "autolang" "1"
 set_moodle_config "langmenu" "1"
 
 # Настройки сайта
-set_moodle_config "fullname" "Система управления обучением РЦТИ"
+set_moodle_config "fullname" "Система управления обучением RTTI"
 set_moodle_config "shortname" "RTTI LMS"
 set_moodle_config "summary" "Современная платформа для онлайн обучения"
 
@@ -594,7 +594,7 @@ cat > /root/moodle-admin-guide.txt << EOF
 3. НАСТРОЙКА ОРГАНИЗАЦИИ
    - Название сайта: RTTI Learning Management System
    - Краткое название: RTTI LMS
-   - Описание: Система обучения РЦТИ
+   - Описание: Система обучения RTTI
    - Часовой пояс: Asia/Dushanbe
    - Страна: Таджикистан
 

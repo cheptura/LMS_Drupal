@@ -260,7 +260,7 @@ fi
 cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 // RTTI Library specific settings
 \$config['system.site']['name'] = 'RTTI Digital Library';
-\$config['system.site']['slogan'] = 'Цифровая библиотека РЦТИ';
+\$config['system.site']['slogan'] = 'Цифровая библиотека RTTI';
 \$config['system.site']['mail'] = 'library@omuzgorpro.tj';
 
 // Base URL configuration
