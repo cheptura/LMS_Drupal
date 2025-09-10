@@ -88,52 +88,50 @@ if [ $? -ne 0 ]; then
     sudo -u www-data composer require drush/drush:^12 --no-interaction
 fi
 
-# Проверяем что Drush установлен и работает
-echo "📍 Проверка установки Drush..."
+echo "5.2. Проверка установки Drush..."
 DRUSH_AVAILABLE=false
 DRUSH_CMD=""
 
-# Сначала проверяем локальный Drush
+# Проверяем локальный Drush (должен быть установлен)
 if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
-    echo "   Проверяем локальный Drush..."
+    echo "   Тестируем Drush..."
     if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
         DRUSH_AVAILABLE=true
         DRUSH_CMD="$DRUPAL_DIR/vendor/bin/drush"
-        echo "✅ Локальный Drush работает: $DRUSH_CMD"
+        echo "✅ Drush установлен и работает: $DRUSH_CMD"
     else
-        echo "   ⚠️ Локальный Drush найден, но не работает"
-    fi
-fi
-
-# Если локальный не работает, проверяем глобальный
-if [ "$DRUSH_AVAILABLE" = false ]; then
-    echo "   Проверяем глобальный Drush..."
-    if which drush >/dev/null 2>&1; then
-        if sudo -u www-data drush --version >/dev/null 2>&1; then
-            DRUSH_AVAILABLE=true
-            DRUSH_CMD="drush"
-            echo "✅ Глобальный Drush работает: $DRUSH_CMD"
-        fi
-    fi
-fi
-
-# Если ничего не работает, устанавливаем через Composer
-if [ "$DRUSH_AVAILABLE" = false ]; then
-    echo "   ❌ Drush не найден, установка через Composer..."
-    cd $DRUPAL_DIR
-    sudo -u www-data composer require drush/drush
-    
-    if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
+        echo "   ❌ Drush найден, но не запускается"
+        echo "   Попытка исправления прав доступа..."
+        sudo chown -R www-data:www-data "$DRUPAL_DIR/vendor/bin/drush"
+        sudo chmod +x "$DRUPAL_DIR/vendor/bin/drush"
+        
+        # Повторная проверка
         if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
             DRUSH_AVAILABLE=true
             DRUSH_CMD="$DRUPAL_DIR/vendor/bin/drush"
-            echo "✅ Drush установлен и работает: $DRUSH_CMD"
+            echo "✅ Drush исправлен и работает: $DRUSH_CMD"
+        fi
+    fi
+else
+    echo "   ❌ Файл Drush не найден после установки"
+    echo "   Попытка переустановки..."
+    sudo -u www-data composer remove drush/drush --no-interaction || true
+    sudo -u www-data composer require drush/drush --no-interaction
+    
+    if [ -f "$DRUPAL_DIR/vendor/bin/drush" ]; then
+        sudo chown -R www-data:www-data "$DRUPAL_DIR/vendor/bin/drush"
+        sudo chmod +x "$DRUPAL_DIR/vendor/bin/drush"
+        
+        if sudo -u www-data "$DRUPAL_DIR/vendor/bin/drush" --version >/dev/null 2>&1; then
+            DRUSH_AVAILABLE=true
+            DRUSH_CMD="$DRUPAL_DIR/vendor/bin/drush"
+            echo "✅ Drush переустановлен и работает: $DRUSH_CMD"
         fi
     fi
 fi
 
 if [ "$DRUSH_AVAILABLE" = false ]; then
-    echo "⚠️ Drush недоступен - будет использована веб-установка"
+    echo "❌ Не удалось настроить Drush - будет использована веб-установка"
 fi
 
 echo "6. Установка дополнительных модулей для цифровой библиотеки..."
@@ -308,19 +306,43 @@ cd $DRUPAL_DIR
 if [ "$DRUSH_AVAILABLE" = true ]; then
     echo "📍 Используем Drush для автоматической установки..."
     echo "   Команда Drush: $DRUSH_CMD"
+    echo "   Проверяем работоспособность..."
     
-    # Установка Drupal через Drush (правильный синтаксис)
-    sudo -u www-data $DRUSH_CMD site:install standard \
-        --langcode=ru \
-        --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
-        --site-name="RTTI Digital Library" \
-        --site-mail=library@omuzgorpro.tj \
-        --account-name=admin \
-        --account-pass=$ADMIN_PASSWORD \
-        --account-mail=admin@omuzgorpro.tj \
-        --yes
+    # Дополнительная проверка Drush перед использованием
+    if sudo -u www-data $DRUSH_CMD --version; then
+        echo "✅ Drush работает корректно"
+        
+        # Проверяем что мы в правильной директории
+        echo "   Текущая директория: $(pwd)"
+        echo "   Содержимое директории:"
+        ls -la
+        
+        # Проверяем наличие composer.json
+        if [ -f "composer.json" ]; then
+            echo "✅ composer.json найден"
+        else
+            echo "❌ composer.json не найден!"
+            echo "Переходим в правильную директорию..."
+            cd $DRUPAL_DIR
+        fi
+        
+        echo "🚀 Запуск установки Drupal..."
+        # Установка Drupal через Drush (правильный синтаксис)
+        sudo -u www-data $DRUSH_CMD site:install standard \
+            --langcode=ru \
+            --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
+            --site-name="RTTI Digital Library" \
+            --site-mail=library@omuzgorpro.tj \
+            --account-name=admin \
+            --account-pass=$ADMIN_PASSWORD \
+            --account-mail=admin@omuzgorpro.tj \
+            --yes
 
-    INSTALL_RESULT=$?
+        INSTALL_RESULT=$?
+    else
+        echo "❌ Drush не работает, переключаемся на веб-установку"
+        DRUSH_AVAILABLE=false
+    fi
 else
     echo "⚠️ Drush не найден, используем альтернативный метод..."
     
