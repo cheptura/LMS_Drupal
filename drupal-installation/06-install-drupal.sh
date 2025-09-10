@@ -407,49 +407,64 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
     echo "   Команда Drush: $DRUSH_CMD"
     echo "   Проверяем работоспособность..."
     
-    # Дополнительная проверка Drush перед использованием
-    if sudo -u www-data "$DRUSH_CMD" --version >/dev/null 2>&1; then
-        echo "✅ Drush работает корректно"
-        
-        # Показываем версию Drush для информации
-        echo "   Версия Drush: $(sudo -u www-data "$DRUSH_CMD" --version 2>/dev/null || echo 'Неизвестна')"
-        
-        # Проверяем что мы в правильной директории
-        echo "   Текущая директория: $(pwd)"
-        
-        # Проверяем наличие composer.json
-        if [ -f "composer.json" ]; then
-            echo "✅ composer.json найден"
-        else
-            echo "❌ composer.json не найден!"
-            echo "Переходим в правильную директорию..."
-            cd $DRUPAL_DIR
-        fi
-        
-        echo "🚀 Запуск установки Drupal..."
-        # Установка Drupal через Drush (правильный синтаксис)
-        sudo -u www-data "$DRUSH_CMD" site:install standard \
-            --langcode=ru \
-            --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
-            --site-name="RTTI Digital Library" \
-            --site-mail=library@omuzgorpro.tj \
-            --account-name=admin \
-            --account-pass=$ADMIN_PASSWORD \
-            --account-mail=admin@omuzgorpro.tj \
-            --yes
-
-        INSTALL_RESULT=$?
-        
-        if [ $INSTALL_RESULT -eq 0 ]; then
-            echo "✅ Drupal успешно установлен через Drush!"
-        else
-            echo "❌ Ошибка установки Drupal через Drush (код: $INSTALL_RESULT)"
-        fi
-    else
-        echo "❌ Drush не работает, переключаемся на веб-установку"
-        echo "   Причина: $(sudo -u www-data "$DRUSH_CMD" --version 2>&1 | head -1)"
+    # Дополнительная диагностика
+    echo "🔍 ДИАГНОСТИКА:"
+    echo "   Переменная DRUPAL_DIR: $DRUPAL_DIR"
+    echo "   Текущая директория: $(pwd)"
+    echo "   Существует ли файл: $([ -f "$DRUSH_CMD" ] && echo "ДА" || echo "НЕТ")"
+    echo "   Права файла: $([ -f "$DRUSH_CMD" ] && ls -la "$DRUSH_CMD" || echo "Файл не найден")"
+    echo "   Пользователь: $(whoami)"
+    echo "   PATH: $PATH"
+    
+    # Убеждаемся что мы в правильной директории
+    cd "$DRUPAL_DIR" || {
+        echo "❌ Ошибка: не могу перейти в $DRUPAL_DIR"
         DRUSH_AVAILABLE=false
         INSTALL_RESULT=1
+    }
+    
+    if [ "$DRUSH_AVAILABLE" = true ]; then
+        # Дополнительная проверка Drush перед использованием
+        if sudo -u www-data "$DRUSH_CMD" --version >/dev/null 2>&1; then
+            echo "✅ Drush работает корректно"
+            
+            # Показываем версию Drush для информации
+            echo "   Версия Drush: $(sudo -u www-data "$DRUSH_CMD" --version 2>/dev/null || echo 'Неизвестна')"
+            
+            # Проверяем наличие composer.json
+            if [ -f "composer.json" ]; then
+                echo "✅ composer.json найден"
+            else
+                echo "❌ composer.json не найден!"
+                echo "Переходим в правильную директорию..."
+                cd $DRUPAL_DIR
+            fi
+            
+            echo "🚀 Запуск установки Drupal..."
+            # Установка Drupal через Drush (правильный синтаксис)
+            sudo -u www-data "$DRUSH_CMD" site:install standard \
+                --langcode=ru \
+                --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
+                --site-name="RTTI Digital Library" \
+                --site-mail=library@omuzgorpro.tj \
+                --account-name=admin \
+                --account-pass=$ADMIN_PASSWORD \
+                --account-mail=admin@omuzgorpro.tj \
+                --yes
+
+            INSTALL_RESULT=$?
+            
+            if [ $INSTALL_RESULT -eq 0 ]; then
+                echo "✅ Drupal успешно установлен через Drush!"
+            else
+                echo "❌ Ошибка установки Drupal через Drush (код: $INSTALL_RESULT)"
+            fi
+        else
+            echo "❌ Drush не работает, переключаемся на веб-установку"
+            echo "   Причина: $(sudo -u www-data "$DRUSH_CMD" --version 2>&1 | head -1)"
+            DRUSH_AVAILABLE=false
+            INSTALL_RESULT=1
+        fi
     fi
 else
     echo "⚠️ Drush не найден, используем альтернативный метод..."
