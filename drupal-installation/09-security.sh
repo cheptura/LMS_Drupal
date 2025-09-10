@@ -516,7 +516,8 @@ check_failed_logins() {
     
     if [ "$failed_count" -gt 50 ]; then
         log_security "High number of login attempts: $failed_count"
-        echo "Suspicious login activity detected: $failed_count attempts today" | mail -s "RTTI Library Security Alert" $EMAIL
+        echo "[$(date)] SECURITY ALERT: Suspicious login activity detected: $failed_count attempts today" >> /var/log/drupal-security.log
+        logger -t "RTTI-Security" "Suspicious login activity: $failed_count attempts"
     fi
 }
 
@@ -531,7 +532,8 @@ check_file_integrity() {
         
         if [ "$current_hash" != "$stored_hash" ]; then
             log_security "Settings file modified unexpectedly"
-            echo "Drupal settings.php file has been modified" | mail -s "RTTI Library File Integrity Alert" $EMAIL
+            echo "[$(date)] FILE INTEGRITY ALERT: Drupal settings.php file has been modified" >> /var/log/drupal-security.log
+            logger -t "RTTI-Security" "Critical file modified: settings.php"
         fi
     fi
     
@@ -546,7 +548,8 @@ check_suspicious_processes() {
     
     if [ ! -z "$suspicious_procs" ]; then
         log_security "Suspicious processes detected: $suspicious_procs"
-        echo "Suspicious processes running: $suspicious_procs" | mail -s "RTTI Library Process Alert" $EMAIL
+        echo "[$(date)] PROCESS ALERT: Suspicious processes running: $suspicious_procs" >> /var/log/drupal-security.log
+        logger -t "RTTI-Security" "Suspicious processes detected"
     fi
 }
 
@@ -556,7 +559,8 @@ check_connections() {
     
     if [ ! -z "$high_conn_ips" ]; then
         log_security "High connection count from IPs: $high_conn_ips"
-        echo "High connection count detected from: $high_conn_ips" | mail -s "RTTI Library Connection Alert" $EMAIL
+        echo "[$(date)] CONNECTION ALERT: High connection count detected from: $high_conn_ips" >> /var/log/drupal-security.log
+        logger -t "RTTI-Security" "High connection count detected"
     fi
 }
 
@@ -566,7 +570,8 @@ check_disk_space() {
     
     if [ "$usage" -gt 90 ]; then
         log_security "Critical disk usage: $usage%"
-        echo "Critical disk usage: $usage%" | mail -s "RTTI Library Disk Alert" $EMAIL
+        echo "[$(date)] DISK ALERT: Critical disk usage: $usage%" >> /var/log/drupal-security.log
+        logger -t "RTTI-Security" "Critical disk usage: $usage%"
     fi
 }
 

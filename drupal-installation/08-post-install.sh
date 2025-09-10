@@ -269,9 +269,23 @@ DRUPAL_DIR="/var/www/drupal"
 LOG_FILE="/var/log/drupal-monitor.log"
 EMAIL="admin@omuzgorpro.tj"
 
-# Функция логирования
+# Функции для форматированного вывода и логирования
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> $LOG_FILE
+}
+
+send_alert() {
+    local message="$1"
+    local subject="$2"
+    
+    # Логируем сообщение вместо отправки email
+    log_message "ALERT: $subject - $message"
+    
+    # Записываем в системный лог
+    logger -t "RTTI-Library" "$subject: $message"
+    
+    # Можно добавить webhook или другие уведомления
+    echo "$(date): $subject - $message" >> /var/log/drupal-alerts.log
 }
 
 # Проверка доступности сайта
@@ -281,7 +295,7 @@ check_site_availability() {
     
     if [ "$status" != "200" ]; then
         log_message "ALERT: Site unavailable (HTTP $status)"
-        echo "Drupal site unavailable" | mail -s "RTTI Library Alert" $EMAIL
+        send_alert "Drupal site unavailable (HTTP $status)" "RTTI Library Site Alert"
         return 1
     fi
     
@@ -295,7 +309,7 @@ check_disk_usage() {
     
     if [ "$usage" -gt 85 ]; then
         log_message "ALERT: High disk usage ($usage%)"
-        echo "High disk usage: $usage%" | mail -s "RTTI Library Disk Alert" $EMAIL
+        send_alert "High disk usage: $usage%" "RTTI Library Disk Alert"
     else
         log_message "INFO: Disk usage normal ($usage%)"
     fi
@@ -307,7 +321,7 @@ check_database() {
     
     if [[ $db_status != *"accepting connections"* ]]; then
         log_message "ALERT: Database connection failed"
-        echo "Database connection failed" | mail -s "RTTI Library DB Alert" $EMAIL
+        send_alert "Database connection failed" "RTTI Library DB Alert"
         return 1
     fi
     
@@ -321,7 +335,7 @@ check_redis() {
     
     if [ "$redis_status" != "PONG" ]; then
         log_message "ALERT: Redis not responding"
-        echo "Redis service down" | mail -s "RTTI Library Redis Alert" $EMAIL
+        send_alert "Redis service down" "RTTI Library Redis Alert"
         return 1
     fi
     
@@ -335,7 +349,7 @@ check_error_logs() {
     
     if [ "$error_count" -gt 10 ]; then
         log_message "ALERT: High error count in logs ($error_count)"
-        echo "High error count: $error_count" | mail -s "RTTI Library Error Alert" $EMAIL
+        send_alert "High error count: $error_count" "RTTI Library Error Alert"
     fi
 }
 
