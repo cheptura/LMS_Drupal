@@ -402,19 +402,19 @@ ADMIN_PASSWORD="RTTIDrupal2024!"
 cd $DRUPAL_DIR
 
 # Проверяем доступность Drush для установки
-if [ "$DRUSH_AVAILABLE" = true ]; then
+if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
     echo "📍 Используем Drush для автоматической установки..."
     echo "   Команда Drush: $DRUSH_CMD"
     echo "   Проверяем работоспособность..."
     
     # Дополнительная проверка Drush перед использованием
-    if sudo -u www-data $DRUSH_CMD --version; then
+    if sudo -u www-data "$DRUSH_CMD" --version >/dev/null 2>&1; then
         echo "✅ Drush работает корректно"
         
         # Проверяем что мы в правильной директории
         echo "   Текущая директория: $(pwd)"
         echo "   Содержимое директории:"
-        ls -la
+        ls -la | head -10
         
         # Проверяем наличие composer.json
         if [ -f "composer.json" ]; then
@@ -427,7 +427,7 @@ if [ "$DRUSH_AVAILABLE" = true ]; then
         
         echo "🚀 Запуск установки Drupal..."
         # Установка Drupal через Drush (правильный синтаксис)
-        sudo -u www-data $DRUSH_CMD site:install standard \
+        sudo -u www-data "$DRUSH_CMD" site:install standard \
             --langcode=ru \
             --db-url=pgsql://drupaluser:$DB_PASSWORD@localhost:5432/drupal_library \
             --site-name="RTTI Digital Library" \
@@ -441,6 +441,7 @@ if [ "$DRUSH_AVAILABLE" = true ]; then
     else
         echo "❌ Drush не работает, переключаемся на веб-установку"
         DRUSH_AVAILABLE=false
+        INSTALL_RESULT=1
     fi
 else
     echo "⚠️ Drush не найден, используем альтернативный метод..."
@@ -704,7 +705,7 @@ echo "📌 Модули для библиотеки установлены"
 echo "📌 База данных настроена"
 echo "📌 Кэширование активировано"
 
-if [ $INSTALL_RESULT -eq 0 ]; then
+if [ "${INSTALL_RESULT:-1}" -eq 0 ]; then
     echo "📌 ✅ Drupal полностью настроен через CLI"
     echo "📌 URL: https://storage.omuzgorpro.tj"
     echo "📌 Логин: admin / Пароль: RTTIDrupal2024!"
