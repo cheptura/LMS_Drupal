@@ -18,6 +18,23 @@ DRUPAL_DIR="/var/www/drupal"
 NGINX_DIR="/etc/nginx"
 PHP_VERSION="8.3"
 
+echo "0. Очистка конфликтующих конфигураций..."
+
+# Удаление файлов, которые могут конфликтовать с новой конфигурацией
+if [ -f "/etc/nginx/conf.d/drupal-performance.conf" ]; then
+    echo "   🗑️  Удаляем drupal-performance.conf (конфликт)"
+    rm -f /etc/nginx/conf.d/drupal-performance.conf
+fi
+
+if [ -f "/etc/nginx/conf.d/drupal-static.conf" ]; then
+    echo "   🗑️  Удаляем drupal-static.conf (конфликт)"
+    rm -f /etc/nginx/conf.d/drupal-static.conf
+fi
+
+# Проверка текущей конфигурации
+echo "   🔍 Проверка текущей конфигурации Nginx..."
+nginx -t 2>/dev/null && echo "   ✅ Конфигурация Nginx чистая" || echo "   ⚠️  Есть проблемы в конфигурации"
+
 echo "1. Настройка Fail2Ban для защиты от атак..."
 
 # Установка Fail2Ban
@@ -109,7 +126,7 @@ http {
     types_hash_max_size 2048;
     server_tokens off;
     
-    # Buffer sizes
+    # Buffer sizes (единые настройки без дублирования)
     client_body_buffer_size 128k;
     client_header_buffer_size 1k;
     client_max_body_size 10m;

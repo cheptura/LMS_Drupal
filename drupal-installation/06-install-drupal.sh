@@ -494,6 +494,7 @@ if (extension_loaded('redis')) {
   \$settings['redis.connection']['interface'] = 'PhpRedis';
   \$settings['redis.connection']['host'] = '127.0.0.1';
   \$settings['redis.connection']['port'] = 6379;
+  \$settings['redis.connection']['password'] = '$REDIS_PASSWORD';
   \$settings['redis.connection']['base'] = 0;
   \$settings['cache']['default'] = 'cache.backend.redis';
   \$settings['cache']['bins']['bootstrap'] = 'cache.backend.chainedfast';

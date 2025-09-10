@@ -70,11 +70,11 @@ echo "2. Настройка Nginx для лучшей производитель
 # Удаляем старую неправильную конфигурацию если существует
 rm -f "$NGINX_DIR/conf.d/drupal-static.conf"
 
-# Дополнительная глобальная конфигурация Nginx
+# Дополнительная глобальная конфигурация Nginx (только кэш)
 cat > "$NGINX_DIR/conf.d/drupal-performance.conf" << EOF
-# Глобальные настройки производительности для Drupal
+# Настройки кэширования для Drupal
 # Дата: $(date)
-# ПРИМЕЧАНИЕ: gzip настройки удалены чтобы избежать конфликта с основным nginx.conf
+# ПРИМЕЧАНИЕ: Основные настройки (gzip, буферы) в nginx.conf
 
 # FastCGI cache settings
 fastcgi_cache_path /var/cache/nginx/drupal levels=1:2 keys_zone=drupal:10m max_size=1g inactive=60m use_temp_path=off;
@@ -83,25 +83,11 @@ fastcgi_cache_use_stale error timeout invalid_header updating http_500 http_503;
 fastcgi_cache_valid 200 301 302 1h;
 fastcgi_cache_valid 404 1m;
 
-# Настройки буферов
-client_body_buffer_size 16K;
-client_header_buffer_size 1k;
-large_client_header_buffers 4 8k;
-
-# Таймауты
-client_body_timeout 60s;
-client_header_timeout 60s;
-keepalive_timeout 65s;
-send_timeout 60s;
-
-# Размеры файлов
-client_max_body_size 100M;
-
-# Логирование
-log_format drupal_detailed '$remote_addr - $remote_user [$time_local] '
-                          '"$request" $status $bytes_sent '
-                          '"$http_referer" "$http_user_agent" '
-                          '$request_time $upstream_response_time';
+# Логирование производительности
+log_format drupal_detailed '\$remote_addr - \$remote_user [\$time_local] '
+                          '"\$request" \$status \$bytes_sent '
+                          '"\$http_referer" "\$http_user_agent" '
+                          '\$request_time \$upstream_response_time';
 EOF
 
 echo "   ✅ Создана конфигурация производительности Nginx"
