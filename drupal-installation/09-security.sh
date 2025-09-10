@@ -6,9 +6,54 @@
 echo "=== RTTI Drupal - Шаг 9: Углубленная настройка безопасности ==="
 echo "🛡️ Комплексная защита системы и данных"
 echo "📅 Дата: $(date)"
-echo
-
-# Проверка прав root
+echo    # Кэширование статических файлов с безопасностью
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options nosniff;
+        add_header Vary Accept-Encoding;
+        access_log off;
+        log_not_found off;
+        
+        # Попробовать файл сначала как есть, потом через Drupal
+        try_files \$uri @rewrite;
+    }
+    
+    # Специальная обработка для файлов в /sites/default/files/
+    location ^~ /sites/default/files/ {
+        # Ограничения безопасности для загружаемых файлов
+        limit_req zone=general burst=30 nodelay;
+        
+        expires 1y;
+        add_header Cache-Control "public";
+        add_header Vary Accept-Encoding;
+        add_header X-Content-Type-Options nosniff;
+        
+        # Попробовать прямой доступ к файлу
+        try_files \$uri @rewrite;
+    }
+    
+    # Обработка core файлов Drupal (css, js, изображения) с безопасностью
+    location ^~ /core/ {
+        # Разрешить доступ только к статическим файлам в core
+        location ~* ^/core/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header Vary Accept-Encoding;
+            add_header X-Content-Type-Options nosniff;
+            access_log off;
+            try_files \$uri @rewrite;
+        }
+        
+        # Запретить доступ к остальным файлам в core
+        deny all;
+        return 403;
+    }
+    
+    # Rewrite обработчик для Drupal
+    location @rewrite {
+        rewrite ^/(.*)$ /index.php?q=\$1;
+    }оверка прав root
 if [ "$EUID" -ne 0 ]; then
     echo "❌ Ошибка: Запустите скрипт с правами root"
     exit 1

@@ -72,8 +72,8 @@ log_min_duration_statement = 1000
 log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 EOF
 
-echo "7. Генерация безопасного пароля для пользователя базы данных..."
-DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+echo "7. Установка статичного пароля для пользователя базы данных..."
+DB_PASSWORD="DrupalRTTI2024!"
 
 echo "8. Перезапуск PostgreSQL для применения настроек..."
 systemctl restart postgresql

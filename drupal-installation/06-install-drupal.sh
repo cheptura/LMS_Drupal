@@ -292,15 +292,9 @@ cp $DRUPAL_DIR/web/sites/default/default.settings.php $DRUPAL_DIR/web/sites/defa
 chown www-data:www-data $DRUPAL_DIR/web/sites/default/settings.php
 chmod 666 $DRUPAL_DIR/web/sites/default/settings.php
 
-# Получение данных базы данных
-if [ -f "/root/drupal-db-credentials.txt" ]; then
-    DB_PASSWORD=$(grep "Пароль:" /root/drupal-db-credentials.txt | awk '{print $2}')
-    echo "✅ Данные базы данных получены"
-else
-    echo "❌ Файл с данными БД не найден"
-    exit 1
-fi
-
+# Получение данных базы данных - используем статичный пароль
+DB_PASSWORD="DrupalRTTI2024!"
+echo "✅ Используется статичный пароль базы данных"
 echo "11. Настройка settings.php..."
 cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 
@@ -343,13 +337,8 @@ cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
 EOF
 
 # Получение данных Redis
-if [ -f "/root/drupal-cache-credentials.txt" ]; then
-    REDIS_PASSWORD=$(grep "Пароль:" /root/drupal-cache-credentials.txt | awk '{print $2}')
-    
-    # Добавление настроек кэширования
-    # Временно комментируем Redis конфигурацию - она будет добавлена после включения модуля Redis
-    echo "# Redis конфигурация будет добавлена после включения модуля Redis" >> $DRUPAL_DIR/web/sites/default/settings.php
-fi
+# Статичный пароль для Redis
+REDIS_PASSWORD="RedisRTTI2024!"
 
 # Дополнительные настройки для библиотеки
 cat >> $DRUPAL_DIR/web/sites/default/settings.php << EOF
@@ -532,6 +521,24 @@ chmod 444 $DRUPAL_DIR/web/sites/default/settings.php
 chown -R www-data:www-data $DRUPAL_DIR
 find $DRUPAL_DIR/web/sites/default/files -type d -exec chmod 755 {} \;
 find $DRUPAL_DIR/web/sites/default/files -type f -exec chmod 644 {} \;
+
+# Дополнительная настройка прав для статических файлов
+echo "13.1. Настройка прав доступа для статических файлов..."
+find $DRUPAL_DIR/web/core -type d -exec chmod 755 {} \;
+find $DRUPAL_DIR/web/core -name "*.css" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.js" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.png" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.jpg" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.jpeg" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.gif" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.svg" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.woff*" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.ttf" -exec chmod 644 {} \;
+find $DRUPAL_DIR/web/core -name "*.eot" -exec chmod 644 {} \;
+
+# Убедимся что все файлы принадлежат www-data
+chown -R www-data:www-data $DRUPAL_DIR/web/core
+chown -R www-data:www-data $DRUPAL_DIR/web/sites/default/files
 
 echo "14. Включение необходимых модулей..."
 cd $DRUPAL_DIR

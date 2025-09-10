@@ -28,8 +28,8 @@ echo "4. Настройка Redis для Drupal..."
 REDIS_CONF="/etc/redis/redis.conf"
 cp $REDIS_CONF ${REDIS_CONF}.backup
 
-# Генерация пароля для Redis
-REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+# Статичный пароль для Redis
+REDIS_PASSWORD="RedisRTTI2024!"
 
 # Настройка Redis
 cat > /etc/redis/redis.conf << EOF

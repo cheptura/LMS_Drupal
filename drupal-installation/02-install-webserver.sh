@@ -339,11 +339,44 @@ server {
         fastcgi_temp_file_write_size 256k;
     }
     
-    # Static files caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    # Static files caching and optimization
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header Vary Accept-Encoding;
         log_not_found off;
+        access_log off;
+        
+        # Попробовать файл сначала как есть, потом через Drupal
+        try_files \$uri @rewrite;
+    }
+    
+    # Специальная обработка для файлов в /sites/default/files/
+    location ^~ /sites/default/files/ {
+        expires 1y;
+        add_header Cache-Control "public";
+        add_header Vary Accept-Encoding;
+        
+        # Попробовать прямой доступ к файлу
+        try_files \$uri @rewrite;
+    }
+    
+    # Обработка core файлов Drupal (css, js, изображения)
+    location ^~ /core/ {
+        # Разрешить доступ только к статическим файлам в core
+        location ~* ^/core/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header Vary Accept-Encoding;
+            access_log off;
+            try_files \$uri @rewrite;
+        }
+        
+        # Запретить доступ к остальным файлам в core
+        location ^~ /core/ {
+            deny all;
+            return 403;
+        }
     }
     
     # Deny access to vendor directory

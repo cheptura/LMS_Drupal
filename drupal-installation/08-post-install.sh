@@ -128,6 +128,7 @@ if [ -n "$ACTIVE_CONFIG" ]; then
 
     # Добавляем правила кэширования в основную конфигурацию сайта
     sed -i '/# Static files caching/,/}/d' /etc/nginx/sites-available/$ACTIVE_CONFIG
+    sed -i '/# Enhanced static files caching/,/}/d' /etc/nginx/sites-available/$ACTIVE_CONFIG
     sed -i '/# Deny access to vendor directory/i\
     # Enhanced static files caching\
     location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|doc|docx|xls|xlsx|ppt|pptx)$ {\
@@ -136,6 +137,19 @@ if [ -n "$ACTIVE_CONFIG" ]; then
         add_header Vary Accept-Encoding;\
         log_not_found off;\
         access_log off;\
+        \
+        # Попробовать файл сначала как есть, потом через Drupal\
+        try_files \\$uri @rewrite;\
+    }\
+    \
+    # Специальная обработка для файлов в /sites/default/files/\
+    location ^~ /sites/default/files/ {\
+        expires 1y;\
+        add_header Cache-Control "public";\
+        add_header Vary Accept-Encoding;\
+        \
+        # Попробовать прямой доступ к файлу\
+        try_files \\$uri @rewrite;\
     }\
     \
     ' /etc/nginx/sites-available/$ACTIVE_CONFIG
@@ -454,6 +468,21 @@ chmod +x vendor/bin/drupal
 mkdir -p web/sites/default/files/{public,private,temp}
 chown -R www-data:www-data web/sites/default/files
 chmod -R 755 web/sites/default/files
+
+# Дополнительная настройка прав для статических файлов
+echo "8.1. Настройка прав доступа для статических файлов core..."
+find web/core -type d -exec chmod 755 {} \;
+find web/core -name "*.css" -exec chmod 644 {} \;
+find web/core -name "*.js" -exec chmod 644 {} \;
+find web/core -name "*.png" -exec chmod 644 {} \;
+find web/core -name "*.jpg" -exec chmod 644 {} \;
+find web/core -name "*.jpeg" -exec chmod 644 {} \;
+find web/core -name "*.gif" -exec chmod 644 {} \;
+find web/core -name "*.svg" -exec chmod 644 {} \;
+find web/core -name "*.woff*" -exec chmod 644 {} \;
+find web/core -name "*.ttf" -exec chmod 644 {} \;
+find web/core -name "*.eot" -exec chmod 644 {} \;
+chown -R www-data:www-data web/core
 
 # Защита конфигурационных файлов
 chmod 444 web/sites/default/settings.php
