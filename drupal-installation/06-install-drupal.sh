@@ -22,12 +22,13 @@ DRUPAL_DIR="/var/www/drupal"
 BACKUP_DIR="/root/drupal-backup-$(date +%Y%m%d-%H%M%S)"
 
 echo "1. Создание резервной копии если Drupal уже установлен..."
-if [ -d "$DRUPAL_DIR" ] && [ -f "$DRUPAL_DIR/composer.json" ]; then
-    echo "Найдена существующая установка Drupal, создание резервной копии..."
-    mkdir -p $BACKUP_DIR
-    cp -r $DRUPAL_DIR $BACKUP_DIR/
-    echo "✅ Резервная копия создана: $BACKUP_DIR"
-fi
+echo "Пропускаем создание резервной копии"
+# if [ -d "$DRUPAL_DIR" ] && [ -f "$DRUPAL_DIR/composer.json" ]; then
+#     echo "Найдена существующая установка Drupal, создание резервной копии..."
+#     mkdir -p $BACKUP_DIR
+#     cp -r $DRUPAL_DIR $BACKUP_DIR/
+#     echo "✅ Резервная копия создана: $BACKUP_DIR"
+# fi
 
 echo "2. Подготовка каталога для Drupal..."
 mkdir -p $DRUPAL_DIR
@@ -517,6 +518,18 @@ else
 \$settings['config_sync_directory'] = '../config/sync';
 \$settings['file_private_path'] = '../private';
 
+// Redis cache settings
+if (extension_loaded('redis')) {
+  \$settings['redis.connection']['interface'] = 'PhpRedis';
+  \$settings['redis.connection']['host'] = '127.0.0.1';
+  \$settings['redis.connection']['port'] = 6379;
+  \$settings['redis.connection']['base'] = 0;
+  \$settings['cache']['default'] = 'cache.backend.redis';
+  \$settings['cache']['bins']['bootstrap'] = 'cache.backend.chainedfast';
+  \$settings['cache']['bins']['discovery'] = 'cache.backend.chainedfast';
+  \$settings['cache']['bins']['config'] = 'cache.backend.chainedfast';
+}
+
 EOF
 
     echo "📍 Установка через веб-интерфейс будет доступна по адресу сервера"
@@ -558,6 +571,7 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ $INSTALL_RESULT -eq 0 ]; then
         "media_library"
         "search_api"
         "search_api_db"
+        "redis"
     )
 
     for module in "${CORE_MODULES[@]}"; do
