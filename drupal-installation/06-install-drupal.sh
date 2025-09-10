@@ -420,7 +420,22 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
         echo "🔧 Исправляем права доступа к Drush..."
         sudo chown www-data:www-data "$DRUSH_CMD"
         sudo chmod +x "$DRUSH_CMD"
-        echo "   Новые права: $(ls -la "$DRUSH_CMD")"
+        
+        # Также исправляем права для основного исполняемого файла Drush
+        DRUSH_MAIN="$DRUPAL_DIR/vendor/drush/drush/drush"
+        if [ -f "$DRUSH_MAIN" ]; then
+            echo "🔧 Исправляем права для основного файла Drush..."
+            sudo chown www-data:www-data "$DRUSH_MAIN"
+            sudo chmod +x "$DRUSH_MAIN"
+            echo "   Права основного файла: $(ls -la "$DRUSH_MAIN")"
+        fi
+        
+        # Исправляем права для всех исполняемых файлов в vendor/bin
+        echo "🔧 Исправляем права для всех файлов в vendor/bin..."
+        sudo find "$DRUPAL_DIR/vendor/bin" -type f -exec chmod +x {} \;
+        sudo chown -R www-data:www-data "$DRUPAL_DIR/vendor/bin"
+        
+        echo "   Новые права обертки: $(ls -la "$DRUSH_CMD")"
     fi
     
     # Убеждаемся что мы в правильной директории
