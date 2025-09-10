@@ -290,8 +290,16 @@ server {
         access_log off;
     }
     
+    # Very rarely should these ever be accessed outside of your lan
+    location ~* \\.(txt|log)\$ {
+        allow 192.168.0.0/16;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        deny all;
+    }
+    
     # Deny access to configuration files
-    location ~ \..*/.*\.php$ {
+    location ~ \\..*/.*\\.php\$ {
         return 403;
     }
     
@@ -299,7 +307,17 @@ server {
         return 403;
     }
     
-    location ~ ^/sites/[^/]+/files/.*\.php$ {
+    # Block access to "hidden" files and directories whose names begin with a period
+    location ~ (^|/)\\. {
+        return 403;
+    }
+    
+    # Block access to Drupal source code files
+    location ~* \\.(module|inc|install|engine|theme|tpl(\\.php)?\$|info|po|sh|.*sql|xtmpl)\$ {
+        deny all;
+    }
+    
+    location ~ ^/sites/[^/]+/files/.*\\.php\$ {
         deny all;
     }
     
@@ -307,57 +325,36 @@ server {
         allow all;
     }
     
-    location ~ (^|/)\. {
-        return 403;
-    }
-    
+    # Drupal clean URLs - For Drupal >= 7
     location / {
-        try_files $uri /index.php?$query_string;
+        try_files \\$uri /index.php?\\$query_string;
     }
     
     location @rewrite {
-        rewrite ^/(.*)$ /index.php?q=$1;
+        rewrite ^/(.*)\$ /index.php?q=\\$1;
     }
     
-    # PHP processing - упрощенный обработчик для всех PHP файлов
-    location ~ [^/]\.php(/|$) {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_index index.php;
-        fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
+    # Fighting with Styles? For Drupal >= 7
+    location ~ ^/sites/.*/files/styles/ {
+        try_files \\$uri @rewrite;
+    }
+    
+    # In Drupal 8+, we must also match new paths where the '.php' appears in the middle
+    location ~ '\\.php\$|^/update.php' {
+        fastcgi_split_path_info ^(.+?\\.php)(|/.*)\$;
         include fastcgi_params;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        
+        include snippets/fastcgi-php.conf;
+        fastcgi_param SCRIPT_FILENAME \\$request_filename;
         fastcgi_intercept_errors on;
-        fastcgi_ignore_client_abort off;
-        fastcgi_connect_timeout 60;
-        fastcgi_send_timeout 180;
-        fastcgi_read_timeout 180;
-        fastcgi_buffer_size 128k;
-        fastcgi_buffers 4 256k;
-        fastcgi_busy_buffers_size 256k;
-        fastcgi_temp_file_write_size 256k;
+        fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
     }
     
-    # Static files caching and optimization
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        add_header Vary Accept-Encoding;
+    # Static files caching - simpler and more reliable approach
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
+        expires max;
         log_not_found off;
         access_log off;
-        
-        # Попробовать файл сначала как есть, потом через Drupal
-        try_files \$uri @rewrite;
     }
-    
-    # Специальная обработка для файлов в /sites/default/files/
-    location ^~ /sites/default/files/ {
-        expires 1y;
-        add_header Cache-Control "public";
-        add_header Vary Accept-Encoding;
-        
-        # Попробовать прямой доступ к файлу
         try_files \$uri @rewrite;
     }
     
