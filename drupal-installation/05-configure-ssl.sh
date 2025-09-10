@@ -35,24 +35,57 @@ check_cert_validity() {
         return 1
     fi
     
-    # Проверка домена в сертификате
-    local cert_domain=$(openssl x509 -in "$cert_file" -noout -subject | grep -o "CN=[^,]*" | cut -d= -f2 | tr -d ' ')
-    if [ "$cert_domain" != "$DOMAIN" ]; then
-        echo "   ❌ Сертификат выписан для другого домена: $cert_domain"
+    # Проверка домена в сертификате (CN или SAN)
+    local cert_domains=$(openssl x509 -in "$cert_file" -noout -text | grep -E "(CN=|DNS:)" | sed 's/.*CN=\([^,]*\).*/\1/; s/.*DNS:\([^,]*\).*/\1/' | tr -d ' ')
+    local domain_found=false
+    
+    # Проверяем и CN и SAN записи
+    while IFS= read -r cert_domain; do
+        if [ "$cert_domain" = "$DOMAIN" ]; then
+            domain_found=true
+            break
+        fi
+    done <<< "$cert_domains"
+    
+    if [ "$domain_found" = "false" ]; then
+        echo "   ⚠️  Сертификат выписан для другого домена. Ожидается: $DOMAIN"
+        echo "   📋 Домены в сертификате: $(echo "$cert_domains" | tr '\n' ', ' | sed 's/,$//')"
         return 1
     fi
     
     # Проверка срока действия
     local end_date=$(openssl x509 -in "$cert_file" -noout -enddate | cut -d= -f2)
-    local end_timestamp=$(date -d "$end_date" +%s 2>/dev/null)
-    local current_timestamp=$(date +%s)
     
-    if [ -z "$end_timestamp" ]; then
-        echo "   ❌ Не удается определить дату истечения сертификата"
-        return 1
+    # Различные форматы даты для разных систем
+    local end_timestamp
+    if command -v gdate >/dev/null 2>&1; then
+        # macOS with GNU date
+        end_timestamp=$(gdate -d "$end_date" +%s 2>/dev/null)
+    else
+        # Linux date
+        end_timestamp=$(date -d "$end_date" +%s 2>/dev/null)
     fi
     
+    if [ -z "$end_timestamp" ]; then
+        echo "   ⚠️  Не удается определить дату истечения сертификата: $end_date"
+        echo "   🔍 Попробуем альтернативный способ проверки..."
+        # Fallback - проверяем через openssl verify
+        if openssl x509 -in "$cert_file" -noout -checkend 2592000 >/dev/null 2>&1; then
+            echo "   ✅ Сертификат действителен еще минимум 30 дней"
+            return 0
+        else
+            echo "   ❌ Сертификат истекает в ближайшие 30 дней"
+            return 1
+        fi
+    fi
+    
+    local current_timestamp=$(date +%s)
     local days_left=$(( (end_timestamp - current_timestamp) / 86400 ))
+    
+    if [ $days_left -lt 0 ]; then
+        echo "   ❌ Сертификат уже истек $((days_left * -1)) дней назад"
+        return 1
+    fi
     
     if [ $days_left -lt $min_days_left ]; then
         echo "   ⚠️  Сертификат истекает через $days_left дней (требуется минимум $min_days_left)"
@@ -73,27 +106,27 @@ if [ -d "$LETSENCRYPT_CERT_DIR" ] && \
     
     echo "📋 Найдены существующие Let's Encrypt сертификаты"
     
-    # Проверка валидности существующего сертификата (минимум 30 дней)
-    if check_cert_validity "$LETSENCRYPT_CERT_DIR/cert.pem" 30; then
+    # Проверка валидности существующего сертификата (минимум 7 дней)
+    if check_cert_validity "$LETSENCRYPT_CERT_DIR/cert.pem" 7; then
         echo "✅ Существующий сертификат валиден и актуален"
         echo "🏃 Пропускаем получение нового сертификата"
         
         # Переходим сразу к настройке Nginx с существующим сертификатом
         echo "🔧 Настройка Nginx для использования существующего SSL сертификата..."
-        CERT_EXISTS=true
+        SKIP_CERTBOT=true
     else
         echo "⚠️  Существующий сертификат устарел или поврежден"
         echo "🔄 Будем получать новый сертификат..."
-        CERT_EXISTS=false
+        SKIP_CERTBOT=false
     fi
 else
     echo "ℹ️  SSL сертификаты не найдены"
     echo "🆕 Будем получать новые сертификаты Let's Encrypt..."
-    CERT_EXISTS=false
+    SKIP_CERTBOT=false
 fi
 
 # Получение нового сертификата только если необходимо
-if [ "$CERT_EXISTS" = false ]; then
+if [ "$SKIP_CERTBOT" = "false" ]; then
     echo
     echo "🆕 Получение нового SSL сертификата..."
     
@@ -108,7 +141,28 @@ if [ "$CERT_EXISTS" = false ]; then
         exit 1
     fi
     
-    echo "3. Создание временного HTTP сайта для получения сертификата..."
+    echo "3. Проверка DNS конфигурации для $DOMAIN..."
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+    DOMAIN_IP=$(dig +short $DOMAIN | tail -1)
+    
+    echo "   🖥️  IP сервера: $SERVER_IP"
+    echo "   🌐 IP домена $DOMAIN: $DOMAIN_IP"
+    
+    if [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+        echo "   ⚠️  ВНИМАНИЕ: DNS записи могут быть некорректными!"
+        echo "   📋 Убедитесь, что A-запись $DOMAIN указывает на $SERVER_IP"
+        echo "   🕐 DNS изменения могут занять до 24 часов"
+        
+        read -p "   ❓ Продолжить несмотря на это? (y/N): " continue_anyway
+        if [[ ! $continue_anyway =~ ^[Yy]$ ]]; then
+            echo "   🛑 Установка SSL прервана пользователем"
+            exit 1
+        fi
+    else
+        echo "   ✅ DNS записи корректны"
+    fi
+    
+    echo "4. Создание временного HTTP сайта для получения сертификата..."
     mkdir -p /var/www/html
     echo "<!DOCTYPE html><html><head><title>RTTI Digital Library</title></head><body><h1>RTTI Digital Library - SSL Setup</h1><p>Настройка SSL...</p></body></html>" > /var/www/html/index.html
     
@@ -134,10 +188,10 @@ EOF
     ln -sf /etc/nginx/sites-available/drupal-temp /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/drupal-default
     
-    echo "4. Перезапуск Nginx..."
+    echo "5. Перезапуск Nginx..."
     systemctl reload nginx
     
-    echo "5. Получение SSL сертификата от Let's Encrypt..."
+    echo "6. Получение SSL сертификата от Let's Encrypt..."
     certbot certonly \
         --nginx \
         --non-interactive \
@@ -182,7 +236,7 @@ echo "📁 Путь к сертификатам: $LETSENCRYPT_CERT_DIR"
 rm -f /etc/nginx/sites-enabled/drupal-default 2>/dev/null || true
 rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
-echo "6. Создание HTTPS конфигурации Nginx для Drupal..."
+echo "7. Создание HTTPS конфигурации Nginx для Drupal..."
 cat > /etc/nginx/sites-available/drupal-ssl << EOF
 # HTTP redirect to HTTPS
 server {
@@ -342,22 +396,22 @@ server {
 }
 EOF
 
-echo "7. Удаление временной конфигурации и активация SSL..."
+echo "8. Удаление временной конфигурации и активация SSL..."
 rm -f /etc/nginx/sites-enabled/drupal-temp
 ln -sf /etc/nginx/sites-available/drupal-ssl /etc/nginx/sites-enabled/
 echo "   ⚠️  ПРИМЕЧАНИЕ: Эта конфигурация будет заменена на более безопасную в шаге 09-security.sh"
 
-echo "8. Проверка конфигурации Nginx..."
+echo "9. Проверка конфигурации Nginx..."
 nginx -t
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка конфигурации Nginx"
     exit 1
 fi
 
-echo "9. Перезапуск Nginx..."
+echo "10. Перезапуск Nginx..."
 systemctl reload nginx
 
-echo "10. Настройка автоматического обновления сертификатов..."
+echo "11. Настройка автоматического обновления сертификатов..."
 cat > /etc/cron.d/certbot-renewal-drupal << 'EOF'
 # Автоматическое обновление Let's Encrypt сертификатов для Drupal
 # Проверка дважды в день
@@ -365,10 +419,10 @@ cat > /etc/cron.d/certbot-renewal-drupal << 'EOF'
 0 0 * * * root certbot renew --quiet --post-hook "systemctl reload nginx"
 EOF
 
-echo "11. Проверка SSL сертификата..."
+echo "12. Проверка SSL сертификата..."
 openssl x509 -in /etc/letsencrypt/live/$DOMAIN/fullchain.pem -text -noout | grep -A 3 "Validity"
 
-echo "12. Тестирование HTTPS подключения..."
+echo "13. Тестирование HTTPS подключения..."
 curl -I https://$DOMAIN >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "✅ HTTPS работает корректно"
@@ -376,7 +430,7 @@ else
     echo "⚠️  HTTPS может работать некорректно"
 fi
 
-echo "13. Создание скрипта проверки SSL..."
+echo "14. Создание скрипта проверки SSL..."
 cat > /root/drupal-ssl-check.sh << EOF
 #!/bin/bash
 echo "=== Drupal SSL Certificate Status ==="
@@ -397,49 +451,11 @@ EOF
 
 chmod +x /root/drupal-ssl-check.sh
 
-echo "14. Настройка файрвола для HTTPS..."
+echo "15. Настройка файрвола для HTTPS..."
 ufw allow 443/tcp comment "HTTPS Drupal"
 ufw status
 
-echo "15. Создание файла с информацией о SSL..."
-cat > /root/drupal-ssl-info.txt << EOF
-# SSL/TLS информация для Drupal
-# Дата создания: $(date)
-# Сервер: storage.omuzgorpro.tj ($(hostname -I | awk '{print $1}'))
-
-Домен: $DOMAIN
-SSL сертификат: Let's Encrypt
-Путь к сертификату: /etc/letsencrypt/live/$DOMAIN/
-Конфигурация Nginx: /etc/nginx/sites-available/drupal-ssl
-
-# Команды для управления:
-# Проверка статуса: certbot certificates
-# Обновление: certbot renew
-# Тест конфигурации: nginx -t
-# Перезагрузка: systemctl reload nginx
-
-# Скрипт проверки: /root/drupal-ssl-check.sh
-
-# Автоматическое обновление:
-# - Сертификат обновляется автоматически через cron
-# - Проверяйте лог: /var/log/letsencrypt/letsencrypt.log
-# - При смене IP нужно обновить DNS записи
-
-# Безопасность:
-# - HSTS включен (Strict-Transport-Security)
-# - Принудительное перенаправление HTTP -> HTTPS
-# - Безопасные заголовки настроены
-# - CSP политика установлена для Drupal
-
-# Производительность:
-# - HTTP/2 включен
-# - Gzip сжатие активировано
-# - Кэширование статических файлов
-# - Оптимизация для Drupal
-
-EOF
-
-echo "15. Создание файла с информацией о SSL..."
+echo "16. Создание файла с информацией о SSL..."
 cat > /root/drupal-ssl-info.txt << EOF
 # SSL/TLS информация для Drupal
 # Дата создания: $(date)
