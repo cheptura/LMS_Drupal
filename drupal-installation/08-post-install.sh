@@ -109,21 +109,41 @@ echo "   ✅ Создана конфигурация производитель�
 # Обновляем основную конфигурацию Drupal с кэшированием статических файлов
 echo "   📝 Обновление конфигурации сайта Drupal с кэшированием..."
 
-# Создаем резервную копию текущей конфигурации
-cp /etc/nginx/sites-available/drupal-default /etc/nginx/sites-available/drupal-default.backup
+# Определяем активную конфигурацию
+ACTIVE_CONFIG=""
+if [ -f /etc/nginx/sites-available/drupal-ssl ]; then
+    ACTIVE_CONFIG="drupal-ssl"
+    echo "   ⚡ Найдена SSL конфигурация, обновляем её"
+elif [ -f /etc/nginx/sites-available/drupal-default ]; then
+    ACTIVE_CONFIG="drupal-default"
+    echo "   ⚡ Найдена базовая конфигурация, обновляем её"
+else
+    echo "   ⚠️  Конфигурация Nginx не найдена, пропускаем обновление кэширования"
+    ACTIVE_CONFIG=""
+fi
 
-# Добавляем правила кэширования в основную конфигурацию сайта
-sed -i '/# Static files caching/,/}/c\
+if [ -n "$ACTIVE_CONFIG" ]; then
+    # Создаем резервную копию текущей конфигурации
+    cp /etc/nginx/sites-available/$ACTIVE_CONFIG /etc/nginx/sites-available/$ACTIVE_CONFIG.backup
+
+    # Добавляем правила кэширования в основную конфигурацию сайта
+    sed -i '/# Static files caching/,/}/d' /etc/nginx/sites-available/$ACTIVE_CONFIG
+    sed -i '/# Deny access to vendor directory/i\
     # Enhanced static files caching\
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|doc|docx|xls|xlsx|ppt|pptx)$ {\
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|doc|docx|xls|xlsx|ppt|pptx)$ {\
         expires 1y;\
         add_header Cache-Control "public, immutable";\
         add_header Vary Accept-Encoding;\
         log_not_found off;\
         access_log off;\
-    }' /etc/nginx/sites-available/drupal-default
+    }\
+    \
+    ' /etc/nginx/sites-available/$ACTIVE_CONFIG
 
-echo "   ✅ Обновлена конфигурация кэширования статических файлов"
+    echo "   ✅ Обновлена конфигурация кэширования статических файлов в $ACTIVE_CONFIG"
+else
+    echo "   ⚠️  Пропущено обновление кэширования - конфигурация будет создана в следующих шагах"
+fi
 
 echo "3. Настройка производительности базы данных..."
 

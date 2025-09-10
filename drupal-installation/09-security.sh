@@ -10,17 +10,7 @@ echo
 
 # Проверка прав root
 if [ "$EUID" -ne 0 ]; then
-    echo "❌ Ошибка:# Дополнительные настройки безопасности PHP
-cat > "/etc/php/$PHP_VERSION/fpm/conf.d/99-security.ini" << EOF
-; Настройки безопасности PHP для Drupal
-; Дата: $(date)
-
-; Отключение опасных функций (ИСКЛЮЧЕНЫ curl_exec и curl_multi_exec)
-; curl_exec и curl_multi_exec могут потребоваться для:
-; - Обновлений модулей
-; - Внешних интеграций
-; - Веб-сервисов
-disable_functions = exec,passthru,shell_exec,system,proc_open,popen,parse_ini_file,show_source,file_get_contents,fopen,fread,fwrite,file_put_contents,fputs,fgets,fsockopen,socket_createите скрипт с правами root"
+    echo "❌ Ошибка: Запустите скрипт с правами root"
     exit 1
 fi
 
@@ -218,7 +208,7 @@ server {
         # Только index.php
         location ~ ^/index\\.php\$ {
             fastcgi_split_path_info ^(.+\\.php)(/.+)\$;
-            fastcgi_pass unix:/var/run/php/php$PHP_VERSION-fpm.sock;
+            fastcgi_pass unix:/run/php/php$PHP_VERSION-fpm-drupal.sock;
             fastcgi_index index.php;
             include fastcgi_params;
             fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
@@ -279,6 +269,17 @@ server {
     }
 }
 EOF
+
+echo "   ✅ Создана защищённая конфигурация Nginx"
+
+# Удаление старых конфигураций и активация новой
+rm -f "$NGINX_DIR/sites-enabled/drupal-default" 2>/dev/null || true
+rm -f "$NGINX_DIR/sites-enabled/drupal-ssl" 2>/dev/null || true
+rm -f "$NGINX_DIR/sites-enabled/default" 2>/dev/null || true
+
+# Активация новой защищённой конфигурации
+ln -sf "$NGINX_DIR/sites-available/drupal" "$NGINX_DIR/sites-enabled/"
+echo "   ✅ Активирована защищённая конфигурация Nginx"
 
 echo "3. Настройка безопасности PostgreSQL..."
 
@@ -348,15 +349,18 @@ cat > "/etc/php/$PHP_VERSION/fpm/conf.d/99-security.ini" << EOF
 ; Настройки безопасности PHP для Drupal
 ; Дата: $(date)
 
-; Отключение опасных функций
-disable_functions = exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,file_get_contents,fopen,fread,fwrite,file_put_contents,fputs,fgets,fsockopen,socket_create
+; Отключение ТОЛЬКО самых опасных функций (исключаем критические для Drupal)
+; ВАЖНО: file_get_contents, fopen, fread, fwrite, file_put_contents, fputs, fgets - НУЖНЫ для Drupal!
+; curl_exec, curl_multi_exec - НУЖНЫ для HTTP запросов, обновлений, API
+; parse_ini_file - может потребоваться для некоторых модулей
+disable_functions = exec,passthru,shell_exec,system,proc_open,popen,show_source
 
 ; Скрытие версии PHP
 expose_php = Off
 
-; Ограничения на выполнение
-max_execution_time = 60
-max_input_time = 60
+; Ограничения на выполнение (увеличены для Drupal операций)
+max_execution_time = 300
+max_input_time = 300
 
 ; Контроль ошибок
 display_errors = Off
@@ -364,10 +368,10 @@ display_startup_errors = Off
 log_errors = On
 error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 
-; Контроль загрузки файлов
+; Контроль загрузки файлов (увеличены для библиотеки)
 file_uploads = On
-upload_max_filesize = 50M
-post_max_size = 50M
+upload_max_filesize = 250M
+post_max_size = 250M
 max_file_uploads = 20
 
 ; Безопасность сессий
