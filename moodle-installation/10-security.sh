@@ -193,10 +193,17 @@ fi
 
 # Определяем файл конфигурации сайта для добавления location блоков
 SITE_CONFIG=""
-if [ -f /etc/nginx/sites-available/omuzgorpro.tj ]; then
+if [ -f /etc/nginx/sites-available/moodle-ssl ]; then
+    SITE_CONFIG="/etc/nginx/sites-available/moodle-ssl"
+    echo "   🔍 Найдена SSL конфигурация, обновляем её"
+elif [ -f /etc/nginx/sites-available/omuzgorpro.tj ]; then
     SITE_CONFIG="/etc/nginx/sites-available/omuzgorpro.tj"
+    echo "   🔍 Найдена базовая конфигурация, обновляем её"
 elif [ -f /etc/nginx/sites-available/default ]; then
     SITE_CONFIG="/etc/nginx/sites-available/default"
+    echo "   🔍 Найдена стандартная конфигурация, обновляем её"
+else
+    echo "   ⚠️  Конфигурация Nginx не найдена, создаём новую защищённую"
 fi
 
 # Добавляем DDoS защиту в server блок, если её еще нет и файл найден
@@ -368,6 +375,22 @@ systemctl start fail2ban
 # Включение автоматических обновлений
 systemctl enable unattended-upgrades
 systemctl start unattended-upgrades
+
+# Активация обновленной конфигурации, если она была изменена
+if [ -n "$SITE_CONFIG" ]; then
+    # Определяем имя файла для активации
+    CONFIG_NAME=$(basename "$SITE_CONFIG")
+    echo "   🔄 Активация обновленной конфигурации: $CONFIG_NAME"
+    
+    # Удаляем старые активные конфигурации
+    rm -f /etc/nginx/sites-enabled/omuzgorpro.tj 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/moodle-ssl 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+    
+    # Активируем обновленную конфигурацию
+    ln -sf "$SITE_CONFIG" "/etc/nginx/sites-enabled/"
+    echo "   ✅ Конфигурация $CONFIG_NAME активирована"
+fi
 
 # Перезапуск Nginx с новыми настройками
 echo "   Проверка конфигурации Nginx..."
