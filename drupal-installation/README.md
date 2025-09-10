@@ -15,10 +15,9 @@ sudo chmod +x install-drupal.sh && sudo ./install-drupal.sh
 
 ⚠️ **ВАЖНО для SSL:** Если получите ошибку лимита сертификатов Let's Encrypt ("too many certificates"), см. раздел troubleshooting → "Ошибка лимита сертификатов Let's Encrypt"
 
-⚠️ **ВАЖНО для Nginx:** Если при запуске `05-configure-ssl.sh` возникает ошибка "location directive is not allowed here in drupal-static.conf", запустите:
+⚠️ **ВАЖНО для старых версий:** Если при запуске встречается ошибка "location directive is not allowed here", обновите репозиторий:
 ```bash
-sudo rm -f /etc/nginx/conf.d/drupal-static.conf
-sudo nginx -t
+cd /tmp/LMS_Drupal && git pull --force origin main
 ```
 
 ### 🔄 Обновление существующего репозитория:
@@ -202,14 +201,18 @@ drush config:import     # Импорт конфигурации
 
 #### Ошибка конфигурации Nginx
 ```bash
-# Если nginx -t показывает ошибки в drupal-static.conf:
-sudo rm -f /etc/nginx/conf.d/drupal-static.conf  # Удаление проблемного файла
+# Если nginx -t показывает ошибки синтаксиса:
 sudo nginx -t                                    # Проверка конфигурации
-sudo systemctl reload nginx                      # Перезагрузка Nginx
-
-# Если проблема в других файлах конфигурации:
 sudo nginx -T                                    # Показать всю конфигурацию
-sudo nginx -t -c /etc/nginx/nginx.conf          # Тест основной конфигурации
+
+# Если ошибка "location directive is not allowed here":
+# Обновите репозиторий до последней версии:
+cd /tmp/LMS_Drupal && git pull --force origin main
+cd drupal-installation && sudo chmod +x *.sh
+
+# Если проблема в drupal-static.conf (старые версии):
+sudo rm -f /etc/nginx/conf.d/drupal-static.conf  # Удаление проблемного файла
+sudo systemctl reload nginx                      # Перезагрузка Nginx
 ```
 
 #### Проблемы с PHP версиями

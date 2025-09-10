@@ -291,7 +291,7 @@ server {
     }
     
     # Very rarely should these ever be accessed outside of your lan
-    location ~* \\.(txt|log)\$ {
+    location ~* \.(txt|log)$ {
         allow 192.168.0.0/16;
         allow 10.0.0.0/8;
         allow 172.16.0.0/12;
@@ -299,7 +299,7 @@ server {
     }
     
     # Deny access to configuration files
-    location ~ \\..*/.*\\.php\$ {
+    location ~ \..*/.*\.php$ {
         return 403;
     }
     
@@ -308,16 +308,16 @@ server {
     }
     
     # Block access to "hidden" files and directories whose names begin with a period
-    location ~ (^|/)\\. {
+    location ~ (^|/)\. {
         return 403;
     }
     
     # Block access to Drupal source code files
-    location ~* \\.(module|inc|install|engine|theme|tpl(\\.php)?\$|info|po|sh|.*sql|xtmpl)\$ {
+    location ~* \.(module|inc|install|engine|theme|tpl(\.php)?$|info|po|sh|.*sql|xtmpl)$ {
         deny all;
     }
     
-    location ~ ^/sites/[^/]+/files/.*\\.php\$ {
+    location ~ ^/sites/[^/]+/files/.*\.php$ {
         deny all;
     }
     
@@ -327,35 +327,34 @@ server {
     
     # Drupal clean URLs - For Drupal >= 7
     location / {
-        try_files \\$uri /index.php?\\$query_string;
+        try_files $uri /index.php?$query_string;
     }
     
     location @rewrite {
-        rewrite ^/(.*)\$ /index.php?q=\\$1;
+        rewrite ^/(.*)$ /index.php?q=$1;
     }
     
     # Fighting with Styles? For Drupal >= 7
     location ~ ^/sites/.*/files/styles/ {
-        try_files \\$uri @rewrite;
+        try_files $uri @rewrite;
     }
     
     # In Drupal 8+, we must also match new paths where the '.php' appears in the middle
-    location ~ '\\.php\$|^/update.php' {
-        fastcgi_split_path_info ^(.+?\\.php)(|/.*)\$;
+    location ~ '\.php$|^/update.php' {
+        fastcgi_split_path_info ^(.+?\.php)(|/.*)$;
         include fastcgi_params;
         include snippets/fastcgi-php.conf;
-        fastcgi_param SCRIPT_FILENAME \\$request_filename;
+        fastcgi_param SCRIPT_FILENAME $request_filename;
         fastcgi_intercept_errors on;
         fastcgi_pass unix:/run/php/php8.3-fpm-drupal.sock;
     }
     
     # Static files caching - simpler and more reliable approach
-    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires max;
         log_not_found off;
         access_log off;
-    }
-        try_files \$uri @rewrite;
+        try_files $uri @rewrite;
     }
     
     # Обработка core файлов Drupal (css, js, изображения)
@@ -366,14 +365,12 @@ server {
             add_header Cache-Control "public, immutable";
             add_header Vary Accept-Encoding;
             access_log off;
-            try_files \$uri @rewrite;
+            try_files $uri @rewrite;
         }
         
         # Запретить доступ к остальным файлам в core
-        location ^~ /core/ {
-            deny all;
-            return 403;
-        }
+        deny all;
+        return 403;
     }
     
     # Deny access to vendor directory
