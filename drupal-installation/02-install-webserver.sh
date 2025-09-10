@@ -358,19 +358,8 @@ server {
         return 403;
     }
     
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_comp_level 6;
-    gzip_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/javascript
-        application/json
-        application/xml
-        application/xml+rss;
+    # NOTE: gzip settings moved to /etc/nginx/conf.d/drupal-performance.conf
+    # to avoid conflicts with main nginx.conf
 }
 EOF
 

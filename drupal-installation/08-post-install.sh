@@ -74,25 +74,14 @@ rm -f "$NGINX_DIR/conf.d/drupal-static.conf"
 cat > "$NGINX_DIR/conf.d/drupal-performance.conf" << EOF
 # Глобальные настройки производительности для Drupal
 # Дата: $(date)
+# ПРИМЕЧАНИЕ: gzip настройки удалены чтобы избежать конфликта с основным nginx.conf
 
-# Сжатие gzip для всех сайтов
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_comp_level 6;
-gzip_types
-    text/plain
-    text/css
-    text/xml
-    text/javascript
-    application/javascript
-    application/json
-    application/xml
-    application/xml+rss
-    application/font-woff
-    application/font-woff2
-    application/x-font-ttf
-    image/svg+xml;
+# FastCGI cache settings
+fastcgi_cache_path /var/cache/nginx/drupal levels=1:2 keys_zone=drupal:10m max_size=1g inactive=60m use_temp_path=off;
+fastcgi_cache_key "\$scheme\$request_method\$host\$request_uri";
+fastcgi_cache_use_stale error timeout invalid_header updating http_500 http_503;
+fastcgi_cache_valid 200 301 302 1h;
+fastcgi_cache_valid 404 1m;
 
 # Настройки буферов
 client_body_buffer_size 16K;
