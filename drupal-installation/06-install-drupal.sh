@@ -414,7 +414,14 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
     echo "   Существует ли файл: $([ -f "$DRUSH_CMD" ] && echo "ДА" || echo "НЕТ")"
     echo "   Права файла: $([ -f "$DRUSH_CMD" ] && ls -la "$DRUSH_CMD" || echo "Файл не найден")"
     echo "   Пользователь: $(whoami)"
-    echo "   PATH: $PATH"
+    
+    # Исправляем права доступа к Drush если они неправильные
+    if [ -f "$DRUSH_CMD" ]; then
+        echo "🔧 Исправляем права доступа к Drush..."
+        sudo chown www-data:www-data "$DRUSH_CMD"
+        sudo chmod +x "$DRUSH_CMD"
+        echo "   Новые права: $(ls -la "$DRUSH_CMD")"
+    fi
     
     # Убеждаемся что мы в правильной директории
     cd "$DRUPAL_DIR" || {
