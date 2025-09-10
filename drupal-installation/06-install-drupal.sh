@@ -411,10 +411,11 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
     if sudo -u www-data "$DRUSH_CMD" --version >/dev/null 2>&1; then
         echo "✅ Drush работает корректно"
         
+        # Показываем версию Drush для информации
+        echo "   Версия Drush: $(sudo -u www-data "$DRUSH_CMD" --version 2>/dev/null || echo 'Неизвестна')"
+        
         # Проверяем что мы в правильной директории
         echo "   Текущая директория: $(pwd)"
-        echo "   Содержимое директории:"
-        ls -la | head -10
         
         # Проверяем наличие composer.json
         if [ -f "composer.json" ]; then
@@ -438,8 +439,15 @@ if [ "$DRUSH_AVAILABLE" = true ] && [ -n "$DRUSH_CMD" ]; then
             --yes
 
         INSTALL_RESULT=$?
+        
+        if [ $INSTALL_RESULT -eq 0 ]; then
+            echo "✅ Drupal успешно установлен через Drush!"
+        else
+            echo "❌ Ошибка установки Drupal через Drush (код: $INSTALL_RESULT)"
+        fi
     else
         echo "❌ Drush не работает, переключаемся на веб-установку"
+        echo "   Причина: $(sudo -u www-data "$DRUSH_CMD" --version 2>&1 | head -1)"
         DRUSH_AVAILABLE=false
         INSTALL_RESULT=1
     fi
